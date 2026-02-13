@@ -1,0 +1,42 @@
+{
+  "$schema": "./config.schema.json",
+  "client": "",
+  "description": "Client configuration - all values populated by user at runtime",
+
+  "credentials": {
+    "azure": {
+      "tenantId": "",
+      "subscriptionId": "",
+      "method": "ask"
+    },
+    "atlassian": {
+      "instanceUrl": "",
+      "projectKey": "",
+      "spaceKey": "",
+      "method": "ask"
+    },
+    "azureDevOps": {
+      "organization": "",
+      "project": "",
+      "method": "ask"
+    },
+    "github": {
+      "organization": "",
+      "repository": "",
+      "method": "ask"
+    }
+  },
+
+  "classification": {
+    "requirementsSearchScope": "confluence",
+    "implementationCheckScope": ["azure", "code"],
+    "confidenceThreshold": 70,
+    "autoUpdateIssues": false
+  },
+
+  "output": {
+    "format": "markdown",
+    "includeAuditTrail": true,
+    "saveToFile": true
+  }
+}

@@ -1,0 +1,41 @@
+// Monitoring Coverage - Resources Query
+// Purpose: List all integration resources that should have monitoring configured
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Returns: List of integration resources with basic info to cross-reference
+// against diagnostic settings and monitoring configuration.
+
+resources
+| where type in~ (
+    'microsoft.logic/workflows',
+    'microsoft.web/sites',
+    'microsoft.servicebus/namespaces',
+    'microsoft.apimanagement/service',
+    'microsoft.keyvault/vaults',
+    'microsoft.storage/storageaccounts',
+    'microsoft.eventgrid/topics',
+    'microsoft.eventhub/namespaces'
+)
+| where type != 'microsoft.web/sites' 
+    or (type == 'microsoft.web/sites' and 
+        (kind contains 'functionapp' or kind contains 'workflowapp'))
+| extend resourceType = case(
+    type == 'microsoft.logic/workflows', 'Logic App',
+    type == 'microsoft.web/sites' and kind contains 'workflowapp', 'Logic App Standard',
+    type == 'microsoft.web/sites' and kind contains 'functionapp', 'Function App',
+    type == 'microsoft.servicebus/namespaces', 'Service Bus',
+    type == 'microsoft.apimanagement/service', 'API Management',
+    type == 'microsoft.keyvault/vaults', 'Key Vault',
+    type == 'microsoft.storage/storageaccounts', 'Storage Account',
+    type == 'microsoft.eventgrid/topics', 'Event Grid',
+    type == 'microsoft.eventhub/namespaces', 'Event Hubs',
+    'Other'
+)
+| project
+    name,
+    resourceType,
+    resourceGroup,
+    location,
+    id,
+    subscriptionId
+| order by resourceType asc, name asc

@@ -1,0 +1,69 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/node_modules": true,
+			"**/.git": true
+		},
+		"editor.formatOnSave": true,
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"[markdown]": {
+			"editor.wordWrap": "on",
+			"editor.quickSuggestions": {
+				"comments": "off",
+				"strings": "off",
+				"other": "off"
+			}
+		},
+		"[json]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"[javascript]": {
+			"editor.defaultFormatter": "esbenp.prettier-vscode"
+		},
+		"files.associations": {
+			"*.kql": "kusto"
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-azuretools.vscode-azurefunctions",
+			"ms-azuretools.vscode-logicapps",
+			"ms-vscode.azure-account",
+			"ms-azuretools.vscode-azure-github-copilot",
+			"rosshamish.kuskus-kusto-syntax-highlighting",
+			"esbenp.prettier-vscode"
+		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": []
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Check MCP Config",
+				"type": "shell",
+				"command": "node scripts/check-mcp-config.js",
+				"problemMatcher": []
+			},
+			{
+				"label": "Test MCP Connection",
+				"type": "shell",
+				"command": "node scripts/test-mcp.js",
+				"problemMatcher": []
+			},
+			{
+				"label": "Show Prompts",
+				"type": "shell",
+				"command": "node scripts/show-prompts.js",
+				"problemMatcher": []
+			}
+		]
+	}
+}

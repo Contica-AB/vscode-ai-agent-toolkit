@@ -1,0 +1,25 @@
+// Security Posture - Service Bus Security Configuration
+// Purpose: Audit Service Bus namespace security settings
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Returns: Service Bus namespaces with security configuration status
+
+resources
+| where type == 'microsoft.servicebus/namespaces'
+| extend
+    sku = sku.name,
+    minimumTlsVersion = properties.minimumTlsVersion,
+    publicNetworkAccess = properties.publicNetworkAccess,
+    disableLocalAuth = properties.disableLocalAuth,
+    hasIssues = (properties.minimumTlsVersion != '1.2')
+        or (properties.publicNetworkAccess == 'Enabled')
+        or (properties.disableLocalAuth != true)
+| project
+    name,
+    resourceGroup,
+    sku,
+    minimumTlsVersion,
+    publicNetworkAccess,
+    disableLocalAuth,
+    hasIssues
+| order by hasIssues desc, name asc

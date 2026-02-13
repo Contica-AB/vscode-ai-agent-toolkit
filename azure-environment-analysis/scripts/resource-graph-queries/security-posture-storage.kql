@@ -1,0 +1,28 @@
+// Security Posture - Storage Account Security Configuration
+// Purpose: Audit storage account security settings
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Returns: Storage accounts with security configuration issues highlighted
+
+resources
+| where type == 'microsoft.storage/storageaccounts'
+| extend
+    httpsOnly = properties.supportsHttpsTrafficOnly,
+    minimumTlsVersion = properties.minimumTlsVersion,
+    publicNetworkAccess = properties.publicNetworkAccess,
+    allowBlobPublicAccess = properties.allowBlobPublicAccess,
+    networkDefaultAction = properties.networkAcls.defaultAction,
+    hasIssues = (properties.supportsHttpsTrafficOnly != true)
+        or (properties.minimumTlsVersion != 'TLS1_2')
+        or (properties.allowBlobPublicAccess == true)
+        or (properties.networkAcls.defaultAction == 'Allow')
+| project
+    name,
+    resourceGroup,
+    httpsOnly,
+    minimumTlsVersion,
+    publicNetworkAccess,
+    allowBlobPublicAccess,
+    networkDefaultAction,
+    hasIssues
+| order by hasIssues desc, name asc

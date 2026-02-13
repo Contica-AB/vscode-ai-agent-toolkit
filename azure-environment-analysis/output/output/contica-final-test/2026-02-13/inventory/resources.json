@@ -1,0 +1,345 @@
+{
+  "metadata": {
+    "client": "Contica Final Test",
+    "subscription": {
+      "id": "e074dd64-b0c6-459d-95be-8673743234f6",
+      "name": "AIS Platform Dev"
+    },
+    "tenant": {
+      "id": "01050a92-db2e-4963-960c-fd998e796072",
+      "name": "Contica AB"
+    },
+    "discoveryDate": "2026-02-13",
+    "discoveryTool": "Azure CLI v2.78.0",
+    "totalResourceCount": 16
+  },
+  "summary": {
+    "logicApps": {
+      "consumption": 3,
+      "standard": 0,
+      "total": 3
+    },
+    "serviceBus": {
+      "namespaces": 4,
+      "queues": 2,
+      "topics": 0
+    },
+    "apiManagement": 0,
+    "functionApps": 3,
+    "keyVaults": 1,
+    "storageAccounts": 5,
+    "appConfiguration": 0,
+    "eventGrid": {
+      "topics": 0
+    },
+    "eventHubs": {
+      "namespaces": 0
+    },
+    "networking": {
+      "privateEndpoints": 0,
+      "vnets": 0
+    }
+  },
+  "resources": {
+    "logicApps": {
+      "consumption": [
+        {
+          "name": "demo-upload-webinar-la",
+          "resourceGroup": "rg-demo-webinar",
+          "location": "westeurope",
+          "state": "Enabled",
+          "sku": "Standard",
+          "tags": {}
+        },
+        {
+          "name": "demo-webinar-la",
+          "resourceGroup": "rg-demo-webinar",
+          "location": "westeurope",
+          "state": "Enabled",
+          "sku": "Standard",
+          "tags": {}
+        },
+        {
+          "name": "cosi-member-adobe-dev-logic",
+          "resourceGroup": "cosi-member-adobe-0073.i001-dev-rg",
+          "location": "northeurope",
+          "state": "Enabled",
+          "sku": "Standard",
+          "tags": {
+            "Component": "Integration",
+            "Product": "CoSI MemberAdobe",
+            "TechnicalOwner": "contica-ais@contica.onmicrosoft.com",
+            "Environment": "Development"
+          }
+        }
+      ],
+      "standard": []
+    },
+    "serviceBus": {
+      "namespaces": [
+        {
+          "name": "simontestservicebus-dev-sbs",
+          "resourceGroup": "rg-demo-webinar",
+          "location": "westeurope",
+          "sku": "Standard",
+          "tags": {}
+        },
+        {
+          "name": "sb-inv-001-ext-2216",
+          "resourceGroup": "integration-worklog",
+          "location": "westeurope",
+          "sku": "Standard",
+          "tags": {}
+        },
+        {
+          "name": "sbclsmetricsdev001",
+          "resourceGroup": "rg-cls-metrics-dev-001",
+          "location": "swedencentral",
+          "sku": "Basic",
+          "tags": {}
+        },
+        {
+          "name": "aisplatform-dev-messaging-bus",
+          "resourceGroup": "aisplatform-dev-messaging-rg",
+          "location": "westeurope",
+          "sku": "Standard",
+          "tags": {}
+        }
+      ],
+      "queues": [
+        {
+          "name": "faktura-queue",
+          "namespace": "aisplatform-dev-messaging-bus",
+          "resourceGroup": "aisplatform-dev-messaging-rg",
+          "maxSizeInMegabytes": 1024,
+          "deadLetteringEnabled": false
+        },
+        {
+          "name": "sbq-001-inv-001-worklog-prod",
+          "namespace": "sb-inv-001-ext-2216",
+          "resourceGroup": "integration-worklog",
+          "maxSizeInMegabytes": 1024,
+          "deadLetteringEnabled": true
+        }
+      ],
+      "topics": []
+    },
+    "apiManagement": [],
+    "functionApps": [
+      {
+        "name": "inv-001-ext-4894",
+        "resourceGroup": "integration-worklog",
+        "location": "West Europe",
+        "kind": "functionapp",
+        "runtimeStack": "dotnet|8.0",
+        "state": "Running",
+        "tags": {}
+      },
+      {
+        "name": "func-cls-metrics-dev-001",
+        "resourceGroup": "rg-cls-metrics-dev-001",
+        "location": "Sweden Central",
+        "kind": "functionapp",
+        "runtimeStack": "dotnet|7.0",
+        "state": "Running",
+        "tags": {}
+      },
+      {
+        "name": "Contica-LASValidator-Function-dev",
+        "resourceGroup": "Contica-LASValidator-dev-rg",
+        "location": "West Europe",
+        "kind": "functionapp",
+        "runtimeStack": null,
+        "state": "Running",
+        "tags": {}
+      }
+    ],
+    "keyVaults": [
+      {
+        "name": "kv-cls-metrics-dev001",
+        "resourceGroup": "rg-cls-metrics-dev-001",
+        "location": "swedencentral",
+        "sku": "standard",
+        "enableSoftDelete": true,
+        "enableRbacAuthorization": false,
+        "enabledForDeployment": false,
+        "tags": {}
+      }
+    ],
+    "storageAccounts": [
+      {
+        "name": "demowebinarsa",
+        "resourceGroup": "rg-demo-webinar",
+        "location": "westeurope",
+        "sku": "Standard_LRS",
+        "kind": "StorageV2",
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": true,
+        "tags": {}
+      },
+      {
+        "name": "lasvalidatorfuncdev",
+        "resourceGroup": "Contica-LASValidator-dev-rg",
+        "location": "westeurope",
+        "sku": "Standard_LRS",
+        "kind": "Storage",
+        "minimumTlsVersion": "TLS1_0",
+        "allowBlobPublicAccess": null,
+        "tags": {}
+      },
+      {
+        "name": "stclsmetricsdev001",
+        "resourceGroup": "rg-cls-metrics-dev-001",
+        "location": "swedencentral",
+        "sku": "Standard_LRS",
+        "kind": "StorageV2",
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": true,
+        "tags": {}
+      },
+      {
+        "name": "stclsmetricsrtdev001",
+        "resourceGroup": "rg-cls-metrics-dev-001",
+        "location": "swedencentral",
+        "sku": "Standard_LRS",
+        "kind": "StorageV2",
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": true,
+        "tags": {}
+      },
+      {
+        "name": "stinv001ext8101",
+        "resourceGroup": "integration-worklog",
+        "location": "westeurope",
+        "sku": "Standard_LRS",
+        "kind": "Storage",
+        "minimumTlsVersion": "TLS1_0",
+        "allowBlobPublicAccess": null,
+        "tags": {}
+      }
+    ],
+    "appConfiguration": [],
+    "eventGrid": {
+      "topics": []
+    },
+    "eventHubs": {
+      "namespaces": []
+    },
+    "networking": {
+      "privateEndpoints": [],
+      "vnets": []
+    }
+  },
+  "securityFindings": {
+    "immediate": [
+      {
+        "severity": "HIGH",
+        "resource": "lasvalidatorfuncdev",
+        "resourceType": "Storage Account",
+        "issue": "Using TLS 1.0 - should be TLS 1.2 minimum"
+      },
+      {
+        "severity": "HIGH",
+        "resource": "stinv001ext8101",
+        "resourceType": "Storage Account",
+        "issue": "Using TLS 1.0 - should be TLS 1.2 minimum"
+      }
+    ],
+    "warnings": [
+      {
+        "severity": "MEDIUM",
+        "resource": "demowebinarsa",
+        "resourceType": "Storage Account",
+        "issue": "Blob public access enabled"
+      },
+      {
+        "severity": "MEDIUM",
+        "resource": "stclsmetricsdev001",
+        "resourceType": "Storage Account",
+        "issue": "Blob public access enabled"
+      },
+      {
+        "severity": "MEDIUM",
+        "resource": "stclsmetricsrtdev001",
+        "resourceType": "Storage Account",
+        "issue": "Blob public access enabled"
+      },
+      {
+        "severity": "MEDIUM",
+        "resource": "kv-cls-metrics-dev001",
+        "resourceType": "Key Vault",
+        "issue": "RBAC authorization not enabled - using access policies"
+      },
+      {
+        "severity": "LOW",
+        "resource": "ALL",
+        "resourceType": "Networking",
+        "issue": "No private endpoints configured - all resources use public endpoints"
+      }
+    ]
+  },
+  "taggingAnalysis": {
+    "taggedResources": 1,
+    "untaggedResources": 15,
+    "tagCoveragePercent": 6.25,
+    "wellTaggedResources": [
+      {
+        "name": "cosi-member-adobe-dev-logic",
+        "tags": ["Component", "Product", "TechnicalOwner", "Environment"]
+      }
+    ],
+    "missingCommonTags": {
+      "environment": 15,
+      "owner": 16,
+      "costCenter": 16,
+      "project": 15
+    }
+  },
+  "resourceGroups": [
+    {
+      "name": "rg-demo-webinar",
+      "resourceCount": 4,
+      "resources": [
+        "demo-upload-webinar-la",
+        "demo-webinar-la",
+        "simontestservicebus-dev-sbs",
+        "demowebinarsa"
+      ]
+    },
+    {
+      "name": "cosi-member-adobe-0073.i001-dev-rg",
+      "resourceCount": 1,
+      "resources": ["cosi-member-adobe-dev-logic"]
+    },
+    {
+      "name": "integration-worklog",
+      "resourceCount": 3,
+      "resources": [
+        "sb-inv-001-ext-2216",
+        "inv-001-ext-4894",
+        "stinv001ext8101"
+      ]
+    },
+    {
+      "name": "rg-cls-metrics-dev-001",
+      "resourceCount": 4,
+      "resources": [
+        "sbclsmetricsdev001",
+        "func-cls-metrics-dev-001",
+        "kv-cls-metrics-dev001",
+        "stclsmetricsdev001",
+        "stclsmetricsrtdev001"
+      ]
+    },
+    {
+      "name": "aisplatform-dev-messaging-rg",
+      "resourceCount": 1,
+      "resources": ["aisplatform-dev-messaging-bus"]
+    },
+    {
+      "name": "Contica-LASValidator-dev-rg",
+      "resourceCount": 2,
+      "resources": ["Contica-LASValidator-Function-dev", "lasvalidatorfuncdev"]
+    }
+  ]
+}

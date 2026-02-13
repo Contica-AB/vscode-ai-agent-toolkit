@@ -1,0 +1,22 @@
+// Networking Topology - Network Security Groups
+// Purpose: Identify NSGs associated with integration subnets
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Returns: NSGs with subnet associations and rule counts
+
+resources
+| where type == 'microsoft.network/networksecuritygroups'
+| mv-expand subnet = properties.subnets
+| extend 
+    subnetId = tostring(subnet.id),
+    vnetName = tostring(split(subnet.id, '/')[8]),
+    subnetName = tostring(split(subnet.id, '/')[10])
+| project
+    nsgName = name,
+    resourceGroup,
+    vnetName,
+    subnetName,
+    subnetId,
+    rulesCount = array_length(properties.securityRules),
+    defaultRulesCount = array_length(properties.defaultSecurityRules)
+| order by nsgName asc

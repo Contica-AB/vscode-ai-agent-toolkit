@@ -1,0 +1,39 @@
+{
+  "name": "azure-integration-assessment",
+  "version": "0.1.0",
+  "description": "Automated Azure Integration Services environment assessment tool",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "setup": "node scripts/interactive-setup.js",
+    "validate": "node scripts/credential-helper.js validate",
+    "check-mcp": "node scripts/check-mcp-config.js",
+    "prompts": "node scripts/show-prompts.js",
+    "sync-ssot": "node scripts/ssot-sync.js",
+    "test-mcp": "node scripts/test-mcp.js",
+    "report": "node scripts/generate-html-report.js"
+  },
+  "keywords": [
+    "azure",
+    "integration",
+    "assessment",
+    "logic-apps",
+    "service-bus"
+  ],
+  "author": "Contica",
+  "license": "MIT",
+  "dependencies": {
+    "@azure/identity": "^4.0.0",
+    "@azure/arm-resources": "^5.2.0",
+    "@azure/arm-subscriptions": "^5.1.0",
+    "@azure/arm-authorization": "^9.0.0",
+    "inquirer": "^9.2.0",
+    "chalk": "^5.3.0",
+    "marked": "^15.0.0",
+    "ora": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

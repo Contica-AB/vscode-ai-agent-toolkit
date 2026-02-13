@@ -1,0 +1,46 @@
+// Security Posture Queries - Index File
+// Purpose: Assess security configuration of integration resources
+// Usage: Run individual query files via Azure Resource Graph Explorer or Azure MCP Server
+//
+// This file contains the main Managed Identity query.
+// For other security checks, use the split query files:
+//
+// Individual Query Files:
+// - security-posture-identity.kql    : Managed Identity configuration
+// - security-posture-storage.kql     : Storage account security settings
+// - security-posture-keyvault.kql    : Key Vault security configuration
+// - security-posture-servicebus.kql  : Service Bus security settings
+// - security-posture-apim.kql        : API Management security settings
+//
+// Run each file separately as Azure Resource Graph doesn't support multi-statement queries.
+
+// ============================================================================
+// QUERY: Managed Identity Coverage
+// ============================================================================
+// Checks all integration resources for Managed Identity configuration.
+// Resources without MI are potential security risks.
+
+resources
+| where type in~ (
+    'microsoft.logic/workflows',
+    'microsoft.web/sites',
+    'microsoft.servicebus/namespaces',
+    'microsoft.apimanagement/service'
+)
+| where type != 'microsoft.web/sites' 
+    or (type == 'microsoft.web/sites' and 
+        (kind contains 'functionapp' or kind contains 'workflowapp'))
+| extend
+    hasSystemIdentity = identity.type contains 'SystemAssigned',
+    hasUserIdentity = identity.type contains 'UserAssigned',
+    hasManagedIdentity = isnotnull(identity) and identity.type != 'None'
+| project
+    name,
+    type,
+    resourceGroup,
+    hasManagedIdentity,
+    hasSystemIdentity,
+    hasUserIdentity,
+    identityType = tostring(identity.type)
+| order by hasManagedIdentity asc, type asc
+

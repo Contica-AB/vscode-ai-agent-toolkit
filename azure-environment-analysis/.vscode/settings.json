@@ -1,0 +1,35 @@
+{
+  "files.associations": {
+    "*.kql": "kusto"
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    }
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "markdown.preview.breaks": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/node_modules": true
+  },
+  "search.exclude": {
+    "**/output/**": true
+  },
+  "recommendations": [
+    "ms-azuretools.vscode-azureresourcegroups",
+    "ms-azuretools.vscode-azurefunctions",
+    "ms-azuretools.vscode-azurelogicapps",
+    "ms-vscode.azure-account",
+    "GitHub.copilot",
+    "GitHub.copilot-chat",
+    "rosshamish.kuskus-kusto-syntax-highlighting"
+  ]
+}

@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Client configs (contain Azure credentials)
+clients/*/config.json
+
+# Claude local settings
+.claude/
+
+# Environment files
+.env
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo

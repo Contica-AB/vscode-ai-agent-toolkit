@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scope Guardian Report - test-client - 2026-02-13</title>
+  <style>
+    :root {
+      --plum: #401938;
+      --salmon: #f58962;
+      --forest: #193837;
+      --beige: #e1d1c1;
+      --pink: #f79299;
+      --tomato: #d93b0b;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--beige);
+      color: var(--plum);
+      line-height: 1.6;
+    }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--plum) 0%, var(--forest) 100%);
+      color: var(--beige);
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    
+    .header .meta {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    
+    .header .logo {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: var(--salmon);
+    }
+    
+    /* Tab Navigation */
+    .tab-nav {
+      background: var(--plum);
+      padding: 0 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      border-bottom: 3px solid var(--salmon);
+    }
+    
+    .tab {
+      background: transparent;
+      border: none;
+      color: var(--beige);
+      padding: 0.75rem 1.25rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      border-radius: 8px 8px 0 0;
+      opacity: 0.7;
+    }
+    
+    .tab:hover {
+      background: rgba(255,255,255,0.1);
+      opacity: 1;
+    }
+    
+    .tab.active {
+      background: var(--salmon);
+      color: var(--plum);
+      opacity: 1;
+      font-weight: 600;
+    }
+    
+    /* Tab Content */
+    .tab-content {
+      display: none;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .document-info {
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(64, 25, 56, 0.2);
+    }
+    
+    .filename {
+      font-size: 0.8rem;
+      color: var(--forest);
+      font-family: monospace;
+    }
+    
+    /* Markdown Content Styles */
+    .markdown-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .markdown-content h1 {
+      color: var(--plum);
+      border-bottom: 3px solid var(--salmon);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 1.8rem;
+    }
+    
+    .markdown-content h2 {
+      color: var(--forest);
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 1.4rem;
+      border-left: 4px solid var(--salmon);
+      padding-left: 0.75rem;
+    }
+    
+    .markdown-content h3 {
+      color: var(--plum);
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+      font-size: 1.15rem;
+    }
+    
+    .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+      color: var(--forest);
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .markdown-content p {
+      margin-bottom: 1rem;
+    }
+    
+    .markdown-content a {
+      color: var(--salmon);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+    
+    .markdown-content a:hover {
+      border-bottom-color: var(--salmon);
+    }
+    
+    .markdown-content ul, .markdown-content ol {
+      margin: 1rem 0;
+      padding-left: 2rem;
+    }
+    
+    .markdown-content li {
+      margin-bottom: 0.25rem;
+    }
+    
+    .markdown-content blockquote {
+      border-left: 4px solid var(--pink);
+      background: rgba(247, 146, 153, 0.1);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      font-style: italic;
+    }
+    
+    .markdown-content hr {
+      border: none;
+      border-top: 2px solid var(--beige);
+      margin: 1.5rem 0;
+    }
+    
+    /* Code */
+    .inline-code {
+      background: rgba(64, 25, 56, 0.1);
+      color: var(--tomato);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.9em;
+    }
+    
+    .code-block {
+      background: var(--forest);
+      color: var(--beige);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    
+    .code-block code {
+      color: inherit;
+    }
+    
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    
+    th {
+      background: var(--plum);
+      color: var(--beige);
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+    }
+    
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--beige);
+    }
+    
+    tr:nth-child(even) {
+      background: rgba(225, 209, 193, 0.3);
+    }
+    
+    tr:hover {
+      background: rgba(245, 137, 98, 0.1);
+    }
+    
+    /* Classification badges */
+    .markdown-content strong {
+      color: var(--plum);
+    }
+    
+    /* Checkboxes */
+    .checkbox {
+      font-size: 1.1em;
+      margin-right: 0.25rem;
+    }
+    
+    .checkbox.checked {
+      color: var(--forest);
+    }
+    
+    .checkbox.unchecked {
+      color: var(--pink);
+    }
+    
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--forest);
+      font-size: 0.85rem;
+      border-top: 1px solid rgba(64, 25, 56, 0.1);
+      margin-top: 2rem;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+      }
+      
+      .tab-nav {
+        justify-content: center;
+      }
+      
+      .tab {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+      }
+      
+      .tab-content {
+        padding: 1rem;
+      }
+      
+      .markdown-content {
+        padding: 1rem;
+      }
+    }
+    
+    /* Print styles */
+    @media print {
+      .tab-nav { display: none; }
+      .tab-content { display: block !important; }
+      .tab-content { page-break-before: always; }
+      .header { background: white; color: var(--plum); }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div>
+      <span class="logo">🛡️ SCOPE GUARDIAN</span>
+      <h1>Classification Report</h1>
+    </div>
+    <div class="meta">
+      <div><strong>Client:</strong> test-client</div>
+      <div><strong>Date:</strong> 2026-02-13</div>
+      <div><strong>Documents:</strong> 3</div>
+    </div>
+  </header>
+  
+  <nav class="tab-nav">
+    <button class="tab active" data-tab="proj-123-classification-md">Classification Report</button>
+        <button class="tab " data-tab="proj-123-evidence-md">Evidence Collection</button>
+        <button class="tab " data-tab="session-summary-md">Session Summary</button>
+  </nav>
+  
+  <main>
+    
+      <div class="tab-content active" id="proj-123-classification-md">
+        <div class="document-info">
+          <span class="filename">PROJ-123-classification.md</span>
+        </div>
+        <div class="markdown-content">
+          <h1>Classification Report</h1>
+
+<hr>
+
+<h2>Classification: CHANGE REQUEST</h2>
+
+<strong>Confidence</strong>: 85%
+<strong>Issue</strong>: PROJ-123 (<a href="https://example.atlassian.net/browse/PROJ-123" target="_blank">link</a>)
+<strong>Classified by</strong>: Scope Guardian Agent
+<strong>Date</strong>: 2026-02-13
+
+<hr>
+
+<h2>Summary</h2>
+
+The implementation correctly follows the documented specification. The reporter is requesting behavior that differs from what was originally specified.
+
+<hr>
+
+<h2>Reported Issue</h2>
+
+<strong>Reporter claims</strong>: Orders are being processed with a 15-minute delay
+
+<strong>Reporter expects</strong>: Orders should be processed immediately in real-time
+
+<hr>
+
+<h2>Evidence</h2>
+
+<h3>Requirements</h3>
+
+<table><tr><th>Document</th><th>Link</th><th>Status</th></tr></table>
+
+<table><tr><th>Order Sync Integration Spec</th><th><a href="https://example.atlassian.net/wiki/spaces/INT/pages/123" target="_blank">Confluence</a></th><th>Approved</th></tr></table>
+
+<strong>Relevant specification</strong>:
+<blockquote>"The Order Sync integration SHALL poll the source system every 15 minutes to retrieve new orders."</blockquote>
+
+<h3>Implementation</h3>
+
+<table><tr><th>Resource</th><th>Type</th><th>Behavior</th><th>Matches Spec</th></tr></table>
+
+<table><tr><th>la-order-sync-prod</th><th>Logic App</th><th>Polls every 15 minutes</th><th>✓ Yes</th></tr></table>
+
+<strong>Verification details</strong>:
+<ul><li>Checked via: Logic Apps MCP</li></ul>
+<ul><li>Last run: 2026-02-13T09:45:00Z</li></ul>
+<ul><li>Success rate: 98.5%</li></ul>
+
+<hr>
+
+<h2>Reasoning</h2>
+
+<li><strong>Requirements check</strong>: Found specification in "Order Sync Integration Spec" dated 2025-11-20</li>
+<li><strong>Implementation check</strong>: Verified Logic App la-order-sync-prod polls every 15 minutes</li>
+<li><strong>Comparison</strong>: Spec says 15-minute polling, implementation does 15-minute polling</li>
+<li><strong>Conclusion</strong>: System works as designed; reporter wants real-time (different from spec)</li>
+
+<hr>
+
+<h2>Recommended Actions</h2>
+
+<ul><li><span class="checkbox unchecked">☐</span> Add label: <code class="inline-code">change-request</code></li></ul>
+<ul><li><span class="checkbox unchecked">☐</span> Discuss with product owner if real-time is needed</li></ul>
+<ul><li><span class="checkbox unchecked">☐</span> If approved, create new user story for real-time implementation</li></ul>
+        </div>
+      </div>
+
+      <div class="tab-content " id="proj-123-evidence-md">
+        <div class="document-info">
+          <span class="filename">PROJ-123-evidence.md</span>
+        </div>
+        <div class="markdown-content">
+          <h1>Evidence Collection</h1>
+
+<h2>Issue Details</h2>
+
+<strong>Source</strong>: Jira  
+<strong>Key</strong>: PROJ-123  
+<strong>URL</strong>: https://example.atlassian.net/browse/PROJ-123  
+<strong>Type</strong>: Bug (reported)  
+<strong>Status</strong>: Open  
+<strong>Reporter</strong>: john.doe@company.com  
+<strong>Created</strong>: 2026-02-10
+
+<h3>Reported Problem</h3>
+
+<blockquote>Orders from the web shop are not appearing in the ERP system in real-time. There's approximately a 15-minute delay between order placement and ERP visibility.</blockquote>
+
+<h3>Expected Behavior (per reporter)</h3>
+
+<blockquote>Orders should appear in ERP immediately after customer completes checkout.</blockquote>
+
+<hr>
+
+<h2>Requirements Search</h2>
+
+<h3>Search Attempts</h3>
+
+<table><tr><th>Location</th><th>Search Terms</th><th>Results</th></tr></table>
+
+<table><tr><th>Confluence INT space</th><th>"order sync"</th><th>3 pages found</th></tr></table>
+<table><tr><th>Confluence INT space</th><th>"real-time orders"</th><th>0 pages</th></tr></table>
+<table><tr><th>ADO Work Items</th><th>"order integration"</th><th>2 closed items</th></tr></table>
+
+<h3>Documents Found</h3>
+
+<h4>1. Order Sync Integration Spec (Primary)</h4>
+
+<strong>URL</strong>: https://example.atlassian.net/wiki/spaces/INT/pages/123  
+<strong>Status</strong>: Approved (2025-11-20)  
+<strong>Author</strong>: Jane Smith
+
+<strong>Relevant Quotes</strong>:
+
+<blockquote>Section 3.1 - Polling Strategy:</blockquote>
+<blockquote>"The Order Sync integration SHALL poll the source system every 15 minutes to retrieve new orders. This interval was chosen to balance system load with acceptable latency."</blockquote>
+
+<blockquote>Section 3.2 - Performance Requirements:</blockquote>
+<blockquote>"Orders SHALL be visible in the target system within 20 minutes of placement under normal conditions."</blockquote>
+
+<hr>
+
+<h2>Implementation Verification</h2>
+
+<h3>Resource: la-order-sync-prod</h3>
+
+<strong>Type</strong>: Logic App (Consumption)  
+<strong>Resource Group</strong>: rg-integration-prod  
+<strong>Location</strong>: West Europe
+
+<h4>Trigger Configuration</h4>
+
+``<code class="inline-code">json
+{
+  "type": "Recurrence",
+  "recurrence": {
+    "frequency": "Minute",
+    "interval": 15
+  }
+}
+</code>``
+
+<h4>Recent Run History</h4>
+
+<table><tr><th>Run ID</th><th>Start Time</th><th>Status</th><th>Duration</th></tr></table>
+
+<table><tr><th>abc123</th><th>2026-02-13 09:45:00</th><th>Succeeded</th><th>12s</th></tr></table>
+<table><tr><th>def456</th><th>2026-02-13 09:30:00</th><th>Succeeded</th><th>14s</th></tr></table>
+<table><tr><th>ghi789</th><th>2026-02-13 09:15:00</th><th>Succeeded</th><th>11s</th></tr></table>
+
+<strong>Success Rate (24h)</strong>: 98.5% (142/144 runs)
+
+<hr>
+
+<h2>Conclusion</h2>
+
+Implementation matches specification. The 15-minute delay is <strong>by design</strong>.
+        </div>
+      </div>
+
+      <div class="tab-content " id="session-summary-md">
+        <div class="document-info">
+          <span class="filename">session-summary.md</span>
+        </div>
+        <div class="markdown-content">
+          <h1>Session Summary</h1>
+
+<strong>Client</strong>: Test Client  
+<strong>Date</strong>: 2026-02-13  
+<strong>Agent</strong>: Scope Guardian  
+<strong>Duration</strong>: ~15 minutes
+
+<hr>
+
+<h2>Session Configuration</h2>
+
+<h3>Tools Used</h3>
+
+<table><tr><th>Tool</th><th>Instance/Account</th><th>Status</th></tr></table>
+
+<table><tr><th>Atlassian</th><th>example.atlassian.net</th><th>✓ Connected</th></tr></table>
+<table><tr><th>Azure</th><th>contoso-prod</th><th>✓ Connected</th></tr></table>
+<table><tr><th>Azure DevOps</th><th>(skipped)</th><th>-</th></tr></table>
+<table><tr><th>GitHub</th><th>(skipped)</th><th>-</th></tr></table>
+<table><tr><th>Logic Apps</th><th>contoso-prod</th><th>✓ Connected</th></tr></table>
+
+<hr>
+
+<h2>Issues Classified</h2>
+
+<table><tr><th>Issue</th><th>Type (reported)</th><th>Classification</th><th>Confidence</th></tr></table>
+
+<table><tr><th>PROJ-123</th><th>Bug</th><th><strong>CHANGE REQUEST</strong></th><th>85%</th></tr></table>
+
+<hr>
+
+<h2>Key Findings</h2>
+
+<li><strong>PROJ-123</strong>: Reporter expected real-time order sync, but specification clearly defines 15-minute polling interval</li>
+
+<hr>
+
+<h2>Actions Taken</h2>
+
+<ul><li><span class="checkbox checked">☑</span> Loaded issue from Jira</li></ul>
+<ul><li><span class="checkbox checked">☑</span> Found requirements in Confluence</li></ul>
+<ul><li><span class="checkbox checked">☑</span> Verified implementation in Azure</li></ul>
+<ul><li><span class="checkbox checked">☑</span> Generated classification report</li></ul>
+<ul><li><span class="checkbox unchecked">☐</span> Updated issue with classification (user skipped)</li></ul>
+
+<hr>
+
+<h2>Files Generated</h2>
+
+<ul><li><code class="inline-code">PROJ-123-classification.md</code> - Full classification report</li></ul>
+<ul><li><code class="inline-code">PROJ-123-evidence.md</code> - Evidence collection details</li></ul>
+<ul><li><code class="inline-code">session-summary.md</code> - This file</li></ul>
+        </div>
+      </div>
+  </main>
+  
+  <footer class="footer">
+    Generated by Scope Guardian • 2026-02-12
+  </footer>
+  
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active from all
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        // Add active to clicked
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      const tabs = Array.from(document.querySelectorAll('.tab'));
+      const activeIndex = tabs.findIndex(t => t.classList.contains('active'));
+      
+      if (e.key === 'ArrowRight' && activeIndex < tabs.length - 1) {
+        tabs[activeIndex + 1].click();
+      } else if (e.key === 'ArrowLeft' && activeIndex > 0) {
+        tabs[activeIndex - 1].click();
+      }
+    });
+  </script>
+</body>
+</html>

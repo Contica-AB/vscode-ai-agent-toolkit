@@ -1,0 +1,216 @@
+{
+  "assessmentDate": "2026-02-11",
+  "client": "Contica AB DEMO new",
+  "generatedAt": "2026-02-11T10:00:00Z",
+  "subscriptions": [
+    {
+      "id": "e074dd64-b0c6-459d-95be-8673743234f6",
+      "name": "AIS Platform Dev",
+      "accessible": true
+    },
+    {
+      "id": "62fab13c-a94c-4ae4-8fcc-045f1e8c9386",
+      "name": "AIS Platform Prod",
+      "accessible": true
+    },
+    {
+      "id": "fb97e57f-1b8b-4ba0-9034-9bf8dfb3a6bf",
+      "name": "AIS Shared Resources Prod",
+      "accessible": false
+    },
+    {
+      "id": "ae2cbfcc-4341-4d8f-99cb-c9ebe91d89e4",
+      "name": "AIS Shared Resources Dev",
+      "accessible": false
+    }
+  ],
+  "resources": {
+    "logicApps": {
+      "consumption": [
+        {
+          "name": "demo-upload-webinar-la",
+          "resourceGroup": "rg-demo-webinar",
+          "subscription": "AIS Platform Dev",
+          "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+          "location": "westeurope",
+          "state": "Enabled",
+          "type": "Consumption",
+          "id": "/subscriptions/e074dd64-b0c6-459d-95be-8673743234f6/resourceGroups/rg-demo-webinar/providers/Microsoft.Logic/workflows/demo-upload-webinar-la"
+        },
+        {
+          "name": "demo-webinar-la",
+          "resourceGroup": "rg-demo-webinar",
+          "subscription": "AIS Platform Dev",
+          "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+          "location": "westeurope",
+          "state": "Enabled",
+          "type": "Consumption",
+          "id": "/subscriptions/e074dd64-b0c6-459d-95be-8673743234f6/resourceGroups/rg-demo-webinar/providers/Microsoft.Logic/workflows/demo-webinar-la"
+        },
+        {
+          "name": "cosi-member-adobe-dev-logic",
+          "resourceGroup": "cosi-member-adobe-0073.i001-dev-rg",
+          "subscription": "AIS Platform Dev",
+          "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+          "location": "swedencentral",
+          "state": "Enabled",
+          "type": "Consumption",
+          "id": "/subscriptions/e074dd64-b0c6-459d-95be-8673743234f6/resourceGroups/cosi-member-adobe-0073.i001-dev-rg/providers/Microsoft.Logic/workflows/cosi-member-adobe-dev-logic"
+        }
+      ],
+      "standard": []
+    },
+    "serviceBus": [
+      {
+        "name": "simontestservicebus-dev-sbs",
+        "resourceGroup": "testing-deployment",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "swedencentral",
+        "sku": "Standard",
+        "id": "/subscriptions/e074dd64-b0c6-459d-95be-8673743234f6/resourceGroups/testing-deployment/providers/Microsoft.ServiceBus/namespaces/simontestservicebus-dev-sbs"
+      },
+      {
+        "name": "sb-inv-001-ext-2216",
+        "resourceGroup": "rg-inv-001-ext",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "swedencentral",
+        "sku": "Standard",
+        "id": "/subscriptions/e074dd64-b0c6-459d-95be-8673743234f6/resourceGroups/rg-inv-001-ext/providers/Microsoft.ServiceBus/namespaces/sb-inv-001-ext-2216"
+      },
+      {
+        "name": "sbclsmetricsdev001",
+        "resourceGroup": "rg-cls-metrics-dev",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "swedencentral",
+        "sku": "Standard",
+        "id": "/subscriptions/e074dd64-b0c6-459d-95be-8673743234f6/resourceGroups/rg-cls-metrics-dev/providers/Microsoft.ServiceBus/namespaces/sbclsmetricsdev001"
+      },
+      {
+        "name": "aisplatform-dev-messaging-bus",
+        "resourceGroup": "rg-demo-webinar",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "westeurope",
+        "sku": "Basic",
+        "queues": ["faktura-queue"],
+        "id": "/subscriptions/e074dd64-b0c6-459d-95be-8673743234f6/resourceGroups/rg-demo-webinar/providers/Microsoft.ServiceBus/namespaces/aisplatform-dev-messaging-bus"
+      }
+    ],
+    "functionApps": [
+      {
+        "name": "func-cls-metrics-dev-001",
+        "resourceGroup": "rg-cls-metrics-dev",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "Sweden Central",
+        "kind": "functionapp",
+        "state": "Running"
+      },
+      {
+        "name": "inv-001-ext-4894",
+        "resourceGroup": "rg-inv-001-ext",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "Sweden Central",
+        "kind": "functionapp",
+        "state": "Running"
+      },
+      {
+        "name": "Contica-LASValidator-Function-dev",
+        "resourceGroup": "LogicAppStandardValidator-dev-rg",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "West Europe",
+        "kind": "functionapp",
+        "state": "Running"
+      }
+    ],
+    "keyVaults": [
+      {
+        "name": "kv-cls-metrics-dev001",
+        "resourceGroup": "rg-cls-metrics-dev",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "swedencentral"
+      }
+    ],
+    "storageAccounts": [
+      {
+        "name": "demowebinarsa",
+        "resourceGroup": "rg-demo-webinar",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "westeurope",
+        "sku": "Standard_LRS",
+        "kind": "StorageV2",
+        "allowBlobPublicAccess": true
+      },
+      {
+        "name": "lasvalidatorfuncdev",
+        "resourceGroup": "LogicAppStandardValidator-dev-rg",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "westeurope",
+        "sku": "Standard_LRS",
+        "kind": "StorageV2",
+        "allowBlobPublicAccess": false
+      },
+      {
+        "name": "stclsmetricsdev001",
+        "resourceGroup": "rg-cls-metrics-dev",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "swedencentral",
+        "sku": "Standard_LRS",
+        "kind": "StorageV2",
+        "allowBlobPublicAccess": false
+      },
+      {
+        "name": "stclsmetricsrtdev001",
+        "resourceGroup": "rg-cls-metrics-dev",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "swedencentral",
+        "sku": "Standard_LRS",
+        "kind": "StorageV2",
+        "allowBlobPublicAccess": false
+      },
+      {
+        "name": "stinv001ext8101",
+        "resourceGroup": "rg-inv-001-ext",
+        "subscription": "AIS Platform Dev",
+        "subscriptionId": "e074dd64-b0c6-459d-95be-8673743234f6",
+        "location": "swedencentral",
+        "sku": "Standard_LRS",
+        "kind": "StorageV2",
+        "allowBlobPublicAccess": false
+      }
+    ],
+    "apiManagement": [],
+    "eventGrid": [],
+    "eventHubs": [],
+    "appConfiguration": []
+  },
+  "summary": {
+    "totalResources": 19,
+    "byType": {
+      "logicAppsConsumption": 3,
+      "logicAppsStandard": 0,
+      "serviceBus": 4,
+      "functionApps": 3,
+      "keyVaults": 1,
+      "storageAccounts": 5,
+      "apiManagement": 0,
+      "eventGrid": 0,
+      "eventHubs": 0,
+      "appConfiguration": 0
+    },
+    "bySubscription": {
+      "AIS Platform Dev": 19,
+      "AIS Platform Prod": 0
+    }
+  }
+}

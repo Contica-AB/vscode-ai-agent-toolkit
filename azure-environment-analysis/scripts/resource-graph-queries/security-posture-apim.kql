@@ -1,0 +1,21 @@
+// Security Posture - API Management Security Configuration
+// Purpose: Audit APIM security and network settings
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Returns: API Management instances with security configuration status
+
+resources
+| where type == 'microsoft.apimanagement/service'
+| extend
+    sku = sku.name,
+    virtualNetworkType = properties.virtualNetworkType,
+    publicNetworkAccess = properties.publicNetworkAccess,
+    isIsolated = properties.virtualNetworkType != 'None'
+| project
+    name,
+    resourceGroup,
+    sku,
+    virtualNetworkType,
+    publicNetworkAccess,
+    isIsolated
+| order by isIsolated asc, name asc
