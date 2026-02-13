@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Output files (client-specific, not committed)
+output/*/
+
+# Keep output folder structure
+!output/.gitkeep
+
+# Environment files
+.env
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
