@@ -1,8 +1,0 @@
-{
-  "servers": {
-    "logicapps": {
-      "type": "stdio",
-      "command": "logicapps-mcp"
-    }
-  }
-}
