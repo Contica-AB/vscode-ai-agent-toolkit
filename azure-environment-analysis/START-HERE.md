@@ -12,6 +12,17 @@ Press `Ctrl+Shift+I` (or `Cmd+Shift+I` on Mac)
 
 **Make sure `@workspace` is enabled** at the bottom of the chat input.
 
+**Select the right model** — this tool requires a high-capability model that can follow long multi-step instructions, make dozens of tool calls, and maintain context across a full assessment session. Do NOT use "Auto" mode.
+
+| Model | Recommendation |
+|-------|---------------|
+| **Claude Sonnet 4.5** | Best choice — strong instruction-following, reliable tool use, handles long prompts well |
+| **Claude Opus** | Also excellent — more thorough analysis, slower but higher quality |
+| GPT-4o | Works but may lose track of phase gating and config rules in long sessions |
+| Smaller models | Not recommended — will struggle with the 50+ step assessment prompt |
+
+**How to select**: Click the model name dropdown at the bottom of Copilot Chat and pick **Claude Sonnet 4.5** (or Claude Opus for maximum quality).
+
 ---
 
 ### Step 2: One-Prompt Setup (First Time Only)
@@ -173,11 +184,24 @@ PHASE 0: PREFLIGHT VALIDATION
 9. Save results to: output/my-company-name/2026-02-10/analysis/preflight-validation.md
 
 ═══════════════════════════════════════════
-PHASE 1: RESOURCE DISCOVERY
+PHASE SELECTION (Interactive)
 ═══════════════════════════════════════════
 
-10. Read /prompts/01-inventory.md
-11. Use Azure MCP to discover all integration resources:
+10. Read /prompts/00b-phase-selection.md
+11. Present phase presets (Full / Security Focus / Quick Health / Compliance / Custom)
+12. If Custom: let me pick individual phases (2-7)
+13. Validate: at least one analysis phase selected
+14. If salesOpportunities.includeInReport is true, ask if I want Phase 9
+15. Show confirmation table (selected, skipped, auto-included)
+16. Save selection to selectedPhases in client config
+17. Wait for my confirmation before proceeding
+
+═══════════════════════════════════════════
+PHASE 1: RESOURCE DISCOVERY (always runs)
+═══════════════════════════════════════════
+
+18. Read /prompts/01-inventory.md
+19. Use Azure MCP to discover all integration resources:
     - Logic Apps (Consumption and Standard)
     - Service Bus Namespaces (queues, topics, subscriptions)
     - API Management instances
@@ -188,16 +212,19 @@ PHASE 1: RESOURCE DISCOVERY
     - Event Grid topics
     - Event Hubs
 
-12. Save inventory to:
+20. Save inventory to:
     - output/my-company-name/2026-02-10/inventory/resources.json (full details)
     - output/my-company-name/2026-02-10/inventory/summary.md (human-readable)
 
 ═══════════════════════════════════════════
 PHASE 2: INTEGRATION SERVICES DEEP DIVE
+(skip if not in selectedPhases)
 ═══════════════════════════════════════════
 
-13. Read /prompts/02-logic-apps-deep-dive.md
-14. For EACH integration resource type, perform deep analysis:
+IF "integration-services-deep-dive" is in selectedPhases:
+
+21. Read /prompts/02-logic-apps-deep-dive.md
+22. For EACH integration resource type, perform deep analysis:
 
     Logic Apps:
     - Extract workflow definitions, connectors, error handling, dependencies
@@ -218,158 +245,245 @@ PHASE 2: INTEGRATION SERVICES DEEP DIVE
     Supporting Services (Key Vault, Storage, Event Grid, Event Hub, App Config):
     - Save: output/my-company-name/2026-02-10/analysis/supporting-services-analysis.md
 
-15. Create connector inventory:
+23. Create connector inventory:
     - output/my-company-name/2026-02-10/analysis/connector-inventory.md
+
+ELSE: Log "Phase 2: Skipped (not in scope)"
 
 ═══════════════════════════════════════════
 PHASE 3: FAILURE ANALYSIS
+(skip if not in selectedPhases)
 ═══════════════════════════════════════════
 
-16. Read /prompts/03-failure-analysis.md
-17. Analyze failures across ALL resource types:
+IF "failure-patterns" is in selectedPhases:
+
+24. Read /prompts/03-failure-analysis.md
+25. Analyze failures across ALL resource types:
     - Logic Apps: Top 10 failing flows, error patterns, root cause analysis
     - Service Bus: DLQ message counts, server errors, throttling
     - Function Apps: Http5xx/4xx rates, function-level errors
     - APIM: Failed requests, per-API error breakdown, backend health
     - Cross-resource failure correlations
 
-18. Save to: output/my-company-name/2026-02-10/analysis/failure-analysis.md
+26. Save to: output/my-company-name/2026-02-10/analysis/failure-analysis.md
+
+ELSE: Log "Phase 3: Skipped (not in scope)"
 
 ═══════════════════════════════════════════
 PHASE 4: SECURITY AUDIT
+(skip if not in selectedPhases)
 ═══════════════════════════════════════════
 
-21. Read /prompts/04-security-audit.md
-22. Use Microsoft Docs MCP to fetch Azure security best practices
-23. Use SSOT standards from /standards/contica-ssot/
-24. Audit:
+IF "security" is in selectedPhases:
+
+27. Read /prompts/04-security-audit.md
+28. Use Microsoft Docs MCP to fetch Azure security best practices
+29. Use SSOT standards from /standards/contica-ssot/
+30. Audit:
     - Authentication & authorization (Managed Identity vs. secrets)
     - Network security (private endpoints, VNet integration)
     - Data protection (encryption, TLS versions)
     - Secrets management (Key Vault usage)
     - Monitoring & auditing (diagnostic settings)
 
-25. Rate findings: HIGH / MEDIUM / LOW severity
-26. Save to: output/my-company-name/2026-02-10/analysis/security-audit.md
+31. Rate findings: HIGH / MEDIUM / LOW severity
+32. Save to: output/my-company-name/2026-02-10/analysis/security-audit.md
+
+ELSE: Log "Phase 4: Skipped (not in scope)"
 
 ═══════════════════════════════════════════
 PHASE 5: UNUSED RESOURCE DETECTION
+(skip if not in selectedPhases)
 ═══════════════════════════════════════════
 
-23. Read /prompts/05-dead-flow-detection.md
-24. Detect unused resources across ALL types:
+IF "dead-flows" is in selectedPhases:
+
+33. Read /prompts/05-dead-flow-detection.md
+34. Detect unused resources across ALL types:
     - Logic Apps: Zero runs in 90 days, always fails, disabled 90+ days
     - Service Bus: Empty namespaces, queues with zero messages
     - Function Apps: Zero invocations, stopped apps, deprecated runtimes
     - APIM: APIs with zero traffic, unused products
     - Key Vault, Storage, Event Grid, Event Hub, App Config: Zero activity
 
-25. Save to: output/my-company-name/2026-02-10/analysis/dead-flows.md
+35. Save to: output/my-company-name/2026-02-10/analysis/dead-flows.md
+
+ELSE: Log "Phase 5: Skipped (not in scope)"
 
 ═══════════════════════════════════════════
 PHASE 6: MONITORING GAPS
+(skip if not in selectedPhases)
 ═══════════════════════════════════════════
 
-30. Read /prompts/06-monitoring-gaps.md
-31. Check for:
+IF "monitoring-gaps" is in selectedPhases:
+
+36. Read /prompts/06-monitoring-gaps.md
+37. Check for:
     - Resources without diagnostic settings
     - Missing Application Insights connections
     - Missing alert rules
     - Log Analytics workspace configuration
 
-32. Save to: output/my-company-name/2026-02-10/analysis/monitoring-gaps.md
+38. Save to: output/my-company-name/2026-02-10/analysis/monitoring-gaps.md
+
+ELSE: Log "Phase 6: Skipped (not in scope)"
 
 ═══════════════════════════════════════════
 PHASE 7: NAMING & TAGGING COMPLIANCE
+(skip if not in selectedPhases)
 ═══════════════════════════════════════════
 
-33. Read /prompts/07-naming-tagging-compliance.md
-34. Evaluate against SSOT naming convention standard
-35. Check for required tags (environment, owner, cost-center, etc.)
-36. Save to: output/my-company-name/2026-02-10/analysis/naming-tagging.md
+IF "naming-tagging" is in selectedPhases:
+
+39. Read /prompts/07-naming-tagging-compliance.md
+40. Evaluate against SSOT naming convention standard
+41. Check for required tags (environment, owner, cost-center, etc.)
+42. Save to: output/my-company-name/2026-02-10/analysis/naming-tagging.md
+
+ELSE: Log "Phase 7: Skipped (not in scope)"
 
 ═══════════════════════════════════════════
 PHASE 8: FINAL REPORT GENERATION
+(auto-included if any analysis phase ran)
 ═══════════════════════════════════════════
 
-37. Read /prompts/08-generate-report.md
-38. Read all analysis files from output/my-company-name/2026-02-10/analysis/
-39. Generate comprehensive report with:
+43. Read /prompts/08-generate-report.md
+44. Read ONLY the analysis files that were generated (skip files for phases not in scope)
+45. Generate report covering only the phases that ran:
     - Executive Summary (business language)
     - Environment Overview
-    - Integration Flows Summary
-    - Security Assessment (HIGH/MEDIUM/LOW findings)
-    - Operational Health
-    - Technical Debt & Dead Flows
-    - Prioritized Recommendations
+    - Sections for each analysis phase that ran
+    - Scope note: list which phases were skipped
+    - Prioritized Recommendations (from executed phases only)
     - Appendix
 
-40. Save to: output/my-company-name/2026-02-10/reports/current-state-assessment.md
+46. Save to: output/my-company-name/2026-02-10/reports/current-state-assessment.md
 
 ═══════════════════════════════════════════
 PHASE 9: SALES OPPORTUNITIES
+(if selected during phase selection)
 ═══════════════════════════════════════════
 
-41. Read /prompts/09-sales-opportunities.md
-42. Check salesOpportunities.includeInReport in client config
-43. If enabled, generate:
+IF Phase 9 was included during phase selection:
+
+47. Read /prompts/09-sales-opportunities.md
+48. Generate:
     - Map findings to opportunity categories (security, operational excellence, etc.)
     - Size each opportunity (XS/S/M/L/XL) with effort and revenue estimates
     - Include pitch tips for account managers
 
-44. Save to:
+49. Save to:
     - output/my-company-name/2026-02-10/reports/improvement-opportunities.md
     - output/my-company-name/2026-02-10/reports/opportunity-summary.md
 
-If salesOpportunities.includeInReport is false, skip this phase.
+ELSE: Log "Phase 9: Skipped"
 
 ═══════════════════════════════════════════
 POST-ASSESSMENT CREDENTIAL CLEANUP
 ═══════════════════════════════════════════
 
-45. Check azureAccess.authenticationType in the client config
-46. If "service-principal":
+50. Check azureAccess.authenticationType in the client config
+51. If "service-principal":
     - Ask me: "Have you copied the client secret to a secure location (e.g., Key Vault, password manager)?"
     - Wait for my confirmation
     - Once I confirm, clean up:
-      • Delete set-env-vars.ps1 from the project root (if it exists)
-      • Delete set-env-vars.sh from the project root (if it exists)
-      • Remove clientSecret from the client config (if stored there)
-      • Tell me to clear environment variables from my session
-      • Ask if I want to delete the service principal from Azure AD
-47. If "azure-cli": Skip cleanup — no secrets to remove
+      - Delete set-env-vars.ps1 from the project root (if it exists)
+      - Delete set-env-vars.sh from the project root (if it exists)
+      - Remove clientSecret from the client config (if stored there)
+      - Tell me to clear environment variables from my session
+      - Ask if I want to delete the service principal from Azure AD
+52. If "azure-cli": Skip cleanup — no secrets to remove
 
 ═══════════════════════════════════════════
 GENERATE INTERACTIVE HTML REPORT
 ═══════════════════════════════════════════
 
-48. Run: npm run report -- my-company-name 2026-02-10
-49. This compiles ALL assessment documents into a single interactive HTML file
-50. The HTML report is saved to: output/my-company-name/2026-02-10/reports/assessment-report.html
-51. Tell me to open the file in a browser to view the interactive report
+53. Run: npm run report -- my-company-name 2026-02-10
+54. This compiles ALL assessment documents into a single interactive HTML file
+55. The HTML report is saved to: output/my-company-name/2026-02-10/reports/assessment-report.html
+56. Tell me to open the file in a browser to view the interactive report
 
 ═══════════════════════════════════════════
 POST-ASSESSMENT SUMMARY
 ═══════════════════════════════════════════
 
-52. Show me:
-    - ✓ Total resources discovered
-    - ✓ Number of HIGH/MEDIUM/LOW severity findings
-    - ✓ Number of unused resources identified
-    - ✓ Top 5 recommendations
-    - ✓ Sales opportunities generated (if enabled)
-    - ✓ Credential cleanup status (if service principal was used)
-    - ✓ HTML report generated
-    - ✓ All files generated (with paths)
+57. Show me:
+    - Total resources discovered
+    - Phases executed vs. skipped
+    - Number of HIGH/MEDIUM/LOW severity findings (from executed phases)
+    - Number of unused resources identified (if Phase 5 ran)
+    - Top 5 recommendations
+    - Sales opportunities generated (if Phase 9 ran)
+    - Credential cleanup status (if service principal was used)
+    - HTML report generated
+    - All files generated (with paths)
 
-53. Tell me where to find the deliverables:
+58. Tell me where to find the deliverables:
     - Markdown report: output/my-company-name/2026-02-10/reports/current-state-assessment.md
     - Interactive HTML: output/my-company-name/2026-02-10/reports/assessment-report.html
 
-Execute all phases sequentially. Show progress updates as you complete each phase. If any phase fails, show the error and continue with the next phase.
+Execute selected phases sequentially. Skip phases not in selectedPhases. Show progress updates as you complete each phase. If any phase fails, show the error and continue with the next phase.
 ```
 
 **This runs the entire assessment automatically!**
+
+---
+
+## Quick Assessment Presets
+
+Pre-built prompts for common assessment types. These skip the interactive phase selection menu and go straight to execution.
+
+### Security-Only Assessment
+```
+Execute a Security-Only assessment for client "my-company-name":
+
+Assessment Date: 2026-02-10
+Output Location: output/my-company-name/2026-02-10/
+
+1. Run Phase 0: Preflight (read /prompts/00-preflight.md)
+2. Skip phase selection — use preset: Security Focus (Phase 4 only)
+3. Save selectedPhases to config: { "preset": "security-focus", "phases": [0,1,4,8], "skipped": [2,3,5,6,7] }
+4. Run Phase 1: Discovery (read /prompts/01-inventory.md)
+5. Run Phase 4: Security Audit (read /prompts/04-security-audit.md)
+6. Run Phase 8: Report (read /prompts/08-generate-report.md) — security-focused report
+7. Credential cleanup + HTML report generation
+```
+
+### Quick Health Check
+```
+Execute a Quick Health Check for client "my-company-name":
+
+Assessment Date: 2026-02-10
+Output Location: output/my-company-name/2026-02-10/
+
+1. Run Phase 0: Preflight (read /prompts/00-preflight.md)
+2. Skip phase selection — use preset: Quick Health Check (Phases 3, 5, 6)
+3. Save selectedPhases to config: { "preset": "quick-health", "phases": [0,1,3,5,6,8], "skipped": [2,4,7] }
+4. Run Phase 1: Discovery (read /prompts/01-inventory.md)
+5. Run Phase 3: Failure Analysis (read /prompts/03-failure-analysis.md)
+6. Run Phase 5: Unused Resources (read /prompts/05-dead-flow-detection.md)
+7. Run Phase 6: Monitoring Gaps (read /prompts/06-monitoring-gaps.md)
+8. Run Phase 8: Report (read /prompts/08-generate-report.md) — health-focused report
+9. Credential cleanup + HTML report generation
+```
+
+### Compliance Review
+```
+Execute a Compliance Review for client "my-company-name":
+
+Assessment Date: 2026-02-10
+Output Location: output/my-company-name/2026-02-10/
+
+1. Run Phase 0: Preflight (read /prompts/00-preflight.md)
+2. Skip phase selection — use preset: Compliance Review (Phases 4, 6, 7)
+3. Save selectedPhases to config: { "preset": "compliance", "phases": [0,1,4,6,7,8], "skipped": [2,3,5] }
+4. Run Phase 1: Discovery (read /prompts/01-inventory.md)
+5. Run Phase 4: Security Audit (read /prompts/04-security-audit.md)
+6. Run Phase 6: Monitoring Gaps (read /prompts/06-monitoring-gaps.md)
+7. Run Phase 7: Naming & Tagging (read /prompts/07-naming-tagging-compliance.md)
+8. Run Phase 8: Report (read /prompts/08-generate-report.md) — compliance-focused report
+9. Credential cleanup + HTML report generation
+```
 
 ---
 

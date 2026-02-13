@@ -1,6 +1,7 @@
 # Phase 5: Unused Resource Detection
 
 ## Objective
+
 Identify unused, legacy, or redundant integration resources across ALL resource types — Logic Apps, Service Bus, Function Apps, APIM, Key Vault, Storage, Event Grid, Event Hub, and App Configuration — that are candidates for decommissioning or cleanup.
 
 ---
@@ -16,9 +17,10 @@ The folder should already exist from Phase 0.
 ## Prerequisites
 
 Before running this prompt:
-1. **Phase 0 through Phase 4 must be complete**
+
+1. **Required**: Phase 0 (Preflight) and Phase 1 (Discovery) must be complete.
 2. Read the inventory from `/output/{client-name}/{YYYY-MM-DD}/inventory/`
-3. Run history data available from Phase 3
+3. **Optional enrichment**: If Phase 3 was selected and completed, read its output for run history context. If not available, proceed with fresh metric queries.
 4. Reference `/standards/azure-apis/resource-health.md` for health status queries
 
 ---
@@ -27,30 +29,32 @@ Before running this prompt:
 
 > **MCP-First Rule**: Always try MCP tools first. Only fall back to CLI if MCP fails.
 
-| Resource | Operation | Primary (MCP) | Fallback (CLI) |
-|----------|-----------|---------------|----------------|
-| Logic Apps | Run history | Logic Apps MCP | `az rest --method GET --url ".../workflows/{name}/runs..."` |
-| Service Bus | Queue message counts | Azure MCP | `az servicebus queue show -g {rg} --namespace-name {ns} -n {queue}` |
-| Service Bus | List topics/subs | Azure MCP | `az servicebus topic list -g {rg} --namespace-name {ns}` |
-| Function Apps | Execution metrics | Azure MCP | `az monitor metrics list --resource {id} --metric FunctionExecutionCount` |
-| Function Apps | List functions | Azure MCP | `az functionapp function list -g {rg} -n {app}` |
-| APIM | Request metrics | Azure MCP | `az monitor metrics list --resource {id} --metric TotalRequests` |
-| APIM | List APIs | Azure MCP | `az apim api list -g {rg} --service-name {apim}` |
-| Key Vault | Activity metrics | Azure MCP | `az monitor metrics list --resource {id} --metric ServiceApiHit` |
-| Event Grid | Delivery metrics | Azure MCP | `az monitor metrics list --resource {id} --metric PublishSuccessCount` |
-| Event Hub | Throughput metrics | Azure MCP | `az monitor metrics list --resource {id} --metric IncomingMessages` |
-| Any resource | Tags/metadata | Azure MCP | `az resource show` |
-| Any resource | ADO work items | Azure DevOps MCP | — |
+| Resource      | Operation            | Primary (MCP)    | Fallback (CLI)                                                            |
+| ------------- | -------------------- | ---------------- | ------------------------------------------------------------------------- |
+| Logic Apps    | Run history          | Logic Apps MCP   | `az rest --method GET --url ".../workflows/{name}/runs..."`               |
+| Service Bus   | Queue message counts | Azure MCP        | `az servicebus queue show -g {rg} --namespace-name {ns} -n {queue}`       |
+| Service Bus   | List topics/subs     | Azure MCP        | `az servicebus topic list -g {rg} --namespace-name {ns}`                  |
+| Function Apps | Execution metrics    | Azure MCP        | `az monitor metrics list --resource {id} --metric FunctionExecutionCount` |
+| Function Apps | List functions       | Azure MCP        | `az functionapp function list -g {rg} -n {app}`                           |
+| APIM          | Request metrics      | Azure MCP        | `az monitor metrics list --resource {id} --metric TotalRequests`          |
+| APIM          | List APIs            | Azure MCP        | `az apim api list -g {rg} --service-name {apim}`                          |
+| Key Vault     | Activity metrics     | Azure MCP        | `az monitor metrics list --resource {id} --metric ServiceApiHit`          |
+| Event Grid    | Delivery metrics     | Azure MCP        | `az monitor metrics list --resource {id} --metric PublishSuccessCount`    |
+| Event Hub     | Throughput metrics   | Azure MCP        | `az monitor metrics list --resource {id} --metric IncomingMessages`       |
+| Any resource  | Tags/metadata        | Azure MCP        | `az resource show`                                                        |
+| Any resource  | ADO work items       | Azure DevOps MCP | —                                                                         |
 
 **Example - Logic App runs from last 90 days:**
 
-*Windows (PowerShell):*
+_Windows (PowerShell):_
+
 ```powershell
 $START_DATE = (Get-Date).AddDays(-90).ToString("yyyy-MM-ddT00:00:00Z")
 az rest --method GET --url "https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{name}/runs?api-version=2016-06-01&`$filter=startTime ge $START_DATE"
 ```
 
-*Linux/macOS (Bash):*
+_Linux/macOS (Bash):_
+
 ```bash
 START_DATE=$(date -d "90 days ago" +%Y-%m-%dT00:00:00Z 2>/dev/null || date -v-90d +%Y-%m-%dT00:00:00Z)
 az rest --method GET \
@@ -139,7 +143,9 @@ For each Service Bus namespace:
 
 For each queue, check:
 ```
+
 az servicebus queue show -g {rg} --namespace-name {ns} -n {queue}
+
 ```
 Flag as unused if:
 - `countDetails.activeMessageCount` == 0 AND
@@ -167,7 +173,9 @@ For each topic:
 
 For each Function App:
 ```
+
 az monitor metrics list --resource {functionAppId} --metric FunctionExecutionCount --interval P1D --start-time {90_days_ago} --end-time {now}
+
 ```
 Flag as unused if total invocations over 90 days == 0.
 
@@ -175,7 +183,9 @@ Flag as unused if total invocations over 90 days == 0.
 
 Check each Function App state:
 ```
+
 az functionapp show -g {rg} -n {app} --query "state"
+
 ```
 - State == "Stopped" for 90+ days → flag as unused
 - Disabled individual functions (if identifiable)
@@ -184,7 +194,9 @@ az functionapp show -g {rg} -n {app} --query "state"
 
 Check runtime versions:
 ```
+
 az functionapp config show -g {rg} -n {app} --query "linuxFxVersion || netFrameworkVersion"
+
 ```
 Flag Function Apps running on:
 - .NET Core 3.1 (EOL)
@@ -207,16 +219,20 @@ Flag Function Apps running on:
 
 For each APIM instance, check per-API request counts:
 ```
+
 az monitor log-analytics query -w {workspaceId} --analytics-query "
 ApiManagementGatewayLogs
 | where TimeGenerated > ago(90d)
 | summarize RequestCount=count() by ApiId
 "
+
 ```
 
 If Log Analytics is unavailable, use APIM metrics:
 ```
+
 az monitor metrics list --resource {apimId} --metric TotalRequests --interval P1D --start-time {90_days_ago}
+
 ```
 
 Flag APIs with zero requests in 90 days.
@@ -242,7 +258,9 @@ Check for:
 
 For each Key Vault:
 ```
+
 az monitor metrics list --resource {kvId} --metric ServiceApiHit --interval P1D --start-time {90_days_ago} --end-time {now}
+
 ```
 Flag as potentially unused if zero API hits in 90 days.
 Also check for expired secrets/certificates that were never rotated.
@@ -251,7 +269,9 @@ Also check for expired secrets/certificates that were never rotated.
 
 For each integration-related Storage Account:
 ```
+
 az monitor metrics list --resource {storageId} --metric Transactions --interval P1D --start-time {90_days_ago} --end-time {now}
+
 ```
 Flag as potentially unused if near-zero transactions (exclude accounts used solely for Logic App state storage or diagnostics — check container names for "azure-webjobs-hosts", "flow-", or "insights-").
 
@@ -259,7 +279,9 @@ Flag as potentially unused if near-zero transactions (exclude accounts used sole
 
 For each Event Grid topic:
 ```
+
 az monitor metrics list --resource {topicId} --metric PublishSuccessCount --interval P1D --start-time {90_days_ago} --end-time {now}
+
 ```
 Flag as unused if:
 - Zero published events in 90 days
@@ -269,7 +291,9 @@ Flag as unused if:
 
 For each Event Hub namespace:
 ```
+
 az monitor metrics list --resource {nsId} --metric IncomingMessages --interval P1D --start-time {90_days_ago} --end-time {now}
+
 ```
 Flag as unused if zero incoming messages in 90 days.
 
@@ -277,8 +301,10 @@ Flag as unused if zero incoming messages in 90 days.
 
 For each App Configuration store:
 ```
+
 az monitor metrics list --resource {storeId} --metric HttpIncomingRequestCount --interval P1D --start-time {90_days_ago} --end-time {now}
-```
+
+````
 Flag as unused if zero requests in 90 days.
 
 ---
@@ -410,34 +436,41 @@ Removing unused resources could save:
 3. Archive definitions before deleting (export ARM templates)
 4. Disable/stop first, wait 30 days, then delete
 5. Update documentation
-```
+````
 
 ### Key Questions to Answer
 
 **Logic Apps:**
+
 - How many Logic Apps have no activity?
 - Are there patterns (same project, same environment)?
 
 **Service Bus:**
+
 - Are there namespaces with no entities (paying for nothing)?
 - Are there queues no one consumes from?
 
 **Function Apps:**
+
 - Are there stopped apps still on paid plans?
 - Are any running deprecated runtimes?
 
 **APIM:**
+
 - Are there APIs with zero traffic?
 - Are there unused products or subscriptions?
 
 **Supporting Services:**
+
 - Are Key Vaults being accessed?
 - Are Storage Accounts being used or just legacy?
 - Are Event Grid/Hub resources receiving any events?
 
 **Cross-Resource:**
+
 - What's the total cost impact of unused resources?
 - Are unused resources concentrated in specific resource groups (e.g., dev/test)?
+
 ```
 
 ---
@@ -499,3 +532,4 @@ Removing unused resources could save:
 - [ ] Recommendations made per resource
 - [ ] Report saved
 - [ ] Ready for Phase 6
+```

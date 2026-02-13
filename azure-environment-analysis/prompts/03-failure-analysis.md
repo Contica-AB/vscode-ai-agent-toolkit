@@ -1,6 +1,7 @@
 # Phase 3: Failure Analysis
 
 ## Objective
+
 Analyze operational health across ALL integration resources — Logic Apps run history, Service Bus dead-letter queues, Function App execution failures, and APIM error rates — to identify failure patterns, recurring errors, and root causes.
 
 ---
@@ -19,49 +20,51 @@ The folder should already exist from Phase 0.
 
 ### Primary Tools (MCP)
 
-| Operation | Primary (MCP) | Fallback (CLI) |
-|-----------|---------------|----------------|
-| Logic App run history | Logic Apps MCP | `az rest` (ARM API) |
-| Logic App run details | Logic Apps MCP | `az rest` (ARM API) |
-| Logic App action I/O | Logic Apps MCP | `az rest` (ARM API) |
-| Service Bus DLQ counts | Azure MCP | `az servicebus queue show` |
-| Service Bus metrics | Azure MCP | `az monitor metrics list` |
-| Function App metrics | Azure MCP | `az monitor metrics list` |
-| APIM metrics | Azure MCP | `az monitor metrics list` |
-| Log Analytics queries | Azure MCP | `az monitor log-analytics query` |
+| Operation              | Primary (MCP)  | Fallback (CLI)                   |
+| ---------------------- | -------------- | -------------------------------- |
+| Logic App run history  | Logic Apps MCP | `az rest` (ARM API)              |
+| Logic App run details  | Logic Apps MCP | `az rest` (ARM API)              |
+| Logic App action I/O   | Logic Apps MCP | `az rest` (ARM API)              |
+| Service Bus DLQ counts | Azure MCP      | `az servicebus queue show`       |
+| Service Bus metrics    | Azure MCP      | `az monitor metrics list`        |
+| Function App metrics   | Azure MCP      | `az monitor metrics list`        |
+| APIM metrics           | Azure MCP      | `az monitor metrics list`        |
+| Log Analytics queries  | Azure MCP      | `az monitor log-analytics query` |
 
 ### CLI Fallback — Logic Apps REST API Endpoints
 
-| Operation | REST API Endpoint |
-|-----------|------------------|
-| **List Run History** | `GET /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{name}/runs?api-version=2016-06-01&$filter=status eq 'Failed'` |
-| **Get Run Details** | `GET /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{name}/runs/{runId}?api-version=2016-06-01` |
-| **List Run Actions** | `GET /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{name}/runs/{runId}/actions?api-version=2016-06-01` |
-| **Get Action I/O** | `GET /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{name}/runs/{runId}/actions/{actionName}?api-version=2016-06-01` |
+| Operation            | REST API Endpoint                                                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **List Run History** | `GET /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{name}/runs?api-version=2016-06-01&$filter=status eq 'Failed'`   |
+| **Get Run Details**  | `GET /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{name}/runs/{runId}?api-version=2016-06-01`                      |
+| **List Run Actions** | `GET /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{name}/runs/{runId}/actions?api-version=2016-06-01`              |
+| **Get Action I/O**   | `GET /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{name}/runs/{runId}/actions/{actionName}?api-version=2016-06-01` |
 
 ### CLI Fallback — Service Bus, Function Apps & APIM
 
-| Operation | Command |
-|-----------|---------|
-| **SB: Queue runtime info (DLQ counts)** | `az servicebus queue show --resource-group {rg} --namespace-name {ns} --name {queue}` |
-| **SB: Topic subscription runtime** | `az servicebus topic subscription show --resource-group {rg} --namespace-name {ns} --topic-name {topic} --name {sub}` |
-| **SB: Namespace metrics** | `az monitor metrics list --resource {sbNamespaceId} --metric ServerErrors,UserErrors,ThrottledRequests --interval PT1H --start-time {start} --end-time {end}` |
-| **FA: Execution metrics** | `az monitor metrics list --resource {functionAppId} --metric FunctionExecutionCount,FunctionExecutionUnits,Http5xx --interval PT1H --start-time {start} --end-time {end}` |
-| **FA: Function invocation details** | `az rest --method GET --url "https://management.azure.com{functionAppId}/functions?api-version=2023-12-01"` |
-| **APIM: Request metrics** | `az monitor metrics list --resource {apimId} --metric TotalRequests,FailedRequests,UnauthorizedRequests,Capacity --interval PT1H --start-time {start} --end-time {end}` |
-| **APIM: Requests by API (via Log Analytics)** | `az monitor log-analytics query -w {workspaceId} --analytics-query "ApiManagementGatewayLogs | where TimeGenerated > ago(30d) | summarize Total=count(), Failed=countif(ResponseCode >= 400) by ApiId"` |
+| Operation                                     | Command                                                                                                                                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| **SB: Queue runtime info (DLQ counts)**       | `az servicebus queue show --resource-group {rg} --namespace-name {ns} --name {queue}`                                                                                     |
+| **SB: Topic subscription runtime**            | `az servicebus topic subscription show --resource-group {rg} --namespace-name {ns} --topic-name {topic} --name {sub}`                                                     |
+| **SB: Namespace metrics**                     | `az monitor metrics list --resource {sbNamespaceId} --metric ServerErrors,UserErrors,ThrottledRequests --interval PT1H --start-time {start} --end-time {end}`             |
+| **FA: Execution metrics**                     | `az monitor metrics list --resource {functionAppId} --metric FunctionExecutionCount,FunctionExecutionUnits,Http5xx --interval PT1H --start-time {start} --end-time {end}` |
+| **FA: Function invocation details**           | `az rest --method GET --url "https://management.azure.com{functionAppId}/functions?api-version=2023-12-01"`                                                               |
+| **APIM: Request metrics**                     | `az monitor metrics list --resource {apimId} --metric TotalRequests,FailedRequests,UnauthorizedRequests,Capacity --interval PT1H --start-time {start} --end-time {end}`   |
+| **APIM: Requests by API (via Log Analytics)** | `az monitor log-analytics query -w {workspaceId} --analytics-query "ApiManagementGatewayLogs                                                                              | where TimeGenerated > ago(30d) | summarize Total=count(), Failed=countif(ResponseCode >= 400) by ApiId"` |
 
 ### Example Commands
 
 **List Failed Runs (last 30 days):**
 
-*Windows (PowerShell):*
+_Windows (PowerShell):_
+
 ```powershell
 $START_DATE = (Get-Date).AddDays(-30).ToString("yyyy-MM-ddT00:00:00Z")
 az rest --method GET --url "https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{workflow}/runs?api-version=2016-06-01&`$filter=status eq 'Failed' and startTime ge $START_DATE"
 ```
 
-*Linux/macOS (Bash):*
+_Linux/macOS (Bash):_
+
 ```bash
 START_DATE=$(date -d "30 days ago" +%Y-%m-%dT00:00:00Z 2>/dev/null || date -v-30d +%Y-%m-%dT00:00:00Z)
 az rest --method GET \
@@ -71,30 +74,35 @@ az rest --method GET \
 **Tip**: The agent can also calculate the ISO 8601 date directly without shell commands.
 
 **Get Run Details:**
+
 ```bash
 az rest --method GET \
   --url "https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{workflow}/runs/{runId}?api-version=2016-06-01"
 ```
 
 **List Actions in a Run:**
+
 ```bash
 az rest --method GET \
   --url "https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{workflow}/runs/{runId}/actions?api-version=2016-06-01"
 ```
 
 **Get Action Inputs/Outputs:**
+
 ```bash
 az rest --method GET \
   --url "https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Logic/workflows/{workflow}/runs/{runId}/actions/{actionName}?api-version=2016-06-01"
 ```
 
 **Service Bus DLQ Check:**
+
 ```powershell
 # Get dead-letter message count for a queue
 az servicebus queue show --resource-group {rg} --namespace-name {ns} --name {queue} --query "countDetails.deadLetterMessageCount"
 ```
 
 **Function App Error Metrics (last 30 days):**
+
 ```powershell
 $START = (Get-Date).AddDays(-30).ToString("yyyy-MM-ddTHH:mm:ssZ")
 $END = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
@@ -102,6 +110,7 @@ az monitor metrics list --resource {functionAppId} --metric FunctionExecutionCou
 ```
 
 **APIM Failed Requests (last 30 days):**
+
 ```powershell
 $START = (Get-Date).AddDays(-30).ToString("yyyy-MM-ddTHH:mm:ssZ")
 $END = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
@@ -113,13 +122,15 @@ az monitor metrics list --resource {apimId} --metric TotalRequests,FailedRequest
 ## Prerequisites
 
 Before running this prompt:
-1. **Phase 0, Phase 1, and Phase 2 must be complete**
+
+1. **Required**: Phase 0 (Preflight) and Phase 1 (Discovery) must be complete.
 2. Read `/output/{client-name}/{YYYY-MM-DD}/inventory/resources.json` for full resource inventory
-3. Read Phase 2 analysis outputs for resource context:
+3. **Optional enrichment**: If Phase 2 was selected and completed, read its output for deeper context:
    - `/output/{client-name}/{YYYY-MM-DD}/analysis/logic-apps/` — Logic App definitions
    - `/output/{client-name}/{YYYY-MM-DD}/analysis/service-bus-analysis.md` — Service Bus configs
    - `/output/{client-name}/{YYYY-MM-DD}/analysis/function-apps-analysis.md` — Function App configs
    - `/output/{client-name}/{YYYY-MM-DD}/analysis/apim-analysis.md` — APIM configs
+     If not available, proceed with inventory data only.
 4. Confirm run history period from client config (default: 90 days)
 5. Reference `/standards/azure-apis/advisor-recommendations.md` for supplementary findings
 
@@ -197,19 +208,23 @@ Analyze failure trends:
 For each Service Bus namespace from the inventory:
 
 1. **List all queues and check DLQ counts:**
-   ```
-   az servicebus queue show --resource-group {rg} --namespace-name {ns} --name {queue}
-   ```
-   Extract from response:
-   - `countDetails.deadLetterMessageCount` — messages in DLQ
-   - `countDetails.activeMessageCount` — messages in main queue
-   - `countDetails.transferDeadLetterMessageCount` — transfer DLQ count
+```
+
+az servicebus queue show --resource-group {rg} --namespace-name {ns} --name {queue}
+
+```
+Extract from response:
+- `countDetails.deadLetterMessageCount` — messages in DLQ
+- `countDetails.activeMessageCount` — messages in main queue
+- `countDetails.transferDeadLetterMessageCount` — transfer DLQ count
 
 2. **List all topic subscriptions and check DLQ counts:**
-   ```
-   az servicebus topic subscription show --resource-group {rg} --namespace-name {ns} --topic-name {topic} --name {sub}
-   ```
-   Same `countDetails` fields apply.
+```
+
+az servicebus topic subscription show --resource-group {rg} --namespace-name {ns} --topic-name {topic} --name {sub}
+
+```
+Same `countDetails` fields apply.
 
 3. **Flag any queue/subscription with DLQ count > 0** — these represent failed message processing.
 
@@ -217,9 +232,11 @@ For each Service Bus namespace from the inventory:
 
 For each Service Bus namespace, query Azure Monitor metrics:
 ```
+
 az monitor metrics list --resource {sbNamespaceId} \
-  --metric ServerErrors,UserErrors,ThrottledRequests \
-  --interval P1D --start-time {30_days_ago} --end-time {now}
+ --metric ServerErrors,UserErrors,ThrottledRequests \
+ --interval P1D --start-time {30_days_ago} --end-time {now}
+
 ```
 
 Capture:
@@ -255,9 +272,11 @@ Produce a summary:
 For each Function App from the inventory:
 
 ```
+
 az monitor metrics list --resource {functionAppId} \
-  --metric FunctionExecutionCount,FunctionExecutionUnits,Http5xx,Http4xx \
-  --interval P1D --start-time {30_days_ago} --end-time {now}
+ --metric FunctionExecutionCount,FunctionExecutionUnits,Http5xx,Http4xx \
+ --interval P1D --start-time {30_days_ago} --end-time {now}
+
 ```
 
 Capture daily totals:
@@ -271,21 +290,25 @@ Capture daily totals:
 If a Function App shows errors, drill into individual functions:
 
 1. **List functions in the app:**
-   ```
-   az rest --method GET --url "https://management.azure.com{functionAppId}/functions?api-version=2023-12-01"
-   ```
+```
+
+az rest --method GET --url "https://management.azure.com{functionAppId}/functions?api-version=2023-12-01"
+
+```
 
 2. **Check Application Insights** (if connected):
-   Query via Log Analytics workspace:
-   ```
-   az monitor log-analytics query -w {workspaceId} --analytics-query "
-   FunctionAppLogs
-   | where TimeGenerated > ago(30d)
-   | where Level == 'Error' or Level == 'Warning'
-   | summarize ErrorCount=count() by FunctionName, Level
-   | order by ErrorCount desc
-   "
-   ```
+Query via Log Analytics workspace:
+```
+
+az monitor log-analytics query -w {workspaceId} --analytics-query "
+FunctionAppLogs
+| where TimeGenerated > ago(30d)
+| where Level == 'Error' or Level == 'Warning'
+| summarize ErrorCount=count() by FunctionName, Level
+| order by ErrorCount desc
+"
+
+```
 
 3. If App Insights is NOT connected, note this as a **monitoring gap** (cross-reference with Phase 6).
 
@@ -317,9 +340,11 @@ Categorize Function App errors:
 For each APIM instance from the inventory:
 
 ```
+
 az monitor metrics list --resource {apimId} \
-  --metric TotalRequests,SuccessfulRequests,FailedRequests,UnauthorizedRequests,Capacity \
-  --interval P1D --start-time {30_days_ago} --end-time {now}
+ --metric TotalRequests,SuccessfulRequests,FailedRequests,UnauthorizedRequests,Capacity \
+ --interval P1D --start-time {30_days_ago} --end-time {now}
+
 ```
 
 Capture daily totals:
@@ -334,18 +359,20 @@ Capture daily totals:
 If APIM has diagnostic logs in Log Analytics, query per-API errors:
 
 ```
+
 az monitor log-analytics query -w {workspaceId} --analytics-query "
 ApiManagementGatewayLogs
 | where TimeGenerated > ago(30d)
 | where ResponseCode >= 400
 | summarize
-    Total=count(),
-    Client4xx=countif(ResponseCode >= 400 and ResponseCode < 500),
-    Server5xx=countif(ResponseCode >= 500)
-  by ApiId, OperationId
+Total=count(),
+Client4xx=countif(ResponseCode >= 400 and ResponseCode < 500),
+Server5xx=countif(ResponseCode >= 500)
+by ApiId, OperationId
 | order by Total desc
 | take 20
 "
+
 ```
 
 If Log Analytics is not available, note as a **monitoring gap**.
@@ -365,10 +392,12 @@ If Log Analytics is not available, note as a **monitoring gap**.
 
 Check if APIM backends are healthy:
 ```
+
 az monitor metrics list --resource {apimId} \
-  --metric BackendRequestDuration \
-  --interval P1D --start-time {30_days_ago} --end-time {now}
-```
+ --metric BackendRequestDuration \
+ --interval P1D --start-time {30_days_ago} --end-time {now}
+
+````
 
 Flag backends with:
 - Average response time > 5 seconds (slow backends)
@@ -513,36 +542,42 @@ Structure:
 
 ## Recommendations
 1. {recommendation with priority and affected resources}
-```
+````
 
 ### Key Questions to Answer
 
 **Logic Apps:**
+
 - Which Logic Apps fail most often?
 - What are the most common error types?
 - Are failures concentrated in specific flows or widespread?
 - Are retry policies helping or exhausted?
 
 **Service Bus:**
+
 - Which queues/subscriptions have DLQ buildup?
 - Is there throttling indicating capacity issues?
 - Are consuming applications processing messages successfully?
 
 **Function Apps:**
+
 - Which Function Apps have the highest error rates?
 - Are errors related to dependencies or internal code issues?
 - Are there cold start or timeout patterns?
 
 **APIM:**
+
 - What percentage of API requests are failing?
 - Are failures concentrated in specific APIs or widespread?
 - Are backend services or policies causing errors?
 - Is APIM capacity sufficient for the traffic?
 
 **Cross-Resource:**
+
 - Are there failure cascades between connected resources?
 - Do failures correlate temporally across resources?
 - Is there a single root cause affecting multiple services?
+
 ```
 
 ---
@@ -605,3 +640,4 @@ Structure:
 - [ ] Failure analysis report saved to `/output/{client-name}/{YYYY-MM-DD}/analysis/failure-analysis.md`
 - [ ] Recommendations provided with priority and affected resources
 - [ ] Ready for Phase 4
+```

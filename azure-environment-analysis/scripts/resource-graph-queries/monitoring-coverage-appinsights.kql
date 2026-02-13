@@ -7,7 +7,7 @@
 
 resources
 | where type == 'microsoft.web/sites'
-| where kind contains 'functionapp'
+| where kind contains 'functionapp' or kind contains 'workflowapp'
 | extend
     appInsightsKey = properties.siteConfig.appSettings
 | mv-expand setting = appInsightsKey

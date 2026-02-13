@@ -284,6 +284,34 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 
 ---
 
+### Phase Selection (Interactive)
+
+**Objective**: Let the user choose which assessment phases to run before starting the analysis.
+
+**When**: After Phase 0 passes, before Phase 1 begins.
+
+**Rules**:
+- Phases 0 and 1 always run (mandatory, not selectable)
+- User selects from Phases 2-7 (at least one required)
+- Phase 8 (Report) auto-includes if any analysis phase is selected
+- Phase 9 (Sales) auto-includes if Phase 8 is included AND `salesOpportunities.includeInReport` is true in config
+
+**Presets Available**:
+
+| Preset | Phases | Use Case |
+|--------|--------|----------|
+| Full Assessment | 2-7 | First-time client, comprehensive |
+| Security Focus | 4 | Quick security audit |
+| Quick Health Check | 3, 5, 6 | Operational health snapshot |
+| Compliance Review | 4, 6, 7 | Governance-focused |
+| Custom | User picks | Any combination of 2-7 |
+
+**Prompt**: Use `/prompts/00b-phase-selection.md`
+
+**Output**: Updated `selectedPhases` in client config
+
+---
+
 ### Phase 1: Discovery
 
 **Objective**: Enumerate all integration-related Azure resources and produce a complete inventory.
@@ -571,13 +599,22 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 - Honor focus areas specified in the config
 - Confirm scope with the user before querying anything
 
+### Phase Gating
+- Before executing any phase (2-7), check `selectedPhases.phases` in the client config
+- If a phase is not in the selected list, skip it and log: "Phase N: Skipped (not in scope)"
+- Phase 8 (Report) must only synthesize findings from phases that actually ran — skip report sections for phases not in scope
+- Phase 9 (Sales) must only run if Phase 8 ran AND `salesOpportunities.includeInReport` is true
+- If `selectedPhases` does not exist in the config (legacy), default to running all phases
+
 ### Starting an Assessment
 1. Ask which client folder to use
 2. Read `/clients/{client}/config.json`
 3. Read `/clients/{client}/notes.md` for context
 4. Confirm scope and focus areas with the user
 5. **Run Phase 0: Preflight Validation** (`/prompts/00-preflight.md`)
-6. Begin Phase 1: Discovery
+6. **Run Phase Selection** (`/prompts/00b-phase-selection.md`) — present presets or custom selection, save to config
+7. Begin Phase 1: Discovery
+8. Execute only the selected phases in order, skipping unselected ones
 
 ### Post-Assessment Credential Cleanup
 

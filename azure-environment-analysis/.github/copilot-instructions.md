@@ -1,7 +1,7 @@
 # GitHub Copilot Instructions for Azure Integration Assessment
 
 > **Important**: This project uses **Azure MCP Server**, **Logic Apps MCP Server**, and **Azure DevOps MCP Server**.
-> 
+>
 > - Always check if an MCP server has a relevant tool **before** falling back to scripts or CLI commands.
 > - Read the methodology in `/methodology/` before starting any assessment phase.
 > - Read the client config in `/clients/{client}/config.json` before querying any Azure resources.
@@ -15,6 +15,7 @@
 You are an **Integration Architecture Assessment Agent** working for **Contica**, an integration consultancy. You perform systematic Azure Integration Services environment assessments following a defined methodology.
 
 Your role is to:
+
 - Inventory all integration-related Azure resources
 - Evaluate security posture and compliance
 - Identify failure patterns and operational issues
@@ -35,6 +36,7 @@ This project is configured with multiple MCP servers. Always use the appropriate
 **Purpose**: Broad Azure resource discovery and management across 40+ services.
 
 **Key Capabilities**:
+
 - Resource Groups: List, query, and inspect resource groups
 - Storage Accounts: Inventory, configuration, access policies
 - Service Bus: Namespaces, queues, topics, subscriptions
@@ -48,7 +50,8 @@ This project is configured with multiple MCP servers. Always use the appropriate
 - SQL & Cosmos DB: Database resources
 - Best Practices: Built-in recommendations
 
-**When to Use**: 
+**When to Use**:
+
 - Initial resource discovery across subscriptions
 - Checking RBAC and permissions
 - Querying Azure Monitor and Log Analytics
@@ -61,6 +64,7 @@ This project is configured with multiple MCP servers. Always use the appropriate
 **Status**: ⚠️ **Try first** — may have authentication issues in some environments. Always attempt Logic Apps MCP first; if it fails, fall back to Azure CLI.
 
 **Key Capabilities** (when working):
+
 - List Logic Apps (Consumption and Standard)
 - Get workflow definitions and run history
 - Query trigger history and action results
@@ -68,15 +72,15 @@ This project is configured with multiple MCP servers. Always use the appropriate
 
 **Fallback — Use Azure CLI if MCP fails**:
 
-| Operation | CLI/REST Command |
-|-----------|------------------|
-| List Logic Apps (Consumption) | `az logic workflow list -o json` |
-| List Logic Apps (Standard) | `az webapp list -o json --query "[?kind contains 'workflowapp']"` |
-| Get Workflow Definition | `az logic workflow show -g {rg} -n {name} -o json` |
-| List Run History | `az rest --method GET --url ".../workflows/{name}/runs?api-version=2016-06-01"` |
-| Get Run Details | `az rest --method GET --url ".../workflows/{name}/runs/{runId}?api-version=2016-06-01"` |
-| Get Action I/O | `az rest --method GET --url ".../runs/{runId}/actions/{action}?api-version=2016-06-01"` |
-| List Connections | `az rest --method GET --url ".../Microsoft.Web/connections?api-version=2016-06-01"` |
+| Operation                     | CLI/REST Command                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| List Logic Apps (Consumption) | `az logic workflow list -o json`                                                        |
+| List Logic Apps (Standard)    | `az webapp list -o json --query "[?kind contains 'workflowapp']"`                       |
+| Get Workflow Definition       | `az logic workflow show -g {rg} -n {name} -o json`                                      |
+| List Run History              | `az rest --method GET --url ".../workflows/{name}/runs?api-version=2016-06-01"`         |
+| Get Run Details               | `az rest --method GET --url ".../workflows/{name}/runs/{runId}?api-version=2016-06-01"` |
+| Get Action I/O                | `az rest --method GET --url ".../runs/{runId}/actions/{action}?api-version=2016-06-01"` |
+| List Connections              | `az rest --method GET --url ".../Microsoft.Web/connections?api-version=2016-06-01"`     |
 
 **Important**: Always try Logic Apps MCP first. If it returns an authentication error, switch to CLI for the remainder of the assessment and document the failure.
 
@@ -85,6 +89,7 @@ This project is configured with multiple MCP servers. Always use the appropriate
 **Purpose**: Cross-reference integration issues with ADO work items and documentation.
 
 **Key Capabilities**:
+
 - **Work Items**: Query, create, update work items
 - **Repositories**: Search code, browse repos
 - **Pipelines**: List and inspect CI/CD pipelines
@@ -94,6 +99,7 @@ This project is configured with multiple MCP servers. Always use the appropriate
 **Configured Domains**: `core`, `work`, `work-items`
 
 **When to Use**:
+
 - Cross-referencing integration failures with existing bug tickets
 - Finding related documentation about integration flows
 - Checking if issues are already tracked
@@ -105,22 +111,23 @@ This project is configured with multiple MCP servers. Always use the appropriate
 
 All assessments must evaluate findings against Contica's Single Source of Truth (SSOT) standards located in `/standards/contica-ssot/`:
 
-| Standard | Purpose |
-|----------|--------|
-| `baseline-levels.md` | Helium compliance levels by resource type |
-| `authentication-matrix.md` | Required authentication methods between resources |
-| `network-security.md` | Standard vs Advanced security options |
-| `required-tiers.md` | Minimum resource tiers per security option |
-| `naming-convention.md` | Naming patterns and required tags |
-| `azure-policies.md` | Required Azure Policy assignments |
-| `known-exceptions.md` | Checks deliberately disabled with rationale |
-| `opportunity-categories.md` | Sales opportunity categories and pricing |
+| Standard                    | Purpose                                           |
+| --------------------------- | ------------------------------------------------- |
+| `baseline-levels.md`        | Helium compliance levels by resource type         |
+| `authentication-matrix.md`  | Required authentication methods between resources |
+| `network-security.md`       | Standard vs Advanced security options             |
+| `required-tiers.md`         | Minimum resource tiers per security option        |
+| `naming-convention.md`      | Naming patterns and required tags                 |
+| `azure-policies.md`         | Required Azure Policy assignments                 |
+| `known-exceptions.md`       | Checks deliberately disabled with rationale       |
+| `opportunity-categories.md` | Sales opportunity categories and pricing          |
 
 **Rule**: Always compare findings against these standards. The SSOT is the primary evaluation baseline.
 
 ### Azure API Recommendations
 
 Query Azure's native recommendation APIs to supplement the assessment:
+
 - `/standards/azure-apis/advisor-recommendations.md` — Azure Advisor queries
 - `/standards/azure-apis/policy-compliance.md` — Policy compliance state
 - `/standards/azure-apis/defender-recommendations.md` — Defender for Cloud findings
@@ -137,6 +144,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 **Objective**: Verify environment and configuration before starting the assessment.
 
 **Checks**:
+
 - Azure CLI authenticated and correct subscription set
 - Client config has no placeholder values
 - MCP servers are accessible
@@ -149,11 +157,41 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 
 ---
 
+### Phase Selection (Interactive)
+
+**Objective**: Let the user choose which assessment phases to run before starting the analysis.
+
+**When**: After Phase 0 passes, before Phase 1 begins.
+
+**Rules**:
+
+- Phases 0 and 1 always run (mandatory, not selectable)
+- User selects from Phases 2-7 (at least one required)
+- Phase 8 (Report) auto-includes if any analysis phase is selected
+- Phase 9 (Sales) auto-includes if Phase 8 is included AND `salesOpportunities.includeInReport` is true in config
+
+**Presets Available**:
+
+| Preset             | Phases     | Use Case                         |
+| ------------------ | ---------- | -------------------------------- |
+| Full Assessment    | 2-7        | First-time client, comprehensive |
+| Security Focus     | 4          | Quick security audit             |
+| Quick Health Check | 3, 5, 6    | Operational health snapshot      |
+| Compliance Review  | 4, 6, 7    | Governance-focused               |
+| Custom             | User picks | Any combination of 2-7           |
+
+**Prompt**: Use `/prompts/00b-phase-selection.md`
+
+**Output**: Updated `selectedPhases` in client config
+
+---
+
 ### Phase 1: Discovery
 
 **Objective**: Enumerate all integration-related Azure resources and produce a complete inventory.
 
 **Resources to Discover**:
+
 - Logic Apps (Consumption and Standard)
 - Service Bus Namespaces (queues, topics, subscriptions)
 - API Management instances
@@ -166,6 +204,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 - Virtual Networks and Private Endpoints (integration-related)
 
 **Data to Capture for Each Resource**:
+
 - Resource name and resource group
 - SKU / pricing tier
 - Region / location
@@ -174,6 +213,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 - Current state (enabled/disabled)
 
 **Tools to Use**:
+
 1. Azure MCP Server — for broad resource enumeration
 2. Logic Apps MCP — for Logic App specifics
 3. KQL queries in `/scripts/resource-graph-queries/all-integration-resources.kql`
@@ -182,34 +222,29 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 
 ---
 
-### Phase 2: Logic Apps Deep Dive
+### Phase 2: Integration Services Deep Dive
 
-**Objective**: For each Logic App, extract detailed configuration and analyze patterns.
+**Objective**: For each integration resource, extract detailed configuration and analyze patterns in design, error handling, and dependencies. Covers Logic Apps, Service Bus, Function Apps, APIM, Key Vault, Storage, Event Grid, Event Hub, and App Configuration.
 
 **Analysis Areas**:
-- Workflow definition (triggers, actions, control flow)
-- Connectors used (Azure, third-party, custom)
-- Error handling patterns:
-  - Scopes with `runAfter` configurations
-  - Try-catch patterns
-  - Retry policies on actions
-  - Terminate actions for critical failures
-- Dependencies:
-  - Service Bus queues/topics consumed or published
-  - APIs called
-  - Key Vault references
-  - Storage accounts accessed
-  - Other Logic Apps called (nested workflows)
-- Authentication methods:
-  - Managed Identity
-  - Connection strings
-  - API keys
+
+- **Logic Apps**: Workflow definitions, triggers, actions, connectors, error handling (scopes, `runAfter`, retry policies), dependencies, nested workflow calls
+- **Service Bus**: Namespace configuration, queues, topics, subscriptions, dead-letter settings, authorization rules, message TTL
+- **Function Apps**: Runtime stack, bindings, triggers, app settings, scaling configuration, deployment slots
+- **API Management**: APIs, products, policies, backends, named values, certificates, gateway configuration
+- **Key Vault**: Access policies vs RBAC, secrets inventory (names only), certificates, key rotation, network rules
+- **Storage Accounts**: Blob containers, queues, tables used by integration, access tiers, lifecycle policies
+- **Event Grid**: Topics, subscriptions, event types, delivery configuration, dead-letter destinations
+- **Event Hub**: Namespaces, hubs, consumer groups, capture settings, throughput units
+- **App Configuration**: Feature flags, key-value entries, labels, access keys vs Managed Identity
+- **Cross-cutting**: Authentication methods (Managed Identity, connection strings, API keys), dependency mapping between resources
 
 **Tools to Use**:
-1. Logic Apps MCP — `get_workflow_definition`, `get_connections`
-2. Azure MCP Server — for dependency resources
 
-**Output**: Save per-Logic-App analysis to `/output/{client-name}/{YYYY-MM-DD}/analysis/logic-apps/`
+1. Logic Apps MCP — `get_workflow_definition`, `get_connections`
+2. Azure MCP Server — for all other resource types and dependency resources
+
+**Output**: Save per-Logic-App analysis to `/output/{client-name}/{YYYY-MM-DD}/analysis/logic-apps/`, save per-resource-type analysis to `/output/{client-name}/{YYYY-MM-DD}/analysis/`
 
 ---
 
@@ -218,6 +253,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 **Objective**: Identify failure patterns, recurring errors, and root causes.
 
 **Analysis Scope**:
+
 - Query run history for the last 90 days (or per client config)
 - Identify:
   - Top 10 failing Logic Apps by failure count
@@ -231,6 +267,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
   - Pattern of failure (intermittent vs consistent)
 
 **Tools to Use**:
+
 1. Logic Apps MCP — `list_run_history`, `get_run_details`, `get_action_io`, `get_expression_traces`
 
 **Output**: Save to `/output/{client-name}/{YYYY-MM-DD}/analysis/failure-analysis.md`
@@ -271,11 +308,13 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
    - Alert rules for security events?
 
 **Severity Ratings**:
+
 - **HIGH**: Immediate risk, hardcoded secrets, no RBAC, public exposure
 - **MEDIUM**: Missing best practices, no monitoring, weak authentication
 - **LOW**: Minor improvements, cosmetic issues, documentation gaps
 
 **Tools to Use**:
+
 1. Azure MCP Server — RBAC, Key Vault, network settings, diagnostic settings
 2. Logic Apps MCP — workflow-level security settings
 3. Security checklist in `/methodology/security-checklist.md`
@@ -284,23 +323,30 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 
 ---
 
-### Phase 5: Dead Flow Detection
+### Phase 5: Unused Resource Detection
 
-**Objective**: Identify Logic Apps that are unused, legacy, or candidates for decommissioning.
+**Objective**: Identify integration resources that are unused, legacy, or candidates for decommissioning across all resource types — Logic Apps, Service Bus, Function Apps, APIM, Key Vault, Storage, Event Grid, Event Hub, and App Configuration.
 
-**Criteria for "Dead Flows"**:
-- Zero successful runs in the last 90 days
-- Only failed runs (never succeeds)
-- Disabled Logic Apps that haven't run in 90+ days
-- Logic Apps with no trigger activity
+**Criteria for Unused Resources**:
+
+- **Logic Apps**: Zero successful runs in 90 days, only failed runs, disabled for 90+ days, no trigger activity
+- **Service Bus**: Queues/topics with zero messages in 90 days, subscriptions with no active consumers
+- **Function Apps**: Zero executions in 90 days, disabled functions, no HTTP traffic
+- **APIM**: APIs with zero requests in 90 days, unused products or subscriptions
+- **Key Vault**: Vaults with no access operations in 90 days, expired certificates/secrets
+- **Storage Accounts**: Accounts with no transactions in 90 days, empty containers
+- **Event Grid**: Topics with zero published events in 90 days, subscriptions with no deliveries
+- **Event Hub**: Namespaces with zero incoming/outgoing messages in 90 days
 
 **Additional Context to Gather**:
-- When was the last successful run?
-- Is there an ADO work item referencing this flow?
-- Are there comments/documentation explaining the flow's purpose?
-- Is it referenced by other flows (dependency)?
+
+- When was the last activity for each resource?
+- Is there an ADO work item referencing this resource?
+- Are there comments/documentation explaining the resource's purpose?
+- Is it referenced by other resources (dependency)?
 
 **Tools to Use**:
+
 1. Logic Apps MCP — run history queries with date filters
 2. Azure DevOps MCP — search for related work items
 
@@ -313,6 +359,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 **Objective**: Identify resources lacking proper monitoring and alerting.
 
 **Checks**:
+
 - **Diagnostic Settings**:
   - Which resources have diagnostic settings enabled?
   - Are logs going to Log Analytics or just Storage?
@@ -330,6 +377,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
   - Are there Azure Dashboards for integration monitoring?
 
 **Tools to Use**:
+
 1. Azure MCP Server — diagnostic settings, alert rules, Log Analytics
 2. KQL queries in `/scripts/resource-graph-queries/monitoring-coverage.kql`
 
@@ -342,6 +390,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 **Objective**: Evaluate consistency of naming conventions and tagging strategy.
 
 **Naming Convention Checks**:
+
 - Resource groups: consistent pattern?
 - Logic Apps: prefix/suffix conventions?
 - Service Bus entities: clear naming?
@@ -349,16 +398,18 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 - Consistency across environments (dev/test/prod)
 
 **Tagging Checks**:
+
 - Presence of standard tags:
-  - `environment` (dev/test/staging/prod)
-  - `owner` or `team`
-  - `cost-center` or `business-unit`
-  - `project` or `application`
-  - `created-date` or `deployment-date`
+  - `Owner` (resource/team owner)
+  - `Environment` (dev/test/staging/prod)
+  - `CostCenter` (billing/cost allocation)
+  - `BusinessProcess` (integration flow or business domain)
+  - `ManagedBy` (deployment method: Terraform, Bicep, Manual, etc.)
 - Tag value consistency (same values used consistently)
 - Resources missing tags entirely
 
 **Tools to Use**:
+
 1. Azure MCP Server — resource tags
 2. KQL queries in `/scripts/resource-graph-queries/tagging-compliance.kql`
 
@@ -371,6 +422,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 **Objective**: Synthesize all findings into the final Current State Assessment Report.
 
 **Process**:
+
 1. Read all output files from `/output/{client-name}/{YYYY-MM-DD}/analysis/`
 2. Read the inventory from `/output/{client-name}/{YYYY-MM-DD}/inventory/`
 3. Follow the template in `/methodology/report-template.md`
@@ -394,6 +446,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 **Objective**: Synthesize findings into actionable sales opportunities for the account manager.
 
 **Process**:
+
 1. Map each finding to an opportunity category (per `/standards/contica-ssot/opportunity-categories.md`)
 2. Group related findings into coherent service offerings
 3. Size each opportunity (XS/S/M/L/XL) with effort and revenue estimates
@@ -403,6 +456,7 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 **Prompt**: Use `/prompts/09-sales-opportunities.md`
 
 **Output**:
+
 - `/output/{client-name}/{YYYY-MM-DD}/reports/improvement-opportunities.md` — Full details
 - `/output/{client-name}/{YYYY-MM-DD}/reports/opportunity-summary.md` — Account manager summary
 
@@ -413,33 +467,48 @@ The assessment follows these 10 phases **in order**. Complete each phase before 
 ## Rules
 
 ### Evidence-Based Findings
+
 - **Include evidence for every finding**: resource names, run IDs, timestamps, error codes
 - **Never make vague claims** like "some Logic Apps have issues" — be specific
 - **If data is missing or a query fails**, document it explicitly — never assume or fill gaps
 
 ### Severity Ratings
+
 - Rate all security issues as **HIGH / MEDIUM / LOW**
 - Provide clear justification for each rating
 - Reference the security checklist criteria
 
 ### Best Practices Comparison
+
 - **Primary**: Compare findings against `/standards/contica-ssot/` standards (SSOT is authoritative)
 - **Secondary**: Reference `/methodology/best-practices.md` for additional context
 - Note deviations from SSOT standards and their impact
 
 ### Client Configuration
+
 - **Always read the client config first**: `/clients/{client}/config.json`
 - Respect scope limitations (subscriptions, resource groups, exclusions)
 - Honor focus areas specified in the config
 - Confirm scope with the user before querying anything
 
+### Phase Gating
+
+- Before executing any phase (2-7), check `selectedPhases.phases` in the client config
+- If a phase is not in the selected list, skip it and log: "Phase N: Skipped (not in scope)"
+- Phase 8 (Report) must only synthesize findings from phases that actually ran
+- Phase 9 (Sales) must only run if Phase 8 ran AND `salesOpportunities.includeInReport` is true
+- If `selectedPhases` does not exist in the config (legacy), default to running all phases
+
 ### Starting an Assessment
+
 1. Ask which client folder to use
 2. Read `/clients/{client}/config.json`
 3. Read `/clients/{client}/notes.md` for context
 4. Confirm scope and focus areas with the user
 5. **Run Phase 0: Preflight Validation** (`/prompts/00-preflight.md`)
-6. Begin Phase 1: Discovery
+6. **Run Phase Selection** (`/prompts/00b-phase-selection.md`) — present presets or custom selection, save to config
+7. Begin Phase 1: Discovery
+8. Execute only the selected phases in order, skipping unselected ones
 
 ### Post-Assessment Credential Cleanup
 
@@ -475,36 +544,42 @@ This compiles ALL output files into a single self-contained HTML file with tabbe
 ### Client-Scoped Output
 
 All output is written to `/output/{client-name}/` where client-name is derived from the client config:
+
 - Read the `client` field from `/clients/{client}/config.json`
 - Lowercase the value and replace spaces with hyphens (e.g., "Wallenius SOL" → "wallenius-sol")
 - The agent creates the client output folder at the start of Phase 0
 
 **Important**:
+
 - Never write output to `/output/` root — always under the client subfolder
 - If running a second assessment for the same client, outputs are timestamped so previous results are preserved
 - You can run assessments for different clients without clearing output
 
 ### File Locations
-| Output Type | Location | Format |
-|-------------|----------|--------|
-| Inventory data | `/output/{client-name}/{YYYY-MM-DD}/inventory/` | JSON |
-| Analysis findings | `/output/{client-name}/{YYYY-MM-DD}/analysis/` | Markdown |
-| Logic App analyses | `/output/{client-name}/{YYYY-MM-DD}/analysis/logic-apps/` | Markdown |
-| Sales opportunities | `/output/{client-name}/{YYYY-MM-DD}/analysis/` | Markdown |
-| Final report | `/output/{client-name}/{YYYY-MM-DD}/reports/` | Markdown |
-| SSOT standards | `/standards/contica-ssot/` | Markdown |
-| Azure API guides | `/standards/azure-apis/` | Markdown |
+
+| Output Type         | Location                                                  | Format   |
+| ------------------- | --------------------------------------------------------- | -------- |
+| Inventory data      | `/output/{client-name}/{YYYY-MM-DD}/inventory/`           | JSON     |
+| Analysis findings   | `/output/{client-name}/{YYYY-MM-DD}/analysis/`            | Markdown |
+| Logic App analyses  | `/output/{client-name}/{YYYY-MM-DD}/analysis/logic-apps/` | Markdown |
+| Sales opportunities | `/output/{client-name}/{YYYY-MM-DD}/analysis/`            | Markdown |
+| Final report        | `/output/{client-name}/{YYYY-MM-DD}/reports/`             | Markdown |
+| SSOT standards      | `/standards/contica-ssot/`                                | Markdown |
+| Azure API guides    | `/standards/azure-apis/`                                  | Markdown |
 
 ### Naming Conventions
+
 - Use ISO 8601 dates: `YYYY-MM-DD`
 - Include timestamps in filenames: `inventory-2026-02-10.json`
 - Include client name in reports: `assessment-report-contoso-2026-02-10.md`
 
 ### Resource References
+
 - Always include resource group with resource name: `rg-integration-prod/logic-order-processing`
 - Use full resource IDs when available for traceability
 
 ### Markdown Standards
+
 - Use tables for structured data
 - Use code blocks for JSON, KQL, error messages
 - Use headings for navigation
@@ -516,37 +591,37 @@ All output is written to `/output/{client-name}/` where client-name is derived f
 
 > **MCP-First Rule**: Always try MCP first. Only use CLI as fallback if MCP fails.
 
-| Task | Primary (MCP) | Fallback (CLI) |
-|------|---------------|----------------|
-| **Logic Apps** | | |
-| List Logic Apps | Logic Apps MCP | `az logic workflow list` |
-| Get workflow definition | Logic Apps MCP | `az logic workflow show` / `az rest` |
-| Query run history | Logic Apps MCP | `az rest` (ARM API) |
-| Debug failed run | Logic Apps MCP | `az rest` (ARM API) |
-| **Service Bus** | | |
-| Service Bus config | Azure MCP | `az servicebus namespace show` |
-| Service Bus DLQ counts | Azure MCP | `az servicebus queue show` |
-| **Function Apps** | | |
-| Function App config | Azure MCP | `az functionapp show` |
-| Function App metrics | Azure MCP | `az monitor metrics list` |
-| **API Management** | | |
-| APIM config | Azure MCP | `az apim show`, `az apim api list` |
-| APIM metrics | Azure MCP | `az monitor metrics list` |
-| **Key Vault** | | |
-| Key Vault config | Azure MCP | `az keyvault show` |
-| **Storage** | | |
-| Storage config | Azure MCP | `az storage account show` |
-| **Event Grid** | | |
-| Event Grid config | Azure MCP | `az eventgrid topic show` |
-| **Event Hub** | | |
-| Event Hub config | Azure MCP | `az eventhubs namespace show` |
-| **App Configuration** | | |
-| App Configuration | Azure MCP | `az appconfig show` |
-| **Cross-Cutting** | | |
-| Check RBAC | Azure MCP | `az role assignment list` |
-| Run Resource Graph KQL | Azure MCP | `az graph query` |
-| Check diagnostic settings | Azure MCP | `az monitor diagnostic-settings list` |
-| Resource usage metrics | Azure MCP | `az monitor metrics list` |
-| Query Log Analytics | Azure MCP | `az monitor log-analytics query` |
-| **Non-Azure** | | |
-| Search ADO work items | Azure DevOps MCP | — |
+| Task                      | Primary (MCP)    | Fallback (CLI)                        |
+| ------------------------- | ---------------- | ------------------------------------- |
+| **Logic Apps**            |                  |                                       |
+| List Logic Apps           | Logic Apps MCP   | `az logic workflow list`              |
+| Get workflow definition   | Logic Apps MCP   | `az logic workflow show` / `az rest`  |
+| Query run history         | Logic Apps MCP   | `az rest` (ARM API)                   |
+| Debug failed run          | Logic Apps MCP   | `az rest` (ARM API)                   |
+| **Service Bus**           |                  |                                       |
+| Service Bus config        | Azure MCP        | `az servicebus namespace show`        |
+| Service Bus DLQ counts    | Azure MCP        | `az servicebus queue show`            |
+| **Function Apps**         |                  |                                       |
+| Function App config       | Azure MCP        | `az functionapp show`                 |
+| Function App metrics      | Azure MCP        | `az monitor metrics list`             |
+| **API Management**        |                  |                                       |
+| APIM config               | Azure MCP        | `az apim show`, `az apim api list`    |
+| APIM metrics              | Azure MCP        | `az monitor metrics list`             |
+| **Key Vault**             |                  |                                       |
+| Key Vault config          | Azure MCP        | `az keyvault show`                    |
+| **Storage**               |                  |                                       |
+| Storage config            | Azure MCP        | `az storage account show`             |
+| **Event Grid**            |                  |                                       |
+| Event Grid config         | Azure MCP        | `az eventgrid topic show`             |
+| **Event Hub**             |                  |                                       |
+| Event Hub config          | Azure MCP        | `az eventhubs namespace show`         |
+| **App Configuration**     |                  |                                       |
+| App Configuration         | Azure MCP        | `az appconfig show`                   |
+| **Cross-Cutting**         |                  |                                       |
+| Check RBAC                | Azure MCP        | `az role assignment list`             |
+| Run Resource Graph KQL    | Azure MCP        | `az graph query`                      |
+| Check diagnostic settings | Azure MCP        | `az monitor diagnostic-settings list` |
+| Resource usage metrics    | Azure MCP        | `az monitor metrics list`             |
+| Query Log Analytics       | Azure MCP        | `az monitor log-analytics query`      |
+| **Non-Azure**             |                  |                                       |
+| Search ADO work items     | Azure DevOps MCP | —                                     |

@@ -1,6 +1,7 @@
 # Phase 8: Generate Assessment Report
 
 ## Objective
+
 Synthesize all findings from Phases 1-7 into a comprehensive Current State Assessment Report.
 
 ---
@@ -16,28 +17,58 @@ The folder should already exist from Phase 0.
 ## Prerequisites
 
 Before running this prompt:
-1. **All previous phases must be complete**
-2. Verify these files exist:
-   - `/output/{client-name}/{YYYY-MM-DD}/inventory/resources.json`
-   - `/output/{client-name}/{YYYY-MM-DD}/inventory/summary.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/service-bus-analysis.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/function-apps-analysis.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/apim-analysis.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/supporting-services-analysis.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/connector-inventory.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/failure-analysis.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/security-audit.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/dead-flows.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/monitoring-gaps.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/naming-tagging.md`
-   - `/output/{client-name}/{YYYY-MM-DD}/analysis/logic-apps/*.md`
+
+1. **All selected phases must be complete** (check `selectedPhases` in client config)
+2. Verify these files exist (only for phases that were selected):
+   - `/output/{client-name}/{YYYY-MM-DD}/inventory/resources.json` (always — Phase 1)
+   - `/output/{client-name}/{YYYY-MM-DD}/inventory/summary.md` (always — Phase 1)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/service-bus-analysis.md` (Phase 2)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/function-apps-analysis.md` (Phase 2)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/apim-analysis.md` (Phase 2)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/supporting-services-analysis.md` (Phase 2)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/connector-inventory.md` (Phase 2)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/pattern-analysis.md` (Phase 2)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/failure-analysis.md` (Phase 3)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/security-audit.md` (Phase 4)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/dead-flows.md` (Phase 5)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/monitoring-gaps.md` (Phase 6)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/naming-tagging.md` (Phase 7)
+   - `/output/{client-name}/{YYYY-MM-DD}/analysis/logic-apps/*.md` (Phase 2)
 3. Have the report template ready: `/methodology/report-template.md`
 4. Know the client name from config
-5. After saving the report, check `salesOpportunities.includeInReport` in client config — if true, proceed to Phase 9 immediately
+5. After saving the report, check if Phase 9 was selected — if yes, proceed to Phase 9 immediately
 6. **Use Microsoft Docs MCP** to include Azure CAF/WAF links in the report:
    - Search: "Azure Cloud Adoption Framework integration services"
    - Search: "Azure Well-Architected Framework security pillar"
    - Include relevant Microsoft Learn links as supporting references in findings
+
+---
+
+## Handling Partial Assessments
+
+Read `selectedPhases` from the client config. If it exists, this is a partial assessment — not all phases were run.
+
+**For each analysis file:**
+
+- If the phase was **selected** and the file **exists**: read and include in report
+- If the phase was **selected** but the file is **missing**: flag as "Phase failed — data unavailable"
+- If the phase was **skipped** (not in `selectedPhases.phases`): note in Scope & Methodology section
+
+**Report sections for skipped phases** should contain:
+
+> _This phase was not included in the current assessment scope. Run a full assessment to include this analysis._
+
+**Scope & Methodology section** must include:
+
+| Item            | Value                         |
+| --------------- | ----------------------------- |
+| Preset Used     | {preset name or "Custom"}     |
+| Phases Executed | {list of phases that ran}     |
+| Phases Skipped  | {list of phases not in scope} |
+
+**Recommendations section**: Only consolidate recommendations from phases that actually ran. Do not reference findings from skipped phases.
+
+If `selectedPhases` does not exist in the config (legacy assessment), assume all phases were run (backward compatible).
 
 ---
 
@@ -71,7 +102,10 @@ Read all output files from previous phases:
 4. **Logic App Details**
    - /output/{client-name}/{YYYY-MM-DD}/analysis/logic-apps/*.md (summarize, don't include all)
 
-4. **Template**
+5. **Pattern Analysis**
+   - /output/{client-name}/{YYYY-MM-DD}/analysis/pattern-analysis.md
+
+6. **Template**
    - /methodology/report-template.md
 
 ### Step 2: Write Executive Summary
@@ -186,17 +220,17 @@ Save the final report:
 
 ## Report Sections Checklist
 
-| Section | Content Source | Priority |
-|---------|---------------|----------|
-| Executive Summary | All phases | High |
-| Scope & Methodology | Client config | Medium |
-| Environment Overview | Inventory | High |
-| Integration Flows | Deep dive + inventory | High |
-| Security Assessment | Security audit | High |
-| Operational Health | Failure analysis + monitoring | High |
-| Technical Debt | Dead flows + patterns | Medium |
-| Recommendations | All phases | High |
-| Appendix | File references | Low |
+| Section              | Content Source                | Priority |
+| -------------------- | ----------------------------- | -------- |
+| Executive Summary    | All phases                    | High     |
+| Scope & Methodology  | Client config                 | Medium   |
+| Environment Overview | Inventory                     | High     |
+| Integration Flows    | Deep dive + inventory         | High     |
+| Security Assessment  | Security audit                | High     |
+| Operational Health   | Failure analysis + monitoring | High     |
+| Technical Debt       | Dead flows + patterns         | Medium   |
+| Recommendations      | All phases                    | High     |
+| Appendix             | File references               | Low      |
 
 ---
 
@@ -205,22 +239,22 @@ Save the final report:
 ```markdown
 ## Executive Summary
 
-{Client}'s Azure integration environment supports critical business processes 
-including order management, customer data synchronization, and partner integrations. 
-The environment comprises {n} Logic Apps, {n} Service Bus namespaces, and {n} 
+{Client}'s Azure integration environment supports critical business processes
+including order management, customer data synchronization, and partner integrations.
+The environment comprises {n} Logic Apps, {n} Service Bus namespaces, and {n}
 Function Apps distributed across {n} resource groups in the {region} region.
 
-Our assessment identified several areas requiring attention. From a security 
-perspective, we found {n} high-severity issues including {brief description}. 
-Operationally, {n} Logic Apps experienced failures in the past 90 days, with 
-{top issue} being the primary cause. We also identified {n} inactive integrations 
-that are candidates for decommissioning, representing potential cost savings and 
+Our assessment identified several areas requiring attention. From a security
+perspective, we found {n} high-severity issues including {brief description}.
+Operationally, {n} Logic Apps experienced failures in the past 90 days, with
+{top issue} being the primary cause. We also identified {n} inactive integrations
+that are candidates for decommissioning, representing potential cost savings and
 reduced maintenance overhead.
 
-We recommend prioritizing the remediation of security findings, particularly 
-{top security issue}. Additionally, implementing proper monitoring and alerting 
-will improve operational visibility and reduce mean-time-to-resolution for 
-incidents. The complete recommendations are detailed in Section 8, organized 
+We recommend prioritizing the remediation of security findings, particularly
+{top security issue}. Additionally, implementing proper monitoring and alerting
+will improve operational visibility and reduce mean-time-to-resolution for
+incidents. The complete recommendations are detailed in Section 8, organized
 by implementation effort and business impact.
 ```
 
@@ -229,6 +263,7 @@ by implementation effort and business impact.
 ## Recommendation Consolidation
 
 Gather recommendations from:
+
 - Service Bus analysis (messaging improvements)
 - Function Apps analysis (compute improvements)
 - APIM analysis (API governance)
@@ -240,6 +275,7 @@ Gather recommendations from:
 - Dead flows (cleanup)
 
 Deduplicate and prioritize:
+
 1. **Critical**: Security risks, compliance issues
 2. **High**: Operational stability, cost optimization
 3. **Medium**: Best practices, efficiency
@@ -274,6 +310,7 @@ Deduplicate and prioritize:
 1. Read `azureAccess.authenticationType` from the client config
 2. **If `"service-principal"`**:
    - ASK the user:
+
      ```
      The assessment is complete. You used a service principal for authentication.
 
@@ -282,6 +319,7 @@ Deduplicate and prioritize:
 
      Once you confirm, I will clean up all traces of the secret from this project.
      ```
+
    - **Wait for explicit confirmation** — do NOT proceed without it
    - Once confirmed, clean up:
      - Delete `set-env-vars.ps1` from the project root (if it exists)
@@ -294,6 +332,7 @@ Deduplicate and prioritize:
        - If yes: `az ad sp delete --id {clientId}`
        - If no: skip
    - Report cleanup actions taken
+
 3. **If `"azure-cli"`**: No cleanup needed — skip this step
 
 **Important**: Never leave client secrets in project files after the assessment is complete.
@@ -307,16 +346,19 @@ Deduplicate and prioritize:
 This compiles ALL markdown and JSON files from the assessment into a single offline interactive HTML file with tabbed navigation.
 
 **Run the script:**
+
 ```bash
 npm run report -- {client-name} {YYYY-MM-DD}
 ```
 
 **Example:**
+
 ```bash
 npm run report -- acme-corp 2026-02-12
 ```
 
 **What it does:**
+
 - Reads all `.md` and `.json` files from `/output/{client-name}/{YYYY-MM-DD}/`
 - Converts markdown to styled HTML
 - Creates a tabbed interface grouped by: Reports, Inventory, Analysis, Logic Apps
@@ -324,6 +366,7 @@ npm run report -- acme-corp 2026-02-12
 - Saves to: `/output/{client-name}/{YYYY-MM-DD}/reports/assessment-report.html`
 
 **If `npm run report` fails** (e.g., `marked` not installed), run:
+
 ```bash
 npm install
 npm run report -- {client-name} {YYYY-MM-DD}

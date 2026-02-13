@@ -2,12 +2,12 @@
 // Purpose: Analyze tag coverage across integration resources
 // Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
 //
-// Required tags checked:
-// - environment
-// - owner
-// - cost-center
-// - project
-// - created-by
+// Required tags checked (per SSOT naming-convention.md):
+// - Owner
+// - Environment
+// - CostCenter
+// - BusinessProcess
+// - ManagedBy
 
 resources
 | where type in~ (
@@ -26,23 +26,23 @@ resources
     or (type == 'microsoft.web/sites' and 
         (kind contains 'functionapp' or kind contains 'workflowapp'))
 | extend
-    hasEnvironmentTag = isnotnull(tags.environment) or isnotnull(tags.Environment) or isnotnull(tags.env),
-    hasOwnerTag = isnotnull(tags.owner) or isnotnull(tags.Owner) or isnotnull(tags['created-by']),
-    hasCostCenterTag = isnotnull(tags['cost-center']) or isnotnull(tags.costCenter) or isnotnull(tags.CostCenter),
-    hasProjectTag = isnotnull(tags.project) or isnotnull(tags.Project) or isnotnull(tags.application),
-    hasCreatedByTag = isnotnull(tags['created-by']) or isnotnull(tags.createdBy)
+    hasOwnerTag = isnotnull(tags.Owner) or isnotnull(tags.owner),
+    hasEnvironmentTag = isnotnull(tags.Environment) or isnotnull(tags.environment) or isnotnull(tags.env),
+    hasCostCenterTag = isnotnull(tags.CostCenter) or isnotnull(tags.costCenter) or isnotnull(tags['cost-center']),
+    hasBusinessProcessTag = isnotnull(tags.BusinessProcess) or isnotnull(tags.businessProcess) or isnotnull(tags.project) or isnotnull(tags.Project),
+    hasManagedByTag = isnotnull(tags.ManagedBy) or isnotnull(tags.managedBy) or isnotnull(tags['managed-by']) or isnotnull(tags['created-by'])
 | extend
-    tagCount = toint(hasEnvironmentTag) + toint(hasOwnerTag) + toint(hasCostCenterTag) + toint(hasProjectTag) + toint(hasCreatedByTag),
-    allTagsPresent = hasEnvironmentTag and hasOwnerTag and hasCostCenterTag and hasProjectTag
+    tagCount = toint(hasOwnerTag) + toint(hasEnvironmentTag) + toint(hasCostCenterTag) + toint(hasBusinessProcessTag) + toint(hasManagedByTag),
+    allTagsPresent = hasOwnerTag and hasEnvironmentTag and hasCostCenterTag and hasBusinessProcessTag and hasManagedByTag
 | project
     name,
     type,
     resourceGroup,
-    hasEnvironmentTag,
     hasOwnerTag,
+    hasEnvironmentTag,
     hasCostCenterTag,
-    hasProjectTag,
-    hasCreatedByTag,
+    hasBusinessProcessTag,
+    hasManagedByTag,
     tagCount,
     allTagsPresent,
     tags
@@ -52,16 +52,16 @@ resources
 // | summarize
 //     totalResources = count(),
 //     withAllTags = countif(allTagsPresent),
-//     withEnvironment = countif(hasEnvironmentTag),
 //     withOwner = countif(hasOwnerTag),
+//     withEnvironment = countif(hasEnvironmentTag),
 //     withCostCenter = countif(hasCostCenterTag),
-//     withProject = countif(hasProjectTag),
-//     withCreatedBy = countif(hasCreatedByTag)
+//     withBusinessProcess = countif(hasBusinessProcessTag),
+//     withManagedBy = countif(hasManagedByTag)
 //     by type
 // | extend
 //     allTagsPercent = round(100.0 * withAllTags / totalResources, 1),
-//     environmentPercent = round(100.0 * withEnvironment / totalResources, 1),
-//     ownerPercent = round(100.0 * withOwner / totalResources, 1)
+//     ownerPercent = round(100.0 * withOwner / totalResources, 1),
+//     environmentPercent = round(100.0 * withEnvironment / totalResources, 1)
 // | order by type asc
 
 // Tag Value Consistency Check (uncomment to use)

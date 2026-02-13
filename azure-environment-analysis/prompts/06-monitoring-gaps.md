@@ -1,6 +1,7 @@
 # Phase 6: Monitoring & Observability Gaps
 
 ## Objective
+
 Identify resources lacking proper monitoring, alerting, and observability configuration.
 
 ---
@@ -16,7 +17,9 @@ The folder should already exist from Phase 0.
 ## Prerequisites
 
 Before running this prompt:
-1. Phases 1-5 must be complete
+
+1. **Required**: Phase 0 (Preflight) and Phase 1 (Discovery) must be complete.
+   **Optional enrichment**: If Phases 2-5 were selected and completed, read their outputs for deeper context. If not available, proceed with inventory data only.
 2. Have the inventory available from `/output/{client-name}/{YYYY-MM-DD}/inventory/`
 3. Know the Log Analytics workspace(s) in use
 4. Note the client's `monitoringPlatform` setting from config
@@ -33,15 +36,16 @@ Before running this prompt:
 
 Check the client config `monitoringPlatform` field:
 
-| Value | Behavior |
-|-------|----------|
-| `AzureMonitor` | Full analysis of all Azure native monitoring (default) |
-| `nodinite` | Skip App Insights, diagnostic settings checks — document "Monitored via Nodinite" |
-| `other` | Document third-party monitoring tool, recommend verifying coverage manually |
+| Value          | Behavior                                                                          |
+| -------------- | --------------------------------------------------------------------------------- |
+| `AzureMonitor` | Full analysis of all Azure native monitoring (default)                            |
+| `nodinite`     | Skip App Insights, diagnostic settings checks — document "Monitored via Nodinite" |
+| `other`        | Document third-party monitoring tool, recommend verifying coverage manually       |
 
 **If `monitoringPlatform` is `nodinite`:**
+
 - Do NOT flag missing diagnostic settings as gaps
-- Do NOT flag missing App Insights as gaps  
+- Do NOT flag missing App Insights as gaps
 - Document: "Client uses Nodinite for integration monitoring. Native Azure monitoring skipped."
 - Still check for Service Bus DLQ alerts (these are often separate)
 - Still verify Key Vault audit logs (security requirement)
@@ -50,7 +54,7 @@ Check the client config `monitoringPlatform` field:
 
 ## Prompt
 
-```
+````
 I need to perform Phase 6: Monitoring & Observability Gaps analysis for the Azure Integration Services assessment.
 
 ### Step 1: Diagnostic Settings Audit
@@ -277,8 +281,9 @@ Structure:
 - [ ] Set up action groups for notifications
 - [ ] Connect App Insights to Function Apps
 - [ ] Create monitoring dashboard
-```
-```
+````
+
+````
 
 ---
 
@@ -312,7 +317,7 @@ resources
 )
 | extend hasDiagnostics = isnotnull(properties.diagnosticSettings)
 | summarize count() by type, hasDiagnostics
-```
+````
 
 ---
 

@@ -1,0 +1,110 @@
+{
+  "$comment": "Template config — copy this folder to clients/{your-client-name}/ and fill in the values",
+
+  "client": "CLIENT_NAME",
+  "engagement": "Azure Integration Environment Assessment",
+  "assessmentDate": "YYYY-MM-DD",
+
+  "azureAccess": {
+    "tenantId": "YOUR_TENANT_ID",
+    "authenticationType": "azure-cli",
+    "servicePrincipal": {
+      "clientId": "YOUR_CLIENT_ID_IF_USING_SP",
+      "credentialSource": "env",
+      "notes": "Only needed if authenticationType is 'service-principal'. Credentials stored in environment variables: AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET"
+    },
+    "accessLevel": "Reader",
+    "accessValidated": false
+  },
+
+  "subscriptions": [
+    {
+      "id": "SUBSCRIPTION_GUID",
+      "name": "Subscription Display Name"
+    }
+  ],
+  "resourceGroups": {
+    "include": [],
+    "exclude": []
+  },
+
+  "adoOrganization": "",
+  "adoProject": "",
+
+  "assessmentPeriod": {
+    "runHistoryDays": 90,
+    "failureAnalysisDays": 30
+  },
+
+  "focusAreas": [
+    "preflight",
+    "inventory",
+    "integration-services-deep-dive",
+    "failure-patterns",
+    "security",
+    "dead-flows",
+    "monitoring-gaps",
+    "naming-tagging",
+    "sales-opportunities"
+  ],
+
+  "exclusions": {
+    "resourceTypes": [],
+    "resourceNames": [],
+    "tags": {}
+  },
+
+  "securityOption": "Standard",
+  "monitoringPlatform": "AzureMonitor",
+  "usesCMK": false,
+  "usesNSGMicroSegmentation": false,
+
+  "standards": {
+    "useLocalSSOT": true,
+    "fetchFromConfluence": false,
+    "confluenceSpace": "",
+    "validateMicrosoftBestPractices": true
+  },
+
+  "contacts": {
+    "clientTechnical": {
+      "name": "",
+      "role": "",
+      "email": ""
+    },
+    "clientBusiness": {
+      "name": "",
+      "role": "",
+      "email": ""
+    },
+    "conticaLead": {
+      "name": "",
+      "role": "Integration Consultant",
+      "email": ""
+    },
+    "accountManager": {
+      "name": "",
+      "email": ""
+    },
+    "clientDecisionMaker": {
+      "name": "",
+      "role": "",
+      "email": ""
+    }
+  },
+
+  "customChecks": {
+    "securityPriorities": [],
+    "complianceRequirements": [],
+    "namingConventionPattern": "",
+    "allowPublicDevPortal": false,
+    "usesSelfHostedIR": false
+  },
+
+  "salesOpportunities": {
+    "includeInReport": true,
+    "currency": "EUR"
+  },
+
+  "notes": ""
+}

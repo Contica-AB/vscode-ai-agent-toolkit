@@ -14,6 +14,7 @@ resources
     networkDefaultAction = properties.networkAcls.defaultAction,
     hasIssues = (properties.enableSoftDelete != true)
         or (properties.enablePurgeProtection != true)
+        or (properties.enableRbacAuthorization != true)
         or (properties.publicNetworkAccess == 'Enabled' and properties.networkAcls.defaultAction == 'Allow')
 | project
     name,

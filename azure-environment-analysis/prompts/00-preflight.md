@@ -379,7 +379,7 @@ For this assessment, I will use:
 
 ## Preflight Status
 
-**{✅ PASSED - Ready to begin Phase 1: Discovery}**
+**{✅ PASSED - Ready for Phase Selection}**
 
 or
 
@@ -440,7 +440,14 @@ or
 ┌─────────────────────────────────────────┐
 │ Ask user to confirm settings            │
 │ Generate preflight report               │
-│ ✅ PASSED → Ready for Phase 1           │
+│ ✅ PASSED → Ready for Phase Selection   │
+└───────────────┬─────────────────────────┘
+                ▼
+┌─────────────────────────────────────────┐
+│ Read /prompts/00b-phase-selection.md    │
+│ Present phase presets or custom menu    │
+│ Validate and save selection to config   │
+│ ✅ → Proceed to Phase 1: Discovery     │
 └─────────────────────────────────────────┘
 ```
 
@@ -456,6 +463,8 @@ Preflight passes when:
 5. ✅ Reader permissions confirmed
 6. ✅ Output folders created
 7. ✅ User confirmed assessment settings
+
+**Next step**: Read `/prompts/00b-phase-selection.md` and present the phase selection menu.
 
 ---
 

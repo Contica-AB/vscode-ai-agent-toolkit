@@ -3,14 +3,13 @@
   "version": "0.1.0",
   "description": "Automated Azure Integration Services environment assessment tool",
   "type": "module",
-  "main": "index.js",
   "scripts": {
     "setup": "node scripts/interactive-setup.js",
     "validate": "node scripts/credential-helper.js validate",
     "check-mcp": "node scripts/check-mcp-config.js",
     "prompts": "node scripts/show-prompts.js",
-    "sync-ssot": "node scripts/ssot-sync.js",
-    "test-mcp": "node scripts/test-mcp.js",
+    "sync-ssot": "node scripts/ssot-instructions.js",
+    "test-mcp": "node scripts/show-mcp-status.js",
     "report": "node scripts/generate-html-report.js"
   },
   "keywords": [

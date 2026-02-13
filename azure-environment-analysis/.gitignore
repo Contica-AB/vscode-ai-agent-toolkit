@@ -1,8 +1,12 @@
 # Dependencies
 node_modules/
 
+# Assessment output (contains sensitive Azure resource details)
+output/
+
 # Client configs (contain Azure credentials)
 clients/*/config.json
+!clients/_template/config.json
 
 # Claude local settings
 .claude/

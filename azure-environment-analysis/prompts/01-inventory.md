@@ -1,6 +1,7 @@
-# Phase 1: Resource Inventory
+# Phase 1: Resource Discovery
 
 ## Objective
+
 Enumerate all integration-related Azure resources and produce a complete inventory.
 
 ---
@@ -17,17 +18,17 @@ The folder should already exist from Phase 0.
 
 > **IMPORTANT**: Use the right tool for each resource type.
 
-| Resource Type | Primary (MCP) | Fallback (CLI) |
-|--------------|---------------|----------------|
-| Logic Apps Consumption | Logic Apps MCP | `az logic workflow list` |
-| Logic Apps Standard | Logic Apps MCP | `az webapp list --query "[?kind contains 'workflowapp']"` |
-| Function Apps | Azure MCP | `az functionapp list` |
-| Service Bus | Azure MCP | `az servicebus namespace list` |
-| Key Vault | Azure MCP | `az keyvault list` |
-| Storage | Azure MCP | `az storage account list` |
-| APIM | Azure MCP | `az apim list` |
-| Event Grid | Azure MCP | `az eventgrid topic list` |
-| Event Hubs | Azure MCP | `az eventhubs namespace list` |
+| Resource Type          | Primary (MCP)  | Fallback (CLI)                                            |
+| ---------------------- | -------------- | --------------------------------------------------------- |
+| Logic Apps Consumption | Logic Apps MCP | `az logic workflow list`                                  |
+| Logic Apps Standard    | Logic Apps MCP | `az webapp list --query "[?kind contains 'workflowapp']"` |
+| Function Apps          | Azure MCP      | `az functionapp list`                                     |
+| Service Bus            | Azure MCP      | `az servicebus namespace list`                            |
+| Key Vault              | Azure MCP      | `az keyvault list`                                        |
+| Storage                | Azure MCP      | `az storage account list`                                 |
+| APIM                   | Azure MCP      | `az apim list`                                            |
+| Event Grid             | Azure MCP      | `az eventgrid topic list`                                 |
+| Event Hubs             | Azure MCP      | `az eventhubs namespace list`                             |
 
 **MCP-First Rule**: Always try MCP tools first. If Logic Apps MCP fails (tested in Phase 0), use CLI fallback. Document any MCP failures.
 
@@ -36,6 +37,7 @@ The folder should already exist from Phase 0.
 ## Prerequisites
 
 Before running this prompt:
+
 1. **Phase 0 must pass** - tools and credentials validated
 2. Confirm the client folder: `/clients/{client}/`
 3. Read and understand `/clients/{client}/config.json`
@@ -46,7 +48,7 @@ Before running this prompt:
 
 ## Prompt
 
-```
+````
 I need to perform Phase 1: Discovery for the Azure Integration Services assessment.
 
 First, read the client configuration:
@@ -104,7 +106,7 @@ Then, enumerate ALL integration-related resources in scope:
 
 1. Save the complete inventory as JSON:
    `/output/{client-name}/{YYYY-MM-DD}/inventory/resources.json`
-   
+
    Structure:
    ```json
    {
@@ -134,11 +136,11 @@ Then, enumerate ALL integration-related resources in scope:
        "byResourceGroup": {...}
      }
    }
-   ```
+````
 
 2. Save a markdown summary:
    `/output/{client-name}/{YYYY-MM-DD}/inventory/summary.md`
-   
+
    Include:
    - Total resource count table
    - Distribution by region
@@ -149,10 +151,12 @@ Then, enumerate ALL integration-related resources in scope:
 ### Verification
 
 After completing the inventory:
+
 - Confirm total count matches expectations
 - Flag any resources that couldn't be accessed
 - Note any unusual findings
-```
+
+````
 
 ---
 
@@ -194,7 +198,7 @@ resources
     'microsoft.eventhub/namespaces'
 )
 | project name, type, resourceGroup, location, sku, tags, properties
-```
+````
 
 ---
 

@@ -1,6 +1,7 @@
 # Phase 4: Security Audit
 
 ## Objective
+
 Evaluate the security posture of all integration resources against the security checklist, rating findings by severity.
 
 ---
@@ -16,7 +17,9 @@ The folder should already exist from Phase 0.
 ## Prerequisites
 
 Before running this prompt:
-1. **Phase 0 through Phase 3 must be complete**
+
+1. **Required**: Phase 0 (Preflight) and Phase 1 (Discovery) must be complete.
+   **Optional enrichment**: If Phases 2-3 were selected and completed, read their outputs for deeper context. If not available, proceed with inventory data only.
 2. Read the SSOT security standards:
    - `/standards/contica-ssot/baseline-levels.md` — Compliance levels
    - `/standards/contica-ssot/authentication-matrix.md` — Required MI/RBAC
@@ -33,8 +36,8 @@ Before running this prompt:
    - Search: "Azure Cloud Adoption Framework security baseline"
    - Search: "Azure Well-Architected Framework security pillar"
    - Include CAF/WAF links as supporting tips alongside SSOT findings
-5. Have the inventory available from `/output/{client-name}/{YYYY-MM-DD}/inventory/`
-6. Note the client's `securityOption` setting (Standard/Advanced)
+6. Have the inventory available from `/output/{client-name}/{YYYY-MM-DD}/inventory/`
+7. Note the client's `securityOption` setting (Standard/Advanced)
 
 ---
 
@@ -42,25 +45,25 @@ Before running this prompt:
 
 > **MCP-First Rule**: Always try MCP tools first. Only fall back to CLI if MCP fails.
 
-| Operation | Primary (MCP) | Fallback (CLI) |
-|-----------|---------------|----------------|
-| RBAC role assignments | Azure MCP | `az role assignment list` |
-| Key Vault configuration | Azure MCP | `az keyvault show` |
-| Network settings | Azure MCP | `az network` commands |
-| Diagnostic settings | Azure MCP | `az monitor diagnostic-settings list` |
-| Logic App definitions | Logic Apps MCP | `az logic workflow show -g {rg} -n {name}` |
-| Search for hardcoded secrets | Logic Apps MCP → parse JSON | `az logic workflow show` → parse JSON |
-| Service Bus security | Azure MCP | `az servicebus namespace show` |
-| Storage security | Azure MCP | `az storage account show` |
-| Event Grid security | Azure MCP | `az eventgrid topic show` |
-| Event Hub security | Azure MCP | `az eventhubs namespace show` |
-| App Config security | Azure MCP | `az appconfig show` |
+| Operation                    | Primary (MCP)               | Fallback (CLI)                             |
+| ---------------------------- | --------------------------- | ------------------------------------------ |
+| RBAC role assignments        | Azure MCP                   | `az role assignment list`                  |
+| Key Vault configuration      | Azure MCP                   | `az keyvault show`                         |
+| Network settings             | Azure MCP                   | `az network` commands                      |
+| Diagnostic settings          | Azure MCP                   | `az monitor diagnostic-settings list`      |
+| Logic App definitions        | Logic Apps MCP              | `az logic workflow show -g {rg} -n {name}` |
+| Search for hardcoded secrets | Logic Apps MCP → parse JSON | `az logic workflow show` → parse JSON      |
+| Service Bus security         | Azure MCP                   | `az servicebus namespace show`             |
+| Storage security             | Azure MCP                   | `az storage account show`                  |
+| Event Grid security          | Azure MCP                   | `az eventgrid topic show`                  |
+| Event Hub security           | Azure MCP                   | `az eventhubs namespace show`              |
+| App Config security          | Azure MCP                   | `az appconfig show`                        |
 
 ---
 
 ## Prompt
 
-```
+````
 I need to perform Phase 4: Security Audit for the Azure Integration Services assessment.
 
 Read the security checklist from /methodology/security-checklist.md and systematically evaluate each check.
@@ -184,21 +187,21 @@ For each App Configuration store:
 
 ### Category 7: Azure Built-in Recommendations
 
-**6.1 Azure Advisor Security Recommendations**
+**7.1 Azure Advisor Security Recommendations**
 Using queries from `/standards/azure-apis/advisor-recommendations.md`:
 - Query Azure Advisor for security recommendations
 - Focus on integration resources (Logic Apps, Service Bus, Key Vault, APIM)
 - Document High/Medium impact recommendations
 - Cross-reference with our findings
 
-**6.2 Microsoft Defender for Cloud**
+**7.2 Microsoft Defender for Cloud**
 Using queries from `/standards/azure-apis/defender-recommendations.md`:
 - Query Defender for Cloud recommendations
 - Check secure score for integration resources
 - Document unhealthy resources
 - Note any actively exploited vulnerabilities
 
-**6.3 Azure Policy Compliance**
+**7.3 Azure Policy Compliance**
 Using queries from `/standards/azure-apis/policy-compliance.md`:
 - Query policy compliance state
 - Check against required policies in `/standards/contica-ssot/azure-policies.md`
@@ -209,7 +212,7 @@ Using queries from `/standards/azure-apis/policy-compliance.md`:
 
 ### Category 8: Azure CAF / WAF Alignment
 
-**7.1 Microsoft Cloud Adoption Framework**
+**8.1 Microsoft Cloud Adoption Framework**
 Use Microsoft Docs MCP to search for Azure CAF guidance relevant to findings:
 - Search: "Azure CAF security baseline for {resource-type}" for each resource type
 - Search: "Azure CAF identity and access management"
@@ -217,7 +220,7 @@ Use Microsoft Docs MCP to search for Azure CAF guidance relevant to findings:
 - Include relevant CAF recommendations as **"Microsoft Recommendation"** tips in findings
 - Note where Contica SSOT aligns with or goes beyond CAF
 
-**7.2 Well-Architected Framework Security Pillar**
+**8.2 Well-Architected Framework Security Pillar**
 Use Microsoft Docs MCP to search:
 - Search: "Azure Well-Architected Framework security checklist"
 - Cross-reference WAF security recommendations with SSOT findings
@@ -229,59 +232,59 @@ Use Microsoft Docs MCP to search:
 
 1. Save security audit:
    `/output/{client-name}/{YYYY-MM-DD}/analysis/security-audit.md`
-   
+
    Structure:
    ```markdown
    # Security Audit Report
-   
+
    **Date**: {date}
    **Client**: {client}
-   
+
    ## Executive Summary
-   
+
    | Severity | Count |
    |----------|-------|
    | HIGH | {n} |
    | MEDIUM | {n} |
    | LOW | {n} |
-   
+
    Overall Security Score: {X}/100
-   
+
    ## Findings by Category
-   
+
    ### Authentication & Authorization
    Score: {X}/10
-   
+
    | ID | Check | Status | Severity | Finding |
    |----|-------|--------|----------|---------|
    | AUTH-01 | Managed Identity | ⚠️ | MEDIUM | 3/10 Logic Apps missing MI |
-   
+
    #### AUTH-01: Managed Identity Usage
-   
+
    **Status**: Partial Compliance
    **Severity**: MEDIUM
-   
-   **Finding**: 
+
+   **Finding**:
    3 Logic Apps are not using Managed Identity:
    - logic-legacy-import (rg-integration)
    - logic-old-sync (rg-integration)
    - logic-test-flow (rg-dev)
-   
+
    **Evidence**:
    - Checked via `az logic workflow show` definition analysis
    - These use connection strings stored in connection objects
-   
+
    **Remediation**:
    1. Enable System Assigned Managed Identity on each Logic App
    2. Update connectors to use MI authentication
    3. Remove stored credentials
-   
+
    **Effort**: Medium (2-3 hours per Logic App)
-   
+
    [... continue for each finding ...]
-   
+
    ## Security Scorecard
-   
+
    | Category | Score | Critical Issues |
    |----------|-------|-----------------|
    | Authentication & Authorization | 7/10 | None |
@@ -289,18 +292,18 @@ Use Microsoft Docs MCP to search:
    | Data Protection | 8/10 | None |
    | Secrets Management | 4/10 | 2 HIGH |
    | Monitoring & Auditing | 6/10 | None |
-   
+
    ## Prioritized Remediation Plan
-   
+
    ### Immediate (HIGH severity)
    1. {finding and fix}
-   
+
    ### Short-term (MEDIUM severity)
    1. {finding and fix}
-   
+
    ### Long-term (LOW severity)
    1. {finding and fix}
-   ```
+````
 
 ### Severity Guidelines
 
@@ -320,6 +323,7 @@ Use Microsoft Docs MCP to search:
   - Missing tags
   - Documentation gaps
   - Non-critical monitoring gaps
+
 ```
 
 ---
@@ -348,3 +352,4 @@ Use Microsoft Docs MCP to search:
 - [ ] Remediation plan created
 - [ ] Report saved
 - [ ] Ready for Phase 5
+```
