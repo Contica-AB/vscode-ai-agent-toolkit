@@ -1,0 +1,72 @@
+// Tagging Compliance Query
+// Purpose: Analyze tag coverage across integration resources
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Required tags checked:
+// - environment
+// - owner
+// - cost-center
+// - project
+// - created-by
+
+resources
+| where type in~ (
+    'microsoft.logic/workflows',
+    'microsoft.web/sites',
+    'microsoft.servicebus/namespaces',
+    'microsoft.apimanagement/service',
+    'microsoft.keyvault/vaults',
+    'microsoft.storage/storageaccounts',
+    'microsoft.appconfiguration/configurationstores',
+    'microsoft.eventgrid/topics',
+    'microsoft.eventhub/namespaces'
+)
+// Filter web sites to Logic Apps Standard and Function Apps only
+| where type != 'microsoft.web/sites' 
+    or (type == 'microsoft.web/sites' and 
+        (kind contains 'functionapp' or kind contains 'workflowapp'))
+| extend
+    hasEnvironmentTag = isnotnull(tags.environment) or isnotnull(tags.Environment) or isnotnull(tags.env),
+    hasOwnerTag = isnotnull(tags.owner) or isnotnull(tags.Owner) or isnotnull(tags['created-by']),
+    hasCostCenterTag = isnotnull(tags['cost-center']) or isnotnull(tags.costCenter) or isnotnull(tags.CostCenter),
+    hasProjectTag = isnotnull(tags.project) or isnotnull(tags.Project) or isnotnull(tags.application),
+    hasCreatedByTag = isnotnull(tags['created-by']) or isnotnull(tags.createdBy)
+| extend
+    tagCount = toint(hasEnvironmentTag) + toint(hasOwnerTag) + toint(hasCostCenterTag) + toint(hasProjectTag) + toint(hasCreatedByTag),
+    allTagsPresent = hasEnvironmentTag and hasOwnerTag and hasCostCenterTag and hasProjectTag
+| project
+    name,
+    type,
+    resourceGroup,
+    hasEnvironmentTag,
+    hasOwnerTag,
+    hasCostCenterTag,
+    hasProjectTag,
+    hasCreatedByTag,
+    tagCount,
+    allTagsPresent,
+    tags
+| order by tagCount asc, name asc
+
+// Summary Query (uncomment to use)
+// | summarize
+//     totalResources = count(),
+//     withAllTags = countif(allTagsPresent),
+//     withEnvironment = countif(hasEnvironmentTag),
+//     withOwner = countif(hasOwnerTag),
+//     withCostCenter = countif(hasCostCenterTag),
+//     withProject = countif(hasProjectTag),
+//     withCreatedBy = countif(hasCreatedByTag)
+//     by type
+// | extend
+//     allTagsPercent = round(100.0 * withAllTags / totalResources, 1),
+//     environmentPercent = round(100.0 * withEnvironment / totalResources, 1),
+//     ownerPercent = round(100.0 * withOwner / totalResources, 1)
+// | order by type asc
+
+// Tag Value Consistency Check (uncomment to use)
+// resources
+// | where type in~ ('microsoft.logic/workflows', 'microsoft.servicebus/namespaces')
+// | where isnotnull(tags.environment)
+// | summarize count() by tostring(tags.environment)
+// | order by count_ desc

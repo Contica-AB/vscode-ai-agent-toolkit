@@ -1,0 +1,27 @@
+// Security Posture - Key Vault Security Configuration
+// Purpose: Audit Key Vault security settings including soft delete and RBAC
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Returns: Key Vaults with security configuration issues highlighted
+
+resources
+| where type == 'microsoft.keyvault/vaults'
+| extend
+    enableSoftDelete = properties.enableSoftDelete,
+    enablePurgeProtection = properties.enablePurgeProtection,
+    enableRbacAuthorization = properties.enableRbacAuthorization,
+    publicNetworkAccess = properties.publicNetworkAccess,
+    networkDefaultAction = properties.networkAcls.defaultAction,
+    hasIssues = (properties.enableSoftDelete != true)
+        or (properties.enablePurgeProtection != true)
+        or (properties.publicNetworkAccess == 'Enabled' and properties.networkAcls.defaultAction == 'Allow')
+| project
+    name,
+    resourceGroup,
+    enableSoftDelete,
+    enablePurgeProtection,
+    enableRbacAuthorization,
+    publicNetworkAccess,
+    networkDefaultAction,
+    hasIssues
+| order by hasIssues desc, name asc

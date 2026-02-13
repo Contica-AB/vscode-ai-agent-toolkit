@@ -1,0 +1,38 @@
+// Security Posture - Managed Identity Coverage
+// Purpose: Identify integration resources with and without Managed Identity enabled
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Returns: Resources with their Managed Identity configuration status
+// Resources without MI are security findings (HIGH if using stored credentials instead)
+
+resources
+| where type in~ (
+    'microsoft.logic/workflows',
+    'microsoft.web/sites',
+    'microsoft.servicebus/namespaces',
+    'microsoft.apimanagement/service'
+)
+| where type != 'microsoft.web/sites' 
+    or (type == 'microsoft.web/sites' and 
+        (kind contains 'functionapp' or kind contains 'workflowapp'))
+| extend
+    hasSystemIdentity = identity.type contains 'SystemAssigned',
+    hasUserIdentity = identity.type contains 'UserAssigned',
+    hasManagedIdentity = isnotnull(identity) and identity.type != 'None',
+    resourceType = case(
+        type == 'microsoft.logic/workflows', 'Logic App (Consumption)',
+        type == 'microsoft.web/sites' and kind contains 'workflowapp', 'Logic App (Standard)',
+        type == 'microsoft.web/sites' and kind contains 'functionapp', 'Function App',
+        type == 'microsoft.servicebus/namespaces', 'Service Bus',
+        type == 'microsoft.apimanagement/service', 'API Management',
+        'Other'
+    )
+| project
+    name,
+    resourceType,
+    resourceGroup,
+    hasManagedIdentity,
+    hasSystemIdentity,
+    hasUserIdentity,
+    identityType = tostring(identity.type)
+| order by hasManagedIdentity asc, resourceType asc

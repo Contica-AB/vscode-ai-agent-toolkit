@@ -1,0 +1,18 @@
+// Monitoring Coverage - Log Analytics Workspaces
+// Purpose: Discover all Log Analytics workspaces for central logging assessment
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Returns: Log Analytics workspaces with configuration details
+
+resources
+| where type == 'microsoft.operationalinsights/workspaces'
+| project
+    workspaceName = name,
+    resourceGroup,
+    location,
+    sku = sku.name,
+    retentionDays = properties.retentionInDays,
+    workspaceId = properties.customerId,
+    id,
+    subscriptionId
+| order by workspaceName asc

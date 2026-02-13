@@ -1,0 +1,22 @@
+// Monitoring Coverage - Function Apps with Application Insights
+// Purpose: Identify Function Apps that have or are missing Application Insights configuration
+// Usage: Run via Azure Resource Graph Explorer or Azure MCP Server
+//
+// Returns: Function Apps with App Insights connection status
+// Note: This query checks app settings for APPINSIGHTS configuration
+
+resources
+| where type == 'microsoft.web/sites'
+| where kind contains 'functionapp'
+| extend
+    appInsightsKey = properties.siteConfig.appSettings
+| mv-expand setting = appInsightsKey
+| where setting.name == 'APPINSIGHTS_INSTRUMENTATIONKEY' 
+    or setting.name == 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+| summarize hasAppInsights = count() > 0 by name, resourceGroup, id
+| project
+    name,
+    resourceGroup,
+    hasAppInsights,
+    id
+| order by hasAppInsights asc, name asc
