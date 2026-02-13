@@ -9,6 +9,7 @@ This document defines the categories of sales opportunities that can be identifi
 ### 1. Security & Compliance Remediation
 
 **Trigger Findings:**
+
 - Non-compliant resources per SSOT standards
 - Missing Managed Identity implementations
 - Hardcoded secrets or connection strings
@@ -18,16 +19,17 @@ This document defines the categories of sales opportunities that can be identifi
 
 **Service Offerings:**
 
-| Service | Description | Typical Effort | Value |
-|---------|-------------|----------------|-------|
-| Managed Identity Migration | Replace connection strings with MI | 2-5 days/resource type | Eliminate credential exposure |
-| Network Security Hardening | Implement Private Endpoints, VNet integration | 3-10 days | Reduce attack surface |
-| Key Vault Migration | Move secrets from app settings to Key Vault | 1-3 days/app | Centralized secret management |
-| Policy Remediation | Remediate non-compliant resources | Variable | Meet compliance requirements |
-| Security Posture Review | Deep-dive security assessment | 5-10 days | Risk reduction roadmap |
+| Service                    | Description                                   | Typical Effort         | Value                         |
+| -------------------------- | --------------------------------------------- | ---------------------- | ----------------------------- |
+| Managed Identity Migration | Replace connection strings with MI            | 2-5 days/resource type | Eliminate credential exposure |
+| Network Security Hardening | Implement Private Endpoints, VNet integration | 3-10 days              | Reduce attack surface         |
+| Key Vault Migration        | Move secrets from app settings to Key Vault   | 1-3 days/app           | Centralized secret management |
+| Policy Remediation         | Remediate non-compliant resources             | Variable               | Meet compliance requirements  |
+| Security Posture Review    | Deep-dive security assessment                 | 5-10 days              | Risk reduction roadmap        |
 
 **Pricing Guidance:**
-- Day rate: €1,200 - €1,800
+
+- Day rate: 14,000 - 21,000 kr
 - Fixed price packages available for common scenarios
 
 ---
@@ -35,6 +37,7 @@ This document defines the categories of sales opportunities that can be identifi
 ### 2. Operational Excellence Improvements
 
 **Trigger Findings:**
+
 - Missing or incomplete monitoring
 - No alerting configured
 - Logic Apps without error handling (scopes, retry policies)
@@ -43,23 +46,25 @@ This document defines the categories of sales opportunities that can be identifi
 
 **Service Offerings:**
 
-| Service | Description | Typical Effort | Value |
-|---------|-------------|----------------|-------|
-| Monitoring Implementation | Set up Log Analytics, App Insights, alerts | 5-15 days | Proactive issue detection |
-| Alert Configuration | Configure actionable alerts | 2-5 days | Reduce MTTR |
-| Dashboard Creation | Build operational dashboards | 3-7 days | Real-time visibility |
-| Error Handling Patterns | Implement proper try-catch, retry policies | 2-4 days/flow | Improved resilience |
-| Runbook Development | Create operational procedures | 3-5 days | Consistent operations |
+| Service                   | Description                                | Typical Effort | Value                     |
+| ------------------------- | ------------------------------------------ | -------------- | ------------------------- |
+| Monitoring Implementation | Set up Log Analytics, App Insights, alerts | 5-15 days      | Proactive issue detection |
+| Alert Configuration       | Configure actionable alerts                | 2-5 days       | Reduce MTTR               |
+| Dashboard Creation        | Build operational dashboards               | 3-7 days       | Real-time visibility      |
+| Error Handling Patterns   | Implement proper try-catch, retry policies | 2-4 days/flow  | Improved resilience       |
+| Runbook Development       | Create operational procedures              | 3-5 days       | Consistent operations     |
 
 **Pricing Guidance:**
-- Day rate: €1,200 - €1,500
-- Monitoring packages: €5,000 - €15,000 depending on scope
+
+- Day rate: 14,000 - 17,000 kr
+- Monitoring packages: 57,000 - 170,000 kr depending on scope
 
 ---
 
 ### 3. Technical Debt Reduction
 
 **Trigger Findings:**
+
 - Dead or unused flows (no runs in 90+ days)
 - Legacy resources (old SKUs, deprecated services)
 - Redundant or duplicate integrations
@@ -68,16 +73,17 @@ This document defines the categories of sales opportunities that can be identifi
 
 **Service Offerings:**
 
-| Service | Description | Typical Effort | Value |
-|---------|-------------|----------------|-------|
-| Dead Flow Cleanup | Decommission unused integrations | 2-5 days | Cost savings, reduced complexity |
-| Legacy Modernization | Upgrade to current SKUs/services | Variable | Better performance, support |
-| Consolidation Analysis | Identify redundant integrations | 3-5 days | Simplified landscape |
-| Naming/Tagging Remediation | Standardize naming and tags | 2-5 days | Improved governance |
-| Architecture Standardization | Align patterns across integrations | 5-15 days | Maintainability |
+| Service                      | Description                        | Typical Effort | Value                            |
+| ---------------------------- | ---------------------------------- | -------------- | -------------------------------- |
+| Dead Flow Cleanup            | Decommission unused integrations   | 2-5 days       | Cost savings, reduced complexity |
+| Legacy Modernization         | Upgrade to current SKUs/services   | Variable       | Better performance, support      |
+| Consolidation Analysis       | Identify redundant integrations    | 3-5 days       | Simplified landscape             |
+| Naming/Tagging Remediation   | Standardize naming and tags        | 2-5 days       | Improved governance              |
+| Architecture Standardization | Align patterns across integrations | 5-15 days      | Maintainability                  |
 
 **Pricing Guidance:**
-- Day rate: €1,200 - €1,500
+
+- Day rate: 14,000 - 17,000 kr
 - Cleanup packages based on resource count
 
 ---
@@ -85,6 +91,7 @@ This document defines the categories of sales opportunities that can be identifi
 ### 4. Cost Optimization
 
 **Trigger Findings:**
+
 - Azure Advisor cost recommendations
 - Oversized/underutilized resources
 - Resources in wrong tier for usage
@@ -93,23 +100,25 @@ This document defines the categories of sales opportunities that can be identifi
 
 **Service Offerings:**
 
-| Service | Description | Typical Effort | Value |
-|---------|-------------|----------------|-------|
-| Cost Analysis & Right-sizing | Analyze usage, recommend changes | 3-5 days | Monthly savings identified |
-| Reserved Instance Planning | Analyze workloads for RI | 2-3 days | Up to 72% savings |
-| Dev/Test Optimization | Implement auto-shutdown, lower tiers | 2-5 days | Reduced non-prod costs |
-| Storage Tiering | Implement lifecycle policies | 2-3 days | Storage cost reduction |
-| Consumption Baseline | Establish cost baselines and budgets | 2-3 days | Predictable costs |
+| Service                      | Description                          | Typical Effort | Value                      |
+| ---------------------------- | ------------------------------------ | -------------- | -------------------------- |
+| Cost Analysis & Right-sizing | Analyze usage, recommend changes     | 3-5 days       | Monthly savings identified |
+| Reserved Instance Planning   | Analyze workloads for RI             | 2-3 days       | Up to 72% savings          |
+| Dev/Test Optimization        | Implement auto-shutdown, lower tiers | 2-5 days       | Reduced non-prod costs     |
+| Storage Tiering              | Implement lifecycle policies         | 2-3 days       | Storage cost reduction     |
+| Consumption Baseline         | Establish cost baselines and budgets | 2-3 days       | Predictable costs          |
 
 **Pricing Guidance:**
+
 - Often priced as % of identified savings (10-20% of first year savings)
-- Or fixed price: €3,000 - €8,000
+- Or fixed price: 35,000 - 92,000 kr
 
 ---
 
 ### 5. New Integration Development
 
 **Trigger Findings:**
+
 - Client mentions upcoming projects
 - Integration gaps identified in landscape
 - Manual processes that could be automated
@@ -117,16 +126,17 @@ This document defines the categories of sales opportunities that can be identifi
 
 **Service Offerings:**
 
-| Service | Description | Typical Effort | Value |
-|---------|-------------|----------------|-------|
-| Integration Design | Architecture for new integration | 3-5 days | Solid foundation |
-| Integration Development | Build new Logic Apps, Functions | Variable | Automation, efficiency |
-| API Development | Build APIs in APIM | Variable | Standardized interfaces |
-| Process Automation | Automate manual workflows | Variable | Time savings |
-| System Connectivity | Connect new systems to integration layer | Variable | Extended capabilities |
+| Service                 | Description                              | Typical Effort | Value                   |
+| ----------------------- | ---------------------------------------- | -------------- | ----------------------- |
+| Integration Design      | Architecture for new integration         | 3-5 days       | Solid foundation        |
+| Integration Development | Build new Logic Apps, Functions          | Variable       | Automation, efficiency  |
+| API Development         | Build APIs in APIM                       | Variable       | Standardized interfaces |
+| Process Automation      | Automate manual workflows                | Variable       | Time savings            |
+| System Connectivity     | Connect new systems to integration layer | Variable       | Extended capabilities   |
 
 **Pricing Guidance:**
-- Day rate: €1,200 - €1,800
+
+- Day rate: 14,000 - 21,000 kr
 - Fixed price based on complexity
 
 ---
@@ -134,6 +144,7 @@ This document defines the categories of sales opportunities that can be identifi
 ### 6. Knowledge Transfer & Training
 
 **Trigger Findings:**
+
 - Client team lacks Azure integration expertise
 - Poor patterns suggest skill gaps
 - No documentation exists
@@ -141,16 +152,17 @@ This document defines the categories of sales opportunities that can be identifi
 
 **Service Offerings:**
 
-| Service | Description | Typical Effort | Value |
-|---------|-------------|----------------|-------|
-| Logic Apps Training | Hands-on training for team | 2-3 days | Self-sufficiency |
-| Azure Integration Workshop | Comprehensive integration training | 3-5 days | Skill development |
-| Documentation Sprint | Document existing integrations | 3-10 days | Knowledge preservation |
-| Best Practices Workshop | Review and teach patterns | 1-2 days | Quality improvement |
-| Pair Programming | Mentor while building | Ongoing | Practical learning |
+| Service                    | Description                        | Typical Effort | Value                  |
+| -------------------------- | ---------------------------------- | -------------- | ---------------------- |
+| Logic Apps Training        | Hands-on training for team         | 2-3 days       | Self-sufficiency       |
+| Azure Integration Workshop | Comprehensive integration training | 3-5 days       | Skill development      |
+| Documentation Sprint       | Document existing integrations     | 3-10 days      | Knowledge preservation |
+| Best Practices Workshop    | Review and teach patterns          | 1-2 days       | Quality improvement    |
+| Pair Programming           | Mentor while building              | Ongoing        | Practical learning     |
 
 **Pricing Guidance:**
-- Training day rate: €1,500 - €2,000
+
+- Training day rate: 17,000 - 23,000 kr
 - Documentation: per-integration pricing
 
 ---
@@ -158,6 +170,7 @@ This document defines the categories of sales opportunities that can be identifi
 ### 7. Managed Services
 
 **Trigger Findings:**
+
 - Client lacks ongoing operational capacity
 - Recurring issues requiring intervention
 - No 24/7 support for critical integrations
@@ -165,17 +178,18 @@ This document defines the categories of sales opportunities that can be identifi
 
 **Service Offerings:**
 
-| Service | Description | Typical Effort | Value |
-|---------|-------------|----------------|-------|
-| Integration Monitoring | 24/7 monitoring and alerting | Monthly | Peace of mind |
-| Incident Response | On-call support for issues | Monthly | Reduced MTTR |
-| Maintenance & Updates | Regular maintenance tasks | Monthly | System health |
-| Capacity Planning | Proactive scaling recommendations | Quarterly | Avoid bottlenecks |
-| Full Managed Service | Complete operational ownership | Monthly | Focus on business |
+| Service                | Description                       | Typical Effort | Value             |
+| ---------------------- | --------------------------------- | -------------- | ----------------- |
+| Integration Monitoring | 24/7 monitoring and alerting      | Monthly        | Peace of mind     |
+| Incident Response      | On-call support for issues        | Monthly        | Reduced MTTR      |
+| Maintenance & Updates  | Regular maintenance tasks         | Monthly        | System health     |
+| Capacity Planning      | Proactive scaling recommendations | Quarterly      | Avoid bottlenecks |
+| Full Managed Service   | Complete operational ownership    | Monthly        | Focus on business |
 
 **Pricing Guidance:**
-- Monitoring: €500 - €2,000/month depending on scope
-- Full managed: €3,000 - €15,000/month depending on complexity
+
+- Monitoring: 6,000 - 23,000 kr/month depending on scope
+- Full managed: 35,000 - 170,000 kr/month depending on complexity
 
 ---
 
@@ -183,21 +197,21 @@ This document defines the categories of sales opportunities that can be identifi
 
 ### T-Shirt Sizes
 
-| Size | Effort | Revenue Range |
-|------|--------|---------------|
-| XS | 1-2 days | €1,500 - €3,000 |
-| S | 3-5 days | €4,000 - €8,000 |
-| M | 5-10 days | €8,000 - €15,000 |
-| L | 10-20 days | €15,000 - €35,000 |
-| XL | 20+ days | €35,000+ |
+| Size | Effort     | Revenue Range        |
+| ---- | ---------- | -------------------- |
+| XS   | 1-2 days   | 17,000 - 35,000 kr   |
+| S    | 3-5 days   | 46,000 - 92,000 kr   |
+| M    | 5-10 days  | 92,000 - 170,000 kr  |
+| L    | 10-20 days | 170,000 - 400,000 kr |
+| XL   | 20+ days   | 400,000+ kr          |
 
 ### Confidence Levels
 
-| Level | Meaning | Evidence Required |
-|-------|---------|-------------------|
-| **High** | Clear need, client aware | Finding is documented, client acknowledged issue |
-| **Medium** | Likely need, may need discovery | Finding exists, client may not be aware |
-| **Low** | Potential need, requires validation | Inferred from patterns, needs discussion |
+| Level      | Meaning                             | Evidence Required                                |
+| ---------- | ----------------------------------- | ------------------------------------------------ |
+| **High**   | Clear need, client aware            | Finding is documented, client acknowledged issue |
+| **Medium** | Likely need, may need discovery     | Finding exists, client may not be aware          |
+| **Low**    | Potential need, requires validation | Inferred from patterns, needs discussion         |
 
 ---
 
@@ -215,13 +229,13 @@ For each opportunity, assess:
 
 ## Cross-Reference with Assessment Phases
 
-| Phase | Primary Opportunities |
-|-------|----------------------|
-| Phase 1: Discovery | New Integration Development (landscape gaps) |
-| Phase 2: Logic Apps Deep Dive | Technical Debt, Operational Excellence |
-| Phase 3: Failure Analysis | Operational Excellence, Managed Services |
-| Phase 4: Security Audit | Security & Compliance Remediation |
-| Phase 5: Dead Flow Detection | Technical Debt Reduction |
-| Phase 6: Monitoring Gaps | Operational Excellence |
-| Phase 7: Naming & Tagging | Technical Debt Reduction |
-| Phase 8: Report | Knowledge Transfer (documentation) |
+| Phase                         | Primary Opportunities                        |
+| ----------------------------- | -------------------------------------------- |
+| Phase 1: Discovery            | New Integration Development (landscape gaps) |
+| Phase 2: Logic Apps Deep Dive | Technical Debt, Operational Excellence       |
+| Phase 3: Failure Analysis     | Operational Excellence, Managed Services     |
+| Phase 4: Security Audit       | Security & Compliance Remediation            |
+| Phase 5: Dead Flow Detection  | Technical Debt Reduction                     |
+| Phase 6: Monitoring Gaps      | Operational Excellence                       |
+| Phase 7: Naming & Tagging     | Technical Debt Reduction                     |
+| Phase 8: Report               | Knowledge Transfer (documentation)           |
