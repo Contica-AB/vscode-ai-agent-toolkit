@@ -30,6 +30,14 @@ You will receive a JSON plan with this structure (see planning agent for full sc
 - `pipeline` - Azure DevOps configuration
 - `placeholders` - List of missing values
 
+## CRITICAL: Always Generate Files
+
+**DO NOT** refuse to generate files because the plan appears sparse or has few resources.
+- Always generate `parameters.json` and `trigger.yml`
+- Use empty arrays `[]` for resource types not in the plan
+- Preserve placeholders `{{DESCRIPTION}}` for missing values
+- Let the user see what would be deployed and decide whether to proceed
+
 ## Output Files
 
 ### 1. parameters.json
@@ -470,6 +478,7 @@ stages:
                   environment: "Prod"
 ```
 
+
 ## Execution Steps
 
 1. **Parse Plan** - Read the JSON plan from input
@@ -483,8 +492,11 @@ stages:
 
 ## Critical Rules
 
-1. **Exact Schema Match** - Output must match Bicep template expectations exactly
-2. **Valid JSON/YAML** - Files must be syntactically valid
-3. **Preserve Placeholders** - Copy all `{{PLACEHOLDER}}` values from the plan
-4. **Empty Arrays** - Include empty arrays for resource types not in plan (don't omit them)
-5. **Consistent Formatting** - Use 2-space indentation for both JSON and YAML
+1. **Always Generate Files** - Never refuse to generate because plan appears sparse
+2. **Exact Schema Match** - Output must match Bicep template expectations exactly
+3. **Valid JSON/YAML** - Files must be syntactically valid
+4. **Preserve Placeholders** - Copy all `{{PLACEHOLDER}}` values from the plan
+5. **Empty Arrays** - Include empty arrays for resource types not in plan (don't omit them)
+6. **Consistent Formatting** - Use 2-space indentation for both JSON and YAML
+
+````

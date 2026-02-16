@@ -60,10 +60,18 @@ Wait for the planning agent to return a structured JSON plan containing:
 - Any gaps or placeholders identified
 - Ask for approval before proceeding
 
-### Phase 2: Implementation
+### Phase 2: Implementation (ALWAYS EXECUTE)
 ```
 @sow-implementation <PLAN_JSON>
 ```
+**CRITICAL: ALWAYS call the implementation agent after planning completes.**
+
+Never assume infrastructure isn't needed. Even if the plan shows few or no resources:
+- The user asked for infrastructure generation
+- Let the implementation agent generate the files
+- Let the user see what would be deployed
+- The user can then decide whether to proceed with deployment
+
 Pass the complete plan JSON to the implementation agent. It will:
 - Generate `parameters.json` with all resource arrays
 - Generate `trigger.yml` with multi-stage pipeline
@@ -88,11 +96,13 @@ The pipeline agent will:
 
 ## Critical Rules
 
-1. **Sequential Execution** - Always complete one phase before starting the next
-2. **User Approval** - Get explicit approval after planning before implementation
-3. **Complete Context** - Pass full plan JSON between agents, never summarize
-4. **Error Recovery** - If any agent fails, explain the issue and offer retry options
-5. **Progress Visibility** - Use todo list to track phases for user visibility
+1. **Never Assume Infrastructure Isn't Needed** - Always chain to implementation, even if SoW appears sparse
+2. **Sequential Execution** - Always complete one phase before starting the next
+3. **User Approval** - Get explicit approval after planning before implementation
+4. **Complete Context** - Pass full plan JSON between agents, never summarize
+5. **Error Recovery** - If any agent fails, explain the issue and offer retry options
+6. **Progress Visibility** - Use todo list to track phases for user visibility
+7. **ALWAYS Chain** - The user asked for infrastructure generation, so generate infrastructure files
 
 ## Example Session
 
