@@ -1,0 +1,20 @@
+{
+  "folders": [
+    {
+      "name": "SoW Infrastructure Generator",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "chat.agent.enabled": true,
+    "chat.agent.maxRequests": 15,
+    "github.copilot.chat.agent.thinkingTool": true
+  },
+  "extensions": {
+    "recommendations": [
+      "github.copilot",
+      "github.copilot-chat",
+      "ms-azuretools.vscode-azureresourcegroups"
+    ]
+  }
+}

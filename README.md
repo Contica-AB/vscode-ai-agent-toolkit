@@ -4,6 +4,24 @@ AI-powered tools for Azure consulting, built to run inside VS Code with GitHub C
 
 ## Projects
 
+### [SoW Infrastructure Generator](sow-infrastructure-generator/) ⭐ NEW
+
+Automated Azure infrastructure deployment file generation from Confluence Statements of Work. Uses a 4-agent chain with specialized models for optimal performance.
+
+**What it generates:**
+- `parameters.json` - Azure Bicep deployment parameters
+- `trigger.yml` - Azure DevOps multi-stage pipeline (Dev → Test → Prod)
+
+**Agent Chain:**
+| Agent | Model | Task |
+|-------|-------|------|
+| Orchestrator | - | Coordinates workflow |
+| Planning | Claude Sonnet 4 | Reads SoW, extracts requirements |
+| Implementation | Claude Opus 4.5 | Generates deployment files |
+| Pipeline | GPT-4o | Validates & deploys |
+
+**How it works:** Provide SoW URL → Agent reads Confluence → Generates ready-to-deploy files
+
 ### [Azure Environment Analysis](azure-environment-analysis/)
 
 Automated assessment of client Azure Integration Services environments. Runs a structured sequence of prompts through Copilot Chat to produce a full environment report — resource inventory, Logic Apps deep-dive, failure analysis, security audit, monitoring gaps, and sales opportunities.
@@ -19,6 +37,27 @@ Issue classification tool that determines whether a reported issue is a **bug**,
 ## Getting Started
 
 Each project has its own `START-HERE.md` with step-by-step instructions. Open the respective `.code-workspace` file in VS Code to begin.
+
+## Global Agent Installation
+
+To make agents available in **any workspace** (recommended), install them to your VS Code user prompts folder:
+
+### macOS
+```bash
+cp sow-infrastructure-generator/.github/agents/*.agent.md ~/Library/Application\ Support/Code/User/prompts/
+```
+
+### Windows
+```powershell
+Copy-Item "sow-infrastructure-generator\.github\agents\*.agent.md" "$env:APPDATA\Code\User\prompts\"
+```
+
+### Linux
+```bash
+cp sow-infrastructure-generator/.github/agents/*.agent.md ~/.config/Code/User/prompts/
+```
+
+After installation, agents are available globally via `@agent-name` in Copilot Chat.
 
 ## Requirements
 
