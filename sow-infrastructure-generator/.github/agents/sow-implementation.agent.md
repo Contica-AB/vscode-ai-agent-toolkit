@@ -54,6 +54,8 @@ Each parameters file is a complete Azure deployment parameters file compatible w
 
 #### File Structure (Each Environment)
 
+**CRITICAL:** Do NOT create individual parameters like `location`, `integrationName`, `integrationNumber`, `scaleUnit`, or `integrationClass`. These values MUST be nested within the `commonTags` object only.
+
 ```json
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
@@ -554,6 +556,9 @@ stages:
 
 1. **Parse Plan** - Read the JSON plan from input
 2. **Build commonTags** - From `identity` section (same for all environments)
+   - **CRITICAL:** Create ONLY the `commonTags` parameter with nested values
+   - DO NOT create separate `location`, `integrationName`, `integrationNumber`, `scaleUnit`, or `integrationClass` parameters
+   - Structure: `commonTags.value.environment`, `commonTags.value.scaleUnit`, `commonTags.value.integrationNumber`, `commonTags.value.integrationClass`
 3. **Build commonResources** - From `networking` and `sharedInfrastructure` (same for all environments)
 4. **For Each Environment (Dev, Test, Prod)**:
    a. **Filter Resources** - Get only resources matching this environment
@@ -586,5 +591,6 @@ stages:
 10. **Consistent Formatting** - Use 2-space indentation for both JSON and YAML
 11. **Resource Type Naming** - Use `logicAppArray`, `functionAppArray`, etc. (NOT `logicApps`)
 12. **Reference Bicep Template** - Structure must match [integrationInfrastructure.Blueprint.bicep](contica-azure-utils/Bicep/Blueprints/IntegrationInfrastructure/integrationInfrastructure.Blueprint.bicep)
+13. **commonTags Structure ONLY** - NEVER create individual parameters for location, integrationName, integrationNumber, scaleUnit, or integrationClass. These MUST be nested within `commonTags.value` object
 
 ````
