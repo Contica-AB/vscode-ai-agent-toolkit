@@ -34,8 +34,12 @@ After installation, the agents (`@sow-infra-orchestrator`, `@sow-planning`, etc.
 
 This agent chain reads your Statement of Work from Confluence and generates:
 
-- **parameters.json** - Azure Bicep deployment parameters
+- **parameters-dev.json** - Azure Bicep deployment parameters (Dev environment)
+- **parameters-test.json** - Azure Bicep deployment parameters (Test environment)
+- **parameters-prod.json** - Azure Bicep deployment parameters (Prod environment)
 - **trigger.yml** - Azure DevOps multi-stage pipeline (Dev → Test → Prod)
+
+All files are written to a `Deployment/` subfolder in the target workspace.
 
 ## Agent Chain
 
@@ -70,10 +74,11 @@ Invoke the orchestrator with your SoW URL:
 
 ### Step 4: Follow the Workflow
 
-1. **Planning Phase** - Agent extracts all infrastructure requirements
-2. **Review Plan** - You approve the resource inventory
-3. **Implementation Phase** - Agent generates deployment files
-4. **Deploy (Optional)** - Trigger Azure DevOps pipeline
+1. **Planning Phase** - Agent reads SoW from Confluence and extracts all infrastructure requirements into a structured JSON plan
+2. **Review Plan** - You review the resource inventory, placeholders, and environment mappings
+3. **Implementation Phase** - Agent generates per-environment parameter files and pipeline YAML
+4. **File Output** - Files are written to `Deployment/` in the workspace root
+5. **Deploy (Optional)** - Trigger Azure DevOps pipeline via the pipeline agent
 
 ## What You'll Need
 
@@ -88,14 +93,31 @@ Invoke the orchestrator with your SoW URL:
 sow-infrastructure-generator/
 ├── .github/
 │   └── agents/
-│       ├── sow-infra-orchestrator.agent.md
-│       ├── sow-planning.agent.md
-│       ├── sow-implementation.agent.md
-│       └── sow-pipeline.agent.md
+│       ├── sow-infra-orchestrator.agent.md   # Orchestrator (coordinates workflow)
+│       ├── sow-planning.agent.md             # Planning agent (Claude Sonnet 4)
+│       ├── sow-implementation.agent.md       # Implementation agent (Claude Opus 4.5)
+│       └── sow-pipeline.agent.md             # Pipeline agent (GPT-4o)
+├── output/
+│   └── expected output/                      # Reference output for validation
+│       ├── parameters.json                   # Example parameters structure
+│       └── trigger.yml                       # Example pipeline structure
 ├── reference/
-│   └── integration-setup-prompt.md       # Detailed generation rules
-├── output/                               # Generated files land here
-└── START-HERE.md
+│   └── integration-setup-prompt.md           # Detailed generation rules
+├── VALIDATION-CHECKLIST.md                   # Output validation checklist
+└── START-HERE.md                             # This file
+```
+
+### Generated Output Structure
+
+When the workflow runs, files are created in the target workspace:
+
+```
+<workspace-root>/
+└── Deployment/
+    ├── parameters-dev.json
+    ├── parameters-test.json
+    ├── parameters-prod.json
+    └── trigger.yml
 ```
 
 ## SoW Requirements
@@ -109,6 +131,31 @@ Your Statement of Work must follow the [SoW MCP Template](https://contica.atlass
 - **9.5** Role Assignments
 - **9.6** Pipeline Configuration
 - **9.7** Environment Mapping
+
+## Supported Resource Types
+
+The generator supports the following Azure resource types from SoW section 9.4:
+
+| Resource Type | Parameter Array Name |
+|---------------|---------------------|
+| Service Bus | `serviceBusArray` |
+| Storage Accounts | `storageAccountArray` |
+| Logic Apps | `logicAppArray` |
+| Function Apps | `functionAppArray` |
+| Web Apps | `webAppArray` |
+| Key Vaults | `keyVaultArray` |
+| Data Factories | `dataFactoryArray` |
+| Role Assignments | `roleAssignments` |
+
+Unused resource types are omitted from the output (no empty arrays).
+
+## Networking Modes
+
+| Mode | Apps (Logic/Function/Web) | Data Resources (SB/Storage/KV) |
+|------|---------------------------|--------------------------------|
+| **None** | `"vnetIntegration": {}` | `"vnetIntegration": {}` |
+| **Outbound** | VNet integration (outbound subnet) | N/A |
+| **Secured** | VNet + Private Endpoint | Private Endpoint |
 
 ## Documentation
 

@@ -5,7 +5,8 @@ This checklist helps verify that the generated infrastructure files match the ex
 ## Pre-Validation
 
 - [ ] Implementation agent has completed successfully
-- [ ] Four files generated: `parameters-dev.json`, `parameters-test.json`, `parameters-prod.json`, `trigger.yml`
+- [ ] Four files generated in `Deployment/` folder: `parameters-dev.json`, `parameters-test.json`, `parameters-prod.json`, `trigger.yml`
+- [ ] Files are NOT in the workspace root (must be in `Deployment/`)
 - [ ] All files are valid JSON/YAML (no syntax errors)
 
 ## Parameters Files Structure (All Environments)
@@ -235,7 +236,7 @@ This checklist helps verify that the generated infrastructure files match the ex
 - [ ] All VNet details resolved per environment
 - [ ] JSON is valid and properly indented (2 spaces)
 - [ ] YAML is valid and properly indented (2 spaces)
-- [ ] Files saved to correct locations: `output/parameters-{env}.json`, `output/trigger.yml`
+- [ ] Files saved to correct locations: `Deployment/parameters-{env}.json`, `Deployment/trigger.yml`
 
 ---
 
