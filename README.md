@@ -4,13 +4,17 @@ AI-powered tools for Azure consulting, built to run inside VS Code with GitHub C
 
 ## Projects
 
-### [SoW Infrastructure Generator](sow-infrastructure-generator/) ⭐ NEW
+### [SoW Infrastructure Generator](sow-infrastructure-generator/)
 
 Automated Azure infrastructure deployment file generation from Confluence Statements of Work. Uses a 4-agent chain with specialized models for optimal performance.
 
 **What it generates:**
-- `parameters.json` - Azure Bicep deployment parameters
+- `parameters-dev.json` - Azure Bicep deployment parameters (Dev environment)
+- `parameters-test.json` - Azure Bicep deployment parameters (Test environment)
+- `parameters-prod.json` - Azure Bicep deployment parameters (Prod environment)
 - `trigger.yml` - Azure DevOps multi-stage pipeline (Dev → Test → Prod)
+
+All files are output to a `Deployment/` subfolder in the target workspace.
 
 **Agent Chain:**
 | Agent | Model | Task |
