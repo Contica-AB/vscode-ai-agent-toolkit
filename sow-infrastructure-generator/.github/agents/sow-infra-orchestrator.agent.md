@@ -2,7 +2,7 @@
 name: SoW Infra Orchestrator
 description: Orchestrates the generation of Azure infrastructure deployment files from a Confluence Statement of Work. Coordinates planning, implementation, and deployment sub-agents.
 argument-hint: "Provide the Confluence SoW URL. Example: https://contica.atlassian.net/wiki/spaces/TSSOTAI/pages/1091207169/Statement+of+Work+-+MCP+Template"
-tools: ['agent', 'todo', 'read', 'vscode', 'atlassian-mcp/*']
+tools: ['agent', 'todo', 'read', 'edit','vscode', 'atlassian-mcp/*']
 ---
 
 # SoW Infrastructure Orchestrator
@@ -75,10 +75,10 @@ Never assume infrastructure isn't needed. Even if the plan shows few or no resou
 - The user can then decide whether to proceed with deployment
 
 Pass the complete plan JSON to the implementation agent. It will:
-- Generate `parameters-dev.json` with Dev environment resources
-- Generate `parameters-test.json` with Test environment resources
-- Generate `parameters-prod.json` with Prod environment resources
-- Generate `trigger.yml` with multi-stage pipeline (hardcoded branch conditions)
+- Generate `Deployment/parameters-dev.json` with Dev environment resources
+- Generate `Deployment/parameters-test.json` with Test environment resources
+- Generate `Deployment/parameters-prod.json` with Prod environment resources
+- Generate `Deployment/trigger.yml` with multi-stage pipeline (hardcoded branch conditions)
 - Apply all networking rules correctly
 - Save files to workspace
 

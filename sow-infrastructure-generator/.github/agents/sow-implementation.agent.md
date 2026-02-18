@@ -44,9 +44,9 @@ You will receive a JSON plan with this structure (see planning agent for full sc
 ### 1. Parameters Files (Per Environment)
 
 Generate **THREE separate parameters files**, one for each environment:
-- `output/parameters-dev.json` (Dev environment resources only)
-- `output/parameters-test.json` (Test environment resources only)
-- `output/parameters-prod.json` (Prod environment resources only)
+- `Deployment/parameters-dev.json` (Dev environment resources only)
+- `Deployment/parameters-test.json` (Test environment resources only)
+- `Deployment/parameters-prod.json` (Prod environment resources only)
 
 Each parameters file is a complete Azure deployment parameters file compatible with [integrationInfrastructure.Blueprint.bicep](contica-azure-utils/Bicep/Blueprints/IntegrationInfrastructure/integrationInfrastructure.Blueprint.bicep).
 
@@ -478,12 +478,7 @@ variables:
 
 resources:
   repositories:
-    - repository: contica-azure-utils-dev
-      type: github
-      ref: dev
-      name: Contica-AB/contica-azure-utils
-      endpoint: contica-azure-utils
-    - repository: contica-azure-utils-main
+    - repository: contica-azure-utils
       type: github
       ref: main
       name: Contica-AB/contica-azure-utils
@@ -503,15 +498,16 @@ stages:
           deploy:
             steps:
               - checkout: self
-              - checkout: contica-azure-utils-dev
-              - template: Yaml/integrationInfrastructure.Blueprint.yml@contica-azure-utils-dev
+              - checkout: contica-azure-utils
+
+              - template: Yaml/integrationInfrastructure.Blueprint.yml@contica-azure-utils
                 parameters:
                   subscriptionId: "[environmentMapping for Dev]"
                   location: "[identity.azureRegion]"
                   environment: "Dev"
-
+                  
 - stage: test
-  condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+  condition: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
   jobs:
     - deployment: "deploy_to_test"
       environment: "[pipeline.environments.test]"
@@ -523,15 +519,16 @@ stages:
           deploy:
             steps:
               - checkout: self
-              - checkout: contica-azure-utils-main
-              - template: Yaml/integrationInfrastructure.Blueprint.yml@contica-azure-utils-main
+              - checkout: contica-azure-utils
+
+              - template: Yaml/integrationInfrastructure.Blueprint.yml@contica-azure-utils
                 parameters:
                   subscriptionId: "[environmentMapping for Test]"
                   location: "[identity.azureRegion]"
                   environment: "Test"
 
 - stage: prod
-  condition: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
   jobs:
     - deployment: "deploy_to_prod"
       environment: "[pipeline.environments.prod]"
@@ -543,8 +540,9 @@ stages:
           deploy:
             steps:
               - checkout: self
-              - checkout: contica-azure-utils-main
-              - template: Yaml/integrationInfrastructure.Blueprint.yml@contica-azure-utils-main
+              - checkout: contica-azure-utils
+
+              - template: Yaml/integrationInfrastructure.Blueprint.yml@contica-azure-utils
                 parameters:
                   subscriptionId: "[environmentMapping for Prod]"
                   location: "[identity.azureRegion]"
@@ -566,12 +564,12 @@ stages:
    f. **Transform Role Assignments** - Group by RG, nest principals and targets
    g. **Assemble parameters-{env}.json** - Combine all sections
    h. **Validate Structure** - Compare with expected output
-   i. **Save File** - Write to `output/parameters-{env}.json`
+   i. **Save File** - Write to `Deployment/parameters-{env}.json`
 5. **Generate trigger.yml**:
    a. **Extract pipeline config** - From `pipeline` section
    b. **Map environment subscriptions** - From `environmentMapping`
    c. **Apply hardcoded branch rules** - Dev→develop, Test→main, Prod→release/*
-   d. **Save File** - Write to `output/trigger.yml`
+   d. **Save File** - Write to `Deployment/trigger.yml`
 6. **Report to User** - List all generated files and their locations
 
 ## Critical Rules
