@@ -20,10 +20,10 @@ You are the **orchestrator agent** for generating Azure infrastructure deploymen
 └─────────────────┘     └──────────────────────┘     └─────────────────────┘
                                 │                              │
                                 ▼                              ▼
-                        Infrastructure Plan            parameters-dev.json
-                        (JSON structure)               parameters-test.json
-                                                       parameters-prod.json
-                                                       trigger.yml
+                        Infrastructure Plan            Deployment/parameters-dev.json
+                        (JSON structure)               Deployment/parameters-test.json
+                                                       Deployment/parameters-prod.json
+                                                       Deployment/trigger.yml
                                                               │
                                                               ▼
                                                  ┌─────────────────────┐
@@ -91,9 +91,11 @@ runSubagent({
 
 1. **Parse Response:** Extract the file contents from the subagent response
 2. **Write Files:** For each file in the response:
-   - Determine output path in the current workspace under `Deployment/<filename>`
-   - Create the Deployment directory if it doesn't exist
-   - Use `create_file` tool to write each file
+   - **CRITICAL:** All files MUST be written to the `Deployment/` subfolder in the workspace root
+   - Output paths: `Deployment/parameters-dev.json`, `Deployment/parameters-test.json`, `Deployment/parameters-prod.json`, `Deployment/trigger.yml`
+   - Create the `Deployment/` directory if it doesn't exist
+   - Use `create_file` tool to write each file to `Deployment/<filename>`
+   - **NEVER** write files to the workspace root
    - If write fails, report error and stop
 3. **Verify Files:** For each expected file:
    - Use `read_file` tool to confirm the file exists and is readable
@@ -105,10 +107,10 @@ runSubagent({
    - If any step fails, inform the user with actionable next steps
 
 **Show the user:**
-- ✅ parameters-dev.json (<verified line count> lines) - verified
-- ✅ parameters-test.json (<verified line count> lines) - verified
-- ✅ parameters-prod.json (<verified line count> lines) - verified
-- ✅ trigger.yml (<verified line count> lines) - verified
+- ✅ Deployment/parameters-dev.json (<verified line count> lines) - verified
+- ✅ Deployment/parameters-test.json (<verified line count> lines) - verified
+- ✅ Deployment/parameters-prod.json (<verified line count> lines) - verified
+- ✅ Deployment/trigger.yml (<verified line count> lines) - verified
 - Summary of resources configured per environment (from the plan)
 - List of placeholders that need manual values
 
@@ -186,12 +188,12 @@ Verifying file creation...
 
 [After implementation completes and files are verified]
 
-📁 Files Created & Verified
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ parameters-dev.json (245 lines) - verified
-✅ parameters-test.json (198 lines) - verified
-✅ parameters-prod.json (203 lines) - verified
-✅ trigger.yml (85 lines) - verified
+📁 Files Created & Verified (in Deployment/ folder)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Deployment/parameters-dev.json (245 lines) - verified
+✅ Deployment/parameters-test.json (198 lines) - verified
+✅ Deployment/parameters-prod.json (203 lines) - verified
+✅ Deployment/trigger.yml (85 lines) - verified
 
 📊 Resources Configured:
    Dev:  2 Logic Apps, 1 Function App, 1 Service Bus, 2 Storage Accounts

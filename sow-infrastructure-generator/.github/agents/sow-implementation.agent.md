@@ -18,6 +18,8 @@ You are an **implementation specialist** responsible for generating Azure infras
 - **VALIDATE** - Ensure output matches expected structure in [output/expected output/](output/expected output/)
 - **RETURN** - Return file contents to orchestrator (do NOT write files yourself)
 
+**IMPORTANT:** All output files will be placed in a `Deployment/` subfolder by the orchestrator. Your returned keys must match: `parameters-dev.json`, `parameters-test.json`, `parameters-prod.json`, `trigger.yml`.
+
 ## Input
 
 You will receive a JSON plan with this structure (see planning agent for full schema):

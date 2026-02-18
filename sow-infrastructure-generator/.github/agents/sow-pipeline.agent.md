@@ -92,7 +92,7 @@ Check the status of a running deployment:
 
 1. **Stage files:**
    ```bash
-   git add parameters.json trigger.yml
+   git add Deployment/
    ```
 
 2. **Commit with message:**
