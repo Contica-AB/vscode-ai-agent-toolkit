@@ -16,7 +16,7 @@ You are an **implementation specialist** responsible for generating Azure infras
 - **TRANSFORM** - Convert plan data into Bicep-compatible parameters matching [integrationInfrastructure.Blueprint.bicep](contica-azure-utils/Bicep/Blueprints/IntegrationInfrastructure/integrationInfrastructure.Blueprint.bicep)
 - **GENERATE** - Create THREE parameters files (one per environment) and ONE trigger.yml
 - **VALIDATE** - Ensure output matches expected structure in [output/expected output/](output/expected output/)
-- **SAVE** - Write files to the workspace
+- **RETURN** - Return file contents to orchestrator (do NOT write files yourself)
 
 ## Input
 
@@ -30,13 +30,23 @@ You will receive a JSON plan with this structure (see planning agent for full sc
 - `pipeline` - Azure DevOps configuration
 - `placeholders` - List of missing values
 
-## CRITICAL: Always Generate Files
+## CRITICAL: Always Generate File Contents
 
-**DO NOT** refuse to generate files because the plan appears sparse or has few resources.
-- Always generate THREE parameters files: `parameters-dev.json`, `parameters-test.json`, `parameters-prod.json`
-- Always generate ONE `trigger.yml` file
+**DO NOT** refuse to generate file contents because the plan appears sparse or has few resources.
+- Always generate THREE parameters file contents: `parameters-dev.json`, `parameters-test.json`, `parameters-prod.json`
+- Always generate ONE `trigger.yml` file content
 - Use empty arrays `[]` for resource types not in the plan
 - Preserve placeholders `{{DESCRIPTION}}` for missing values
+- **IMPORTANT:** Return file contents in this JSON format:
+  ```json
+  {
+    "parameters-dev.json": "<full JSON content as escaped string>",
+    "parameters-test.json": "<full JSON content as escaped string>",
+    "parameters-prod.json": "<full JSON content as escaped string>",
+    "trigger.yml": "<full YAML content as string>"
+  }
+  ```
+- Do NOT write files to disk - the orchestrator will handle file writing
 - Let the user see what would be deployed and decide whether to proceed
 
 ## Output Files
@@ -63,7 +73,7 @@ Each parameters file is a complete Azure deployment parameters file compatible w
   "parameters": {
     "commonTags": { 
       "value": {
-        "environment": "[from identity.azureRegion]",
+        "environment": "[from identity.azureRegion - use the full region display name like 'Sweden Central', 'West Europe', etc.]",
         "scaleUnit": "[from identity.scaleUnit]",
         "integrationNumber": "[from identity.integrationNumber]",
         "integrationClass": "[from identity.integrationClass]"
@@ -176,22 +186,43 @@ Generate an Azure DevOps multi-stage pipeline with stages for each environment.
 Generate PE for each sub-resource type that has items defined:
 ```json
 "vnetIntegration": {
-  "privateEndpoints": [
-    {
+  "vnetResourceGroupName": "[environmentMapping.vnetResourceGroup]",
+  "vnetName": "[environmentMapping.vnetName]",
+  "subnetName": "[networking.privateEndpointSubnet]",
+  "privateEndpoints": {
+    "blobContainers": {
       "privateEndpointName": "pep-[storageAccountName]-blob",
-      "groupId": "blob",
       "vnetResourceGroupName": "[environmentMapping.vnetResourceGroup]",
       "vnetName": "[environmentMapping.vnetName]",
       "subnetName": "[networking.privateEndpointSubnet]"
     },
-    {
+    "queues": {
+      "privateEndpointName": "pep-[storageAccountName]-queue",
+      "vnetResourceGroupName": "[environmentMapping.vnetResourceGroup]",
+      "vnetName": "[environmentMapping.vnetName]",
+      "subnetName": "[networking.privateEndpointSubnet]"
+    },
+    "tables": {
       "privateEndpointName": "pep-[storageAccountName]-table",
-      "groupId": "table",
-      ...
+      "vnetResourceGroupName": "[environmentMapping.vnetResourceGroup]",
+      "vnetName": "[environmentMapping.vnetName]",
+      "subnetName": "[networking.privateEndpointSubnet]"
+    },
+    "fileShares": {
+      "privateEndpointName": "pep-[storageAccountName]-file",
+      "vnetResourceGroupName": "[environmentMapping.vnetResourceGroup]",
+      "vnetName": "[environmentMapping.vnetName]",
+      "subnetName": "[networking.privateEndpointSubnet]"
     }
-  ]
+  }
 }
 ```
+
+**IMPORTANT:** Only include privateEndpoint keys for sub-resource types that have items:
+- Include `blobContainers` key only if blobContainers array has items
+- Include `queues` key only if queues array has items
+- Include `tables` key only if tables array has items
+- Include `fileShares` key only if fileShares array has items
 
 **Private Endpoint = "Yes" (Data Factory):**
 ```json
@@ -200,13 +231,17 @@ Generate PE for each sub-resource type that has items defined:
   "privateEndpoints": [
     {
       "privateEndpointName": "pep-[dataFactoryName]-dataFactory",
-      "groupId": "dataFactory",
-      ...
+      "privateEndpointComponentType": "dataFactory",
+      "vnetResourceGroupName": "[environmentMapping.vnetResourceGroup]",
+      "vnetName": "[environmentMapping.vnetName]",
+      "subnetName": "[networking.privateEndpointSubnet]"
     },
     {
       "privateEndpointName": "pep-[dataFactoryName]-portal",
-      "groupId": "portal",
-      ...
+      "privateEndpointComponentType": "portal",
+      "vnetResourceGroupName": "[environmentMapping.vnetResourceGroup]",
+      "vnetName": "[environmentMapping.vnetName]",
+      "subnetName": "[networking.privateEndpointSubnet]"
     }
   ]
 }
@@ -231,11 +266,12 @@ When generating `parameters-prod.json`, only include resources where `environmen
 
 **Omit empty resource arrays:** If an environment has no Logic Apps, completely omit the `logicAppArray` parameter from that environment's file.
 
-**Storage Account Private Endpoints:** Only generate PE configurations for sub-resource types that have items defined:
-- If `blobContainers` array is empty → omit blob PE
-- If `queues` array is empty → omit queue PE
-- If `tables` array is empty → omit table PE
-- If `fileShares` array is empty → omit file share PE
+**Storage Account Private Endpoints:** Only include privateEndpoint keys in the `privateEndpoints` object for sub-resource types that have items defined:
+- If `blobContainers` array is empty → omit `blobContainers` key from privateEndpoints object
+- If `queues` array is empty → omit `queues` key from privateEndpoints object
+- If `tables` array is empty → omit `tables` key from privateEndpoints object
+- If `fileShares` array is empty → omit `fileShares` key from privateEndpoints object
+- If NO sub-resources have items, omit the entire `privateEndpoints` object but keep the base VNet details
 
 ### Role Assignment Transformation
 
@@ -253,6 +289,7 @@ Transform role assignments from the plan format to the parameters format:
       "assignmentTargets": [
         {
           "resourceType": "[infer from target resource type, e.g. 'Microsoft.Storage/storageAccounts']",
+          "resourceGroupName": "[OPTIONAL - only include if target resource is in a DIFFERENT resource group than the roleAssignment's resourceGroupName]",
           "resourceName": "[roleAssignment.targetResource]",
           "roleDefinitionIds": ["[roleGuid from table]"],
           "childResources": []
@@ -345,7 +382,7 @@ Transform role assignments from the plan format to the parameters format:
   "keyVaultName": "[keyVaultReference]",
   "vnetIntegration": "[generated based on networking]",
   "applicationAuthSettings": [],
-  "diagnosticSettings": {},
+  "diagnosticSettings": [],
   "applicationInsights": {
     "applicationInsightsName": "[name]-appins",
     "logAnalyticsWorkspaceName": "[sharedInfrastructure.logAnalytics.workspaceName]",
@@ -371,7 +408,7 @@ Transform role assignments from the plan format to the parameters format:
   "keyVaultName": "[keyVaultReference]",
   "vnetIntegration": "[generated based on networking]",
   "applicationAuthSettings": [],
-  "diagnosticSettings": {},
+  "diagnosticSettings": [],
   "applicationInsights": {
     "applicationInsightsName": "[name]-appins",
     "logAnalyticsWorkspaceName": "[sharedInfrastructure.logAnalytics.workspaceName]",
@@ -393,7 +430,7 @@ Transform role assignments from the plan format to the parameters format:
   "runtime": "[runtime]",
   "vnetIntegration": "[generated based on networking]",
   "applicationAuthSettings": [],
-  "diagnosticSettings": {},
+  "diagnosticSettings": [],
   "applicationInsights": {
     "applicationInsightsName": "[name]-appins",
     "logAnalyticsWorkspaceName": "[sharedInfrastructure.logAnalytics.workspaceName]",
@@ -569,20 +606,28 @@ stages:
    f. **Transform Role Assignments** - Group by RG, nest principals and targets
    g. **Assemble parameters-{env}.json** - Combine all sections
    h. **Validate Structure** - Compare with expected output
-   i. **Save File** - Write to `Deployment/parameters-{env}.json`
+   i. **Store Content** - Add to return object as `parameters-{env}.json`
 5. **Generate trigger.yml**:
    a. **Extract pipeline config** - From `pipeline` section
    b. **Map environment subscriptions** - From `environmentMapping`
    c. **Apply hardcoded branch rules** - Dev→develop, Test→main, Prod→release/*
-   d. **Save File** - Write to `Deployment/trigger.yml`
-6. **Report to User** - List all generated files and their locations
+   d. **Store Content** - Add to return object as `trigger.yml`
+6. **Return All Contents** - Return JSON object with all file contents:
+   ```json
+   {
+     "parameters-dev.json": "<full JSON content>",
+     "parameters-test.json": "<full JSON content>",
+     "parameters-prod.json": "<full JSON content>",
+     "trigger.yml": "<full YAML content>"
+   }
+   ```
 
 ## Critical Rules
 
-1. **Always Generate Files** - Never refuse to generate because plan appears sparse
-2. **Three Parameters Files** - Generate separate files for dev, test, and prod environments
+1. **Always Generate Content** - Never refuse to generate because plan appears sparse
+2. **Three Parameters Files** - Generate separate file contents for dev, test, and prod environments
 3. **Exact Schema Match** - Output must match [expected output](output/expected output/) structure exactly
-4. **Valid JSON/YAML** - Files must be syntactically valid
+4. **Valid JSON/YAML** - File contents must be syntactically valid
 5. **Preserve Placeholders** - Copy all `{{PLACEHOLDER}}` values from the plan
 6. **Omit Empty Arrays** - If a resource type has no entries for an environment, omit that parameter entirely
 7. **Hardcoded Branch Rules** - Dev→develop, Test→main, Prod→release/* (not configurable)
@@ -592,5 +637,314 @@ stages:
 11. **Resource Type Naming** - Use `logicAppArray`, `functionAppArray`, etc. (NOT `logicApps`)
 12. **Reference Bicep Template** - Structure must match [integrationInfrastructure.Blueprint.bicep](contica-azure-utils/Bicep/Blueprints/IntegrationInfrastructure/integrationInfrastructure.Blueprint.bicep)
 13. **commonTags Structure ONLY** - NEVER create individual parameters for location, integrationName, integrationNumber, scaleUnit, or integrationClass. These MUST be nested within `commonTags.value` object
+14. **Return Format** - MUST return file contents in JSON format with keys: `parameters-dev.json`, `parameters-test.json`, `parameters-prod.json`, `trigger.yml`
+15. **No File Writing** - Do NOT use file writing tools. Only generate and return content strings
+
+## NEVER DO THIS - Common Hallucination Patterns
+
+**The following patterns are WRONG. If you generate any of these, you have failed.**
+
+### ❌ WRONG: Separate top-level parameters for identity fields
+```json
+"parameters": {
+  "location": { "value": "westeurope" },
+  "integrationName": { "value": "MSC-FI" },
+  "integrationNumber": { "value": "0001" },
+  "scaleUnit": { "value": "intinfra" },
+  "integrationClass": { "value": "standard" }
+}
+```
+### ✅ CORRECT: Nested inside commonTags only
+```json
+"parameters": {
+  "commonTags": {
+    "value": {
+      "environment": "West Europe",
+      "scaleUnit": "intinfra",
+      "integrationNumber": "0001",
+      "integrationClass": "standard"
+    }
+  }
+}
+```
+
+### ❌ WRONG: Parameter names `logicApps`, `functionApps`
+```json
+"logicApps": { "value": [...] },
+"functionApps": { "value": [...] }
+```
+### ✅ CORRECT: Parameter names `logicAppArray`, `functionAppArray`
+```json
+"logicAppArray": { "value": [...] },
+"functionAppArray": { "value": [...] }
+```
+
+### ❌ WRONG: Property `name` on apps
+```json
+{ "name": "HandleBooking-MscFinland-la" }
+```
+### ✅ CORRECT: Property `appName` on apps
+```json
+{ "appName": "HandleBooking-MscFinland-la" }
+```
+
+### ❌ WRONG: Flat logAnalytics fields on app objects
+```json
+{
+  "appName": "my-la",
+  "logAnalyticsWorkspaceName": "dev-wsol-common-log",
+  "logAnalyticsWorkspaceResourceGroup": "dev-las-infrastructure"
+}
+```
+### ✅ CORRECT: logAnalytics nested inside applicationInsights
+```json
+{
+  "appName": "my-la",
+  "applicationInsights": {
+    "applicationInsightsName": "my-la-appins",
+    "logAnalyticsWorkspaceName": "dev-wsol-common-log",
+    "logAnalyticsWorkspaceResourceGroupName": "dev-las-infrastructure"
+  }
+}
+```
+
+### ❌ WRONG: Flat subnet/VNet fields on apps
+```json
+{
+  "appName": "my-la",
+  "subnetResourceId": "",
+  "outboundSubnetResourceId": ""
+}
+```
+### ✅ CORRECT: Nested vnetIntegration object
+```json
+{
+  "appName": "my-la",
+  "vnetIntegration": {}
+}
+```
+
+### ❌ WRONG: Flat role assignments
+```json
+{
+  "principalName": "my-func",
+  "principalType": "FunctionApp",
+  "targetResourceName": "my-kv",
+  "targetResourceType": "KeyVault",
+  "role": "Key Vault Secrets User"
+}
+```
+### ✅ CORRECT: Nested role assignments grouped by RG with GUIDs
+```json
+{
+  "name": "rg-intinfra-dev-assignments",
+  "resourceGroupName": "rg-intinfra-dev",
+  "principals": [{
+    "appName": "my-func",
+    "assignmentTargets": [{
+      "resourceType": "Microsoft.KeyVault/vaults",
+      "resourceName": "my-kv",
+      "roleDefinitionIds": ["4633458b-17de-408a-b874-0445c86b69e6"],
+      "childResources": []
+    }]
+  }]
+}
+```
+
+### ❌ WRONG: Missing fields on app objects
+```json
+{
+  "appName": "my-la",
+  "resourceGroupName": "rg-dev",
+  "appSettings": {}
+}
+```
+### ✅ CORRECT: All required fields on app objects
+```json
+{
+  "appName": "my-la",
+  "resourceGroupName": "rg-dev",
+  "runtimeStorageAccountName": "...",
+  "runtimeStorageAccountResourceGroupName": "...",
+  "appServicePlanName": "...",
+  "appServicePlanResourceGroupName": "...",
+  "runtime": "",
+  "runtimeStorageAccountRbacAuthEnabled": true,
+  "keyVaultName": "...",
+  "vnetIntegration": {},
+  "applicationAuthSettings": [],
+  "diagnosticSettings": [],
+  "applicationInsights": {
+    "applicationInsightsName": "my-la-appins",
+    "logAnalyticsWorkspaceName": "...",
+    "logAnalyticsWorkspaceResourceGroupName": "..."
+  },
+  "customAppSettings": [],
+  "tags": {}
+}
+```
+
+### ❌ WRONG: Missing commonResources parameter
+A parameters file without `commonResources` is invalid. Every file MUST have `commonResources`.
+
+### ❌ WRONG: Missing resourceGroupNames parameter  
+A parameters file without `resourceGroupNames` is invalid. Every file MUST have `resourceGroupNames`.
+
+### ❌ WRONG: Property name missing "Name" suffix
+```json
+"appServicePlanResourceGroup": "rg-dev",
+"runtimeStorageAccountResourceGroup": "rg-dev",
+"logAnalyticsWorkspaceResourceGroup": "rg-dev"
+```
+### ✅ CORRECT: Always use "ResourceGroupName" suffix
+```json
+"appServicePlanResourceGroupName": "rg-dev",
+"runtimeStorageAccountResourceGroupName": "rg-dev",
+"logAnalyticsWorkspaceResourceGroupName": "rg-dev"
+```
+
+## Concrete Example - Minimal Parameters File
+
+This is a **complete, valid** parameters file for a Dev environment with 1 Logic App and 1 Function App. Use this as your structural reference. Every parameters file you generate MUST follow this exact structure.
+
+```json
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "commonTags": {
+      "value": {
+        "environment": "West Europe",
+        "scaleUnit": "intinfra",
+        "integrationNumber": "0001",
+        "integrationClass": "standard"
+      }
+    },
+    "resourceGroupNames": {
+      "value": [
+        "mscfinland-booking-dev-rg"
+      ]
+    },
+    "commonResources": {
+      "value": {
+        "apimObjectId": null,
+        "vnetResourceGroupName": "",
+        "vnetName": "",
+        "logicAppOutSubnet": "",
+        "functionAppOutSubnet": "",
+        "webAppOutSubnet": "",
+        "logAnalyticsWorkspaceName": "dev-wsol-common-log",
+        "logAnalyticsWorkspaceResourceGroupName": "dev-las-infrastructure",
+        "storageAccountOutSubnet": "",
+        "serviceBusSubnet": "",
+        "keyVaultSubnet": "",
+        "logicRuntimeStorageAccountName": "devwsolcommonsa",
+        "logicRuntimeStorageAccountResourceGroupName": "dev-las-infrastructure",
+        "logicAppServicePlanName": "dev-wsol-common-asp",
+        "logicAppServicePlanResourceGroupName": "dev-las-infrastructure",
+        "functionRuntimeStorageAccountName": "funcsstorageaccountdev",
+        "functionRuntimeStorageAccountResourceGroupName": "functionapp-infrastructure-dev-rg",
+        "functionAppServicePlanName": "functionappsplan",
+        "functionAppServicePlanResourceGroupName": "functionapp-infrastructure-dev-rg",
+        "webRuntimeStorageAccountName": "",
+        "webRuntimeStorageAccountResourceGroupName": "",
+        "webAppServicePlanName": "",
+        "webAppServicePlanResourceGroupName": "",
+        "privateEndpointSubnetName": ""
+      }
+    },
+    "logicAppArray": {
+      "value": [
+        {
+          "appName": "HandleBooking-MscFinland-la",
+          "resourceGroupName": "mscfinland-booking-dev-rg",
+          "runtimeStorageAccountName": "devwsolcommonsa",
+          "runtimeStorageAccountResourceGroupName": "dev-las-infrastructure",
+          "appServicePlanName": "dev-wsol-common-asp",
+          "appServicePlanResourceGroupName": "dev-las-infrastructure",
+          "runtime": "",
+          "runtimeStorageAccountRbacAuthEnabled": true,
+          "keyVaultName": "dev-wsol-las-infra-kv",
+          "vnetIntegration": {},
+          "applicationAuthSettings": [],
+          "diagnosticSettings": [],
+          "applicationInsights": {
+            "applicationInsightsName": "HandleBooking-MscFinland-la-appins",
+            "logAnalyticsWorkspaceName": "dev-wsol-common-log",
+            "logAnalyticsWorkspaceResourceGroupName": "dev-las-infrastructure"
+          },
+          "customAppSettings": [],
+          "tags": {}
+        }
+      ]
+    },
+    "functionAppArray": {
+      "value": [
+        {
+          "appName": "mscfinland-functions-dev-func",
+          "resourceGroupName": "mscfinland-booking-dev-rg",
+          "runtimeStorageAccountName": "funcsstorageaccountdev",
+          "runtimeStorageAccountResourceGroupName": "functionapp-infrastructure-dev-rg",
+          "appServicePlanName": "functionappsplan",
+          "appServicePlanResourceGroupName": "functionapp-infrastructure-dev-rg",
+          "runtime": "dotnet",
+          "runtimeStorageAccountRbacAuthEnabled": true,
+          "keyVaultName": "dev-wsol-func-infra-kv",
+          "vnetIntegration": {},
+          "applicationAuthSettings": [],
+          "diagnosticSettings": [],
+          "applicationInsights": {
+            "applicationInsightsName": "mscfinland-functions-dev-func-appins",
+            "logAnalyticsWorkspaceName": "dev-wsol-common-log",
+            "logAnalyticsWorkspaceResourceGroupName": "dev-las-infrastructure"
+          },
+          "customAppSettings": [],
+          "tags": {}
+        }
+      ]
+    },
+    "roleAssignments": {
+      "value": [
+        {
+          "name": "mscfinland-booking-dev-assignments",
+          "resourceGroupName": "mscfinland-booking-dev-rg",
+          "principals": [
+            {
+              "appName": "mscfinland-functions-dev-func",
+              "assignmentTargets": [
+                {
+                  "resourceType": "Microsoft.KeyVault/vaults",
+                  "resourceGroupName": "dev-las-infrastructure",
+                  "resourceName": "dev-wsol-func-infra-kv",
+                  "roleDefinitionIds": [
+                    "4633458b-17de-408a-b874-0445c86b69e6"
+                  ],
+                  "childResources": []
+                }
+              ]
+            },
+            {
+              "appName": "HandleBooking-MscFinland-la",
+              "assignmentTargets": [
+                {
+                  "resourceType": "Microsoft.Storage/storageAccounts",
+                  "resourceGroupName": "dev-las-infrastructure",
+                  "resourceName": "devwsolcommonsa",
+                  "roleDefinitionIds": [
+                    "ba92f5b4-2d11-453d-a403-e96b0029c9fe"
+                  ],
+                  "childResources": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+**This concrete example uses data from a real SoW. Your generated output MUST follow this exact nesting, property naming, and structure.**
 
 ````
