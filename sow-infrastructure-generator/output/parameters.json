@@ -1,0 +1,304 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectMetadata": {
+      "value": {
+        "integrationName": "MSC-FI",
+        "integrationNumber": "0001",
+        "integrationClass": "standard",
+        "scaleUnit": "intinfra",
+        "description": "Integration of CUSCAR Messages for HS Code Compliance with Belgian Customs",
+        "client": "Wallenius SOL AB",
+        "jiraReference": "WSOL-210",
+        "acceloReference": "#38130",
+        "region": "westeurope",
+        "repository": "mscfinland-booking"
+      }
+    },
+    "environments": {
+      "value": [
+        {
+          "name": "dev",
+          "subscriptionId": "aac1363d-0885-4781-a5fb-4023f0cc0237",
+          "resourceGroupName": "mscfinland-booking-dev-rg",
+          "vnetResourceGroup": "mscfinland-booking-dev-vnet-rg",
+          "vnetName": "mscfinland-booking-dev-vnet"
+        },
+        {
+          "name": "test",
+          "subscriptionId": "422487bd-30de-4f15-84c3-57271d44cab4",
+          "resourceGroupName": "mscfinland-booking-test-rg",
+          "vnetResourceGroup": "mscfinland-booking-test-vnet-rg",
+          "vnetName": "mscfinland-booking-test-vnet"
+        },
+        {
+          "name": "prod",
+          "subscriptionId": "7163ffbc-035d-4c15-873c-aed39ccc1966",
+          "resourceGroupName": "mscfinland-booking-prod-rg",
+          "vnetResourceGroup": "mscfinland-booking-prod-vnet-rg",
+          "vnetName": "mscfinland-booking-prod-vnet"
+        }
+      ]
+    },
+    "logicApps": {
+      "value": [
+        {
+          "name": "HandleBooking-MscFinland-la",
+          "displayName": "MSC Finland Booking Handler",
+          "resourceGroups": {
+            "dev": "mscfinland-booking-dev-rg",
+            "test": "mscfinland-booking-test-rg",
+            "prod": "mscfinland-booking-prod-rg"
+          },
+          "purpose": "Handle bookings for MSC FI and process CUSCAR messages",
+          "keyVaultReference": "{env}-wsol-las-infra-kv",
+          "storageAccount": "{env}wsolcommonsa",
+          "tags": {
+            "project": "MSC-FI",
+            "integration": "CUSCAR",
+            "jiraReference": "WSOL-210",
+            "costCenter": "INTEGRATION"
+          }
+        }
+      ]
+    },
+    "functionApps": {
+      "value": [
+        {
+          "name": "mscfinland-functions-{env}-func",
+          "displayName": "MSC Finland Functions",
+          "runtime": "dotnet",
+          "runtimeVersion": "8.0",
+          "resourceGroups": {
+            "dev": "mscfinland-booking-dev-rg",
+            "test": "mscfinland-booking-test-rg",
+            "prod": "mscfinland-booking-prod-rg"
+          },
+          "purpose": "Handle bookings for MSC FI",
+          "keyVaultReference": "{env}-wsol-func-infra-kv",
+          "servicePlan": "functionappsplan",
+          "storageAccount": "funcsstorageaccount{env}",
+          "tags": {
+            "project": "MSC-FI",
+            "integration": "CUSCAR",
+            "jiraReference": "WSOL-210",
+            "costCenter": "INTEGRATION"
+          }
+        }
+      ]
+    },
+    "servicePlans": {
+      "value": [
+        {
+          "name": "{env}-wsol-common-asp",
+          "type": "Logic App Service Plan",
+          "kind": "elastic",
+          "sku": {
+            "name": "EP1",
+            "tier": "ElasticPremium"
+          },
+          "resourceGroup": "{env}-las-infrastructure",
+          "capacity": 1,
+          "shared": true,
+          "tags": {
+            "project": "Shared-Infrastructure",
+            "purpose": "LogicApp-ServicePlan",
+            "costCenter": "INTEGRATION"
+          }
+        },
+        {
+          "name": "functionappsplan",
+          "type": "Function App Service Plan",
+          "kind": "elastic",
+          "sku": {
+            "name": "EP1",
+            "tier": "ElasticPremium"
+          },
+          "resourceGroup": "functionapp-infrastructure-{env}-rg",
+          "capacity": 1,
+          "shared": true,
+          "tags": {
+            "project": "Shared-Infrastructure",
+            "purpose": "FunctionApp-ServicePlan",
+            "costCenter": "INTEGRATION"
+          }
+        }
+      ]
+    },
+    "storageAccounts": {
+      "value": [
+        {
+          "name": "{env}wsolcommonsa",
+          "displayName": "Logic App Runtime Storage",
+          "type": "StorageV2",
+          "kind": "StorageV2",
+          "accessTier": "Hot",
+          "redundancy": {
+            "dev": "LRS",
+            "test": "LRS",
+            "prod": "GRS"
+          },
+          "resourceGroup": "{env}-las-infrastructure",
+          "shared": true,
+          "httpsOnly": true,
+          "tlsVersion": "TLS1_2",
+          "publicNetworkAccess": "Enabled",
+          "tags": {
+            "project": "Shared-Infrastructure",
+            "purpose": "LogicApp-Runtime",
+            "costCenter": "INTEGRATION"
+          }
+        },
+        {
+          "name": "funcsstorageaccount{env}",
+          "displayName": "Function App Runtime Storage",
+          "type": "StorageV2",
+          "kind": "StorageV2",
+          "accessTier": "Hot",
+          "redundancy": {
+            "dev": "LRS",
+            "test": "LRS",
+            "prod": "GRS"
+          },
+          "resourceGroup": "functionapp-infrastructure-{env}-rg",
+          "shared": true,
+          "httpsOnly": true,
+          "tlsVersion": "TLS1_2",
+          "publicNetworkAccess": "Enabled",
+          "tags": {
+            "project": "Shared-Infrastructure",
+            "purpose": "FunctionApp-Runtime",
+            "costCenter": "INTEGRATION"
+          }
+        }
+      ]
+    },
+    "keyVaults": {
+      "value": [
+        {
+          "name": "{env}-wsol-las-infra-kv",
+          "displayName": "Logic App Key Vault",
+          "resourceGroup": "{env}-las-infrastructure",
+          "sku": "standard",
+          "enableSoftDelete": true,
+          "softDeleteRetentionDays": 90,
+          "enablePurgeProtection": true,
+          "enableRbacAuthorization": true,
+          "defaultAction": "Allow",
+          "secrets": [
+            {
+              "name": "mscfi-connection-string",
+              "description": "Connection string for MSC FI integration"
+            },
+            {
+              "name": "cuscar-api-key",
+              "description": "API key for CUSCAR message processing"
+            }
+          ],
+          "tags": {
+            "project": "Shared-Infrastructure",
+            "purpose": "LogicApp-Secrets",
+            "costCenter": "INTEGRATION"
+          }
+        },
+        {
+          "name": "{env}-wsol-func-infra-kv",
+          "displayName": "Function App Key Vault",
+          "resourceGroup": "functionapp-infrastructure-{env}-rg",
+          "sku": "standard",
+          "enableSoftDelete": true,
+          "softDeleteRetentionDays": 90,
+          "enablePurgeProtection": true,
+          "enableRbacAuthorization": true,
+          "defaultAction": "Allow",
+          "secrets": [
+            {
+              "name": "functionapp-storage-connection",
+              "description": "Storage connection string for function app"
+            },
+            {
+              "name": "cuscar-processing-config",
+              "description": "CUSCAR message processing configuration"
+            }
+          ],
+          "tags": {
+            "project": "Shared-Infrastructure",
+            "purpose": "FunctionApp-Secrets",
+            "costCenter": "INTEGRATION"
+          }
+        }
+      ]
+    },
+    "logAnalyticsWorkspaces": {
+      "value": [
+        {
+          "name": "{env}-wsol-common-log",
+          "displayName": "MSC FI Integration Logging",
+          "resourceGroup": "{env}-las-infrastructure",
+          "sku": "PerGB2018",
+          "retentionDays": {
+            "dev": 30,
+            "test": 30,
+            "prod": 90
+          },
+          "publicNetworkAccessForIngestion": "Enabled",
+          "publicNetworkAccessForQuery": "Enabled",
+          "tags": {
+            "project": "Shared-Infrastructure",
+            "purpose": "Centralized-Logging",
+            "costCenter": "INTEGRATION"
+          }
+        }
+      ]
+    },
+    "roleAssignments": {
+      "value": [
+        {
+          "principalName": "mscfinland-functions-{env}-func",
+          "principalType": "ServicePrincipal",
+          "principalType_actual": "Managed Identity",
+          "targetResourceName": "{env}-wsol-func-infra-kv",
+          "targetResourceType": "Key Vault",
+          "role": "Key Vault Secrets User",
+          "roleDefinitionId": "4633458b-17de-408a-b874-0445c86b69e6",
+          "environments": ["dev", "test", "prod"],
+          "scope": "Resource"
+        },
+        {
+          "principalName": "HandleBooking-MscFinland-la",
+          "principalType": "ServicePrincipal",
+          "principalType_actual": "Managed Identity",
+          "targetResourceName": "{env}wsolcommonsa",
+          "targetResourceType": "Storage Account",
+          "role": "Storage Blob Data Contributor",
+          "roleDefinitionId": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
+          "environments": ["dev", "test", "prod"],
+          "scope": "Resource"
+        }
+      ]
+    },
+    "tags": {
+      "value": {
+        "project": "MSC-FI",
+        "integration": "CUSCAR-HS-Code-Compliance",
+        "client": "Wallenius-SOL-AB",
+        "jiraReference": "WSOL-210",
+        "acceloReference": "38130",
+        "costCenter": "INTEGRATION",
+        "createdDate": "2026-02-16",
+        "compliance": "Belgian-Customs-HS-Code"
+      }
+    },
+    "commonSettings": {
+      "value": {
+        "apiVersion": "2022-06-01",
+        "location": "westeurope",
+        "deploymentMode": "Incremental",
+        "validationLevel": "Template",
+        "enableDiagnosticsLogging": true,
+        "enableAdvancedMonitoring": true
+      }
+    }
+  }
+}

@@ -1,0 +1,102 @@
+trigger:
+  batch: true
+  branches:
+    include:
+      - develop
+      - main
+      - release/*
+
+variables:
+  - name: vmImage
+    value: "windows-2025"
+  - name: utilsRepoName
+    value: "contica-azure-utils"
+  - name: repoName
+    value: "general-sandbox-integration-infrastructure"
+  - name: location
+    value: "swedencentral"
+
+  - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/develop') }}:
+    - group: general-sandbox-01
+
+resources:
+  repositories:
+    - repository: contica-azure-utils-dev
+      type: github
+      ref: dev
+      name: Contica-AB/contica-azure-utils
+      endpoint: contica-azure-utils
+    - repository: contica-azure-utils-main
+      type: github
+      ref: main
+      name: Contica-AB/contica-azure-utils
+      endpoint: contica-azure-utils
+    - repository: contica-azure-utils-kv
+      type: github
+      ref: feature/rule-update
+      name: Contica-AB/contica-azure-utils
+      endpoint: contica-azure-utils
+
+stages:
+- stage: dev
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+  jobs:
+    - deployment: "deploy_to_dev"
+      environment: "development"
+      displayName: "Deploy to dev"
+      pool:
+        vmImage: "$(vmImage)"
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - checkout: contica-azure-utils-kv
+
+              - template: Yaml/integrationInfrastructure.Blueprint.yml@contica-azure-utils-kv
+                parameters:
+                  subscriptionId: "{SUBSCRIPTION_ID}"
+                  location: "{LOCATION}"
+                  environment: "Dev"
+                  
+- stage: test
+  condition: contains(variables['Build.SourceBranch'], 'refs/heads/release/')
+  jobs:
+    - deployment: "deploy_to_test"
+      environment: "test"
+      displayName: "Deploy to test"
+      pool:
+        vmImage: "$(vmImage)"
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - checkout: contica-azure-utils-kv
+
+              - template: Yaml/integrationInfrastructure.Blueprint.yml@contica-azure-utils-kv
+                parameters:
+                  subscriptionId: "{SUBSCRIPTION_ID}"
+                  location: "{LOCATION}"
+                  environment: "Test"
+
+- stage: prod
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+  jobs:
+    - deployment: "deploy_to_prod"
+      environment: "production"
+      displayName: "Deploy to production"
+      pool:
+        vmImage: "$(vmImage)"
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: self
+              - checkout: contica-azure-utils-kv
+
+              - template: Yaml/integrationInfrastructure.Blueprint.yml@contica-azure-utils-kv
+                parameters:
+                  subscriptionId: "{SUBSCRIPTION_ID}"
+                  location: "{LOCATION}"
+                  environment: "Prod"

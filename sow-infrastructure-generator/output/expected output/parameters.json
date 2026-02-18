@@ -1,0 +1,494 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "commonTags": {
+      "value": {
+        "environment": "Sweden Central",
+        "scaleUnit": "intinfra",
+        "integrationNumber": "0005",
+        "integrationClass": "critical"
+     }
+    },
+    "resourceGroupNames": {
+    "value": [
+      "rg-intinfra-dev",
+      "rg-intinfra-dj"
+    ]
+  },
+    
+  "commonResources": {
+      "value": {
+        "apimObjectId": null,
+        "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+        "vnetName": "vnet-general-sandbox-dev",
+        "logicAppOutSubnet": "snet-outbound",
+        "functionAppOutSubnet": "snet-outbound",
+        "webAppOutSubnet": "snet-outbound",
+        "logAnalyticsWorkspaceName": "DefaultWorkspace-f7810e4c-b3d2-433e-b68d-d7955dbb13f3-SEC",
+        "logAnalyticsWorkspaceResourceGroupName": "DefaultResourceGroup-SEC",
+        "storageAccountOutSubnet": "snet-pepperoni",
+        "serviceBusSubnet": "snet-pepperoni",
+        "keyVaultSubnet": "snet-pepperoni",
+        "logicRuntimeStorageAccountName": "intinfrasdcdevruntimesa",
+        "logicRuntimeStorageAccountResourceGroupName": "rg-intinfra-dev",
+        "logicAppServicePlanName": "asp-general-sandbox-dev-01",
+        "logicAppServicePlanResourceGroupName": "rg-las-infrastructure-dev",
+        "functionRuntimeStorageAccountName": "intinfrasdcdevruntimesa",
+        "functionRuntimeStorageAccountResourceGroupName": "rg-intinfra-dev",
+        "functionAppServicePlanName": "asp-func-general-sandbox-dev-01",
+        "functionAppServicePlanResourceGroupName": "rg-func-infrastructure-dev",
+        "webRuntimeStorageAccountName": "intinfrasdcdevruntimesa",
+        "webRuntimeStorageAccountResourceGroupName": "rg-intinfra-dev",
+        "webAppServicePlanName": "asp-web-general-sandbox-dev-01",
+        "webAppServicePlanResourceGroupName": "rg-web-infrastructure-dev",
+        "privateEndpointSubnetName": "snet-pepperoni"
+      }
+    },
+    "serviceBusArray": {
+      "value": [
+        {
+          "serviceBusNamespaceName": "intinfra-sdc-dev-sb-dj1",
+          "resourceGroupName": "rg-intinfra-dev",
+          "subscriptionId": "f7810e4c-b3d2-433e-b68d-d7955dbb13f3",
+          "sku": "Standard",
+          "publicNetworkAccess": "Disabled",
+          "disableLocalAuth": true,
+          "vnetIntegration": {},
+          "queues": [
+            {
+              "queueName": "dj1-queue"
+            }
+          ],
+          "topics": [],
+          "tags": {
+              "Service": "Bus"
+          }
+        }
+      ]
+    },
+    "storageAccountArray": {
+      "value": [
+        {
+          "storageAccountName": "intinfrasdcdevruntimesa",
+          "resourceGroupName": "rg-intinfra-dev",
+          "subscriptionId": "f7810e4c-b3d2-433e-b68d-d7955dbb13f3",
+          "sku": "Standard_LRS",
+          "isHnsEnabled": false,
+          "deleteBlobLifeCycle": true,
+          "deleteBlobLifeCycleDays": 90,
+          "archiveBlobLifeCycle": false,
+          "archiveBlobLifeCycleDays": 90,
+          "publicNetworkAccess": "Disabled",
+          "vnetIntegration": {},
+          "tables": [],
+          "queues": [],
+          "blobContainers": [],
+          "fileShares": [],
+          "tags": {
+              "Storage": "Account"
+          }
+        },
+        {
+          "storageAccountName": "intinfrasdcdevstoragesa",
+          "resourceGroupName": "rg-intinfra-dev",
+          "subscriptionId": "f7810e4c-b3d2-433e-b68d-d7955dbb13f3",
+          "sku": "Standard_LRS",
+          "isHnsEnabled": false,
+          "deleteBlobLifeCycle": true,
+          "deleteBlobLifeCycleDays": 90,
+          "archiveBlobLifeCycle": false,
+          "archiveBlobLifeCycleDays": 90,
+          "publicNetworkAccess": "Disabled",
+          "vnetIntegration": {
+            "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+            "vnetName": "vnet-general-sandbox-dev",
+            "subnetName": "snet-pepperoni",
+             "privateEndpoints": {
+              "blobContainers": {
+                "privateEndpointName": "yo",
+                "vnetResourceGroupName": "",
+                "vnetName": "",
+                "subnetName": ""
+              },
+              "queues": {
+                "privateEndpointName": "mama",
+                "vnetResourceGroupName": "",
+                "vnetName": "",
+                "subnetName": ""
+              },
+              "fileShares": {
+                "privateEndpointName": "ma",
+                "vnetResourceGroupName": "",
+                "vnetName": "",
+                "subnetName": ""
+              },
+              "tables": {
+                "privateEndpointName": "tja",
+                "vnetResourceGroupName": "",
+                "vnetName": "",
+                "subnetName": ""
+              }
+          }
+          },
+        "tables": [
+          { "tableName": "sampletable1" },
+          { "tableName": "sampletable2" }
+        ],
+        "queues": [
+          { "queueName": "samplequeue1" },
+          { "queueName": "samplequeue2" }
+        ],
+        "blobContainers": [
+          { "containerName": "samplecontainer1" },
+          { "containerName": "samplecontainer2" }
+        ],
+        "fileShares": [
+          { "fileshareName": "sampleshare1" },
+          { "fileshareName": "sampleshare2" }
+        ]
+        }
+      ]
+    },
+    "logicAppArray": {
+      "value": [
+        {
+          "appName": "sof-sdc-dev-app01-las",
+          "resourceGroupName": "rg-intinfra-dev",
+          "runtimeStorageAccountName": "sagslasdev01",
+          "runtimeStorageAccountResourceGroupName": "rg-las-infrastructure-dev",
+          "appServicePlanName": "asp-general-sandbox-dev-01",
+          "appServicePlanResourceGroupName": "rg-las-infrastructure-dev", 
+          "runtime": "",
+          "runtimeStorageAccountRbacAuthEnabled": true,   
+          "keyVaultName": "intinfra-sdc-dev-kv-186",
+          "vnetIntegration": {
+            "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+            "vnetName": "vnet-general-sandbox-dev",
+            "subnetName": "snet-outbound",
+            "privateEndpoints": {
+              "privateEndpointName": "yo-mama",
+              "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+              "vnetName": "vnet-general-sandbox-dev",
+              "subnetName": "snet-pepperoni"
+            }
+          },
+          "applicationAuthSettings": [
+            {
+              "audienceAppRegistrationName": "sof-sdc-dev-app01-las-appreg"
+            }],
+          "diagnosticSettings": [
+          ],
+          "applicationInsights": {
+            "applicationInsightsName": "intinfra-sdc-dev-app01-la-appiIns",
+            "logAnalyticsWorkspaceName": "DefaultWorkspace-f7810e4c-b3d2-433e-b68d-d7955dbb13f3-SEC",
+            "logAnalyticsWorkspaceResourceGroupName": "DefaultResourceGroup-SEC"
+          },
+          "customAppSettings": [],
+          "tags": {
+              "Logic": "App"
+          }
+        },
+        {
+          "appName": "intinfra-sdc-dev-app03-las",
+          "resourceGroupName": "rg-intinfra-dev",
+          "customAppSettings": [
+            {
+              "name": "tesFromIntInfra",
+              "value": "hejsan"
+            },
+            {
+              "name": "testtest",
+              "value": "tjo"
+            }
+          ]
+        }
+      ]
+    },
+    "functionAppArray": {
+      "value": [
+        {
+          "appName": "intinfra-sdc-dev-app01-fn",
+          "resourceGroupName": "rg-intinfra-dev",
+          "runtimeStorageAccountName": "sagsfuncruntimedev0101",
+          "runtimeStorageAccountResourceGroupName": "rg-func-infrastructure-dev",
+          "appServicePlanName": "asp-func-general-sandbox-dev-01",
+          "appServicePlanResourceGroupName": "rg-func-infrastructure-dev",
+          "runtime": "",   
+          "runtimeStorageAccountRbacAuthEnabled": true,   
+          "vnetIntegration": {
+            "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+            "vnetName": "vnet-general-sandbox-dev",
+            "subnetName": "snet-outbound",
+            "privateEndpoints": {
+              "privateEndpointName": "yo-mama",
+              "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+              "vnetName": "vnet-general-sandbox-dev",
+              "subnetName": "snet-pepperoni"
+            }
+          },
+          "applicationAuthSettings": [],
+          "diagnosticSettings": [],
+          "applicationInsights": {
+            "applicationInsightsName": "intinfra-sdc-dev-app01-fn-appiIns",
+            "logAnalyticsWorkspaceName": "DefaultWorkspace-f7810e4c-b3d2-433e-b68d-d7955dbb13f3-SEC",
+            "logAnalyticsWorkspaceResourceGroupName": "DefaultResourceGroup-SEC"
+          },
+          "customAppSettings": [],
+          "tags": {
+              "Function": "App"
+          }
+        },
+        {
+          "appName": "intinfra-sdc-dev-app04-fn",
+          "resourceGroupName": "rg-intinfra-dev",
+          "runtimeStorageAccountName": "intinfrasdcdevruntimesa"
+        }
+      ]
+    },
+    "webAppArray": {
+      "value": [
+        {
+          "appName": "intinfra-sdc-dev-app01-web",
+          "resourceGroupName": "rg-intinfra-dev",
+          "appServicePlanName": "asp-web-general-sandbox-dev-01",
+          "appServicePlanResourceGroupName": "rg-web-infrastructure-dev",
+          "runtime": "",
+          "vnetIntegration": {
+            "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+            "vnetName": "vnet-general-sandbox-dev",
+            "subnetName": "snet-outbound",
+            "privateEndpoints": {
+              "privateEndpointName": "yo-mama",
+              "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+              "vnetName": "vnet-general-sandbox-dev",
+              "subnetName": "snet-pepperoni"
+            }
+          },
+          "applicationAuthSettings": [],
+          "diagnosticSettings": [],
+          "applicationInsights": {
+            "applicationInsightsName": "intinfra-sdc-dev-app01-web-appiIns",
+            "logAnalyticsWorkspaceName": "DefaultWorkspace-f7810e4c-b3d2-433e-b68d-d7955dbb13f3-SEC",
+            "logAnalyticsWorkspaceResourceGroupName": "DefaultResourceGroup-SEC"
+          },
+          "customAppSettings": []
+          ,
+          "tags": {
+              "Web": "App"
+          }
+        },
+        {
+          "appName": "intinfra-sdc-dev-app03-web",
+          "resourceGroupName": "rg-intinfra-dev"
+        }
+      ]
+    },
+      "keyVaultArray": {
+    "value": [
+      {
+        "keyVaultName": "intinfra-sdc-dev-kv-186",
+        "resourceGroupName": "rg-intinfra-dev",
+        "subscriptionId": "f7810e4c-b3d2-433e-b68d-d7955dbb13f3",
+        "skuName": "standard",
+        "enabledForTemplateDeployment": true,
+        "enableRbacAuthorization": true,
+        "publicNetworkAccess": "Enabled",
+        "networkAclsBypass": "AzureServices",
+        "networkAclsDefaultAction": "Allow",
+        "networkAclsIpRules": [],
+        "networkAclsVirtualNetworkRules": [],
+        "enableSoftDelete": true,
+        "softDeleteRetentionInDays": 14,
+        "vnetIntegration": {},
+        "secrets": [
+          {
+            "secretName": "DatabaseConnectionString",
+            "secretValue": "yoyoyo-conn"
+          }
+        ],
+        "tags": {
+              "Key": "Vault"
+          }
+      }
+    ]
+  },
+      "dataFactoryArray": {
+      "value": [
+        {
+          "dataFactoryName": "intinfra-sdc-dev-adf012",
+          "resourceGroupName": "rg-intinfra-dev",
+          "managedIdentity": true,
+          "globalParameters": {
+            "environment": {
+              "type": "String",
+              "value": "dev"
+            },
+            "region": {
+              "type": "String",
+              "value": "swedencentral"
+            }
+          },
+          "tags": {
+            "DataFactory": "Integration",
+            "Purpose": "ETL"
+          },
+          "network": {
+            "publicNetworkAccess": false,
+            "privateEndpoints": [
+              {
+                "privateEndpointName": "pep-intinfra-adf01-datafactory",
+                "privateEndpointComponentType": "dataFactory",
+                "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+                "vnetName": "vnet-general-sandbox-dev",
+                "subnetName": "snet-pepperoni"
+              },
+              {
+                "privateEndpointName": "pep-intinfra-adf01-portal",
+                "privateEndpointComponentType": "portal",
+                "vnetResourceGroupName": "rg-networking-infrastructure-dev",
+                "vnetName": "vnet-general-sandbox-dev",
+                "subnetName": "snet-pepperoni"
+              }
+            ]
+          },
+          "integrationRuntimes": [
+            {
+              "integrationRuntimeName": "AutoResolveIntegrationRuntime"
+            },
+            {
+              "integrationRuntimeName": "SharedIR-Link",
+              "linkedInfo": {
+                "dataFactorySubscriptionId": "f7810e4c-b3d2-433e-b68d-d7955dbb13f3",
+                "dataFactoryResourceGroupName": "rg-shared-adf-dev",
+                "dataFactoryResourceName": "shared-adf-dev",
+                "dataFactoryIntegrationRuntimeName": "SharedIR"
+              }
+            }
+          ],
+          "linkedServices": {
+            "azureKeyVault": [
+              {
+                "keyVaultName": "intinfra-sdc-dev-kv-186",
+                "dataFactoryName": "intinfra-sdc-dev-adf01"
+              }
+            ],
+            "sqlServer": [
+              {
+                "sqlServerDatabaseName": "OnPremDB",
+                "sqlServerName": "sqlserver.local",
+                "authentication": {
+                  "userName": "sqladmin",
+                  "passwordKeyVaultName": "intinfra-sdc-dev-kv-186",
+                  "passwordKeyVaultSecretName": "sql-password"
+                },
+                "integrationRuntimeName": "SharedIR-Link"
+              }
+            ],
+            "azureSqlDatabase": [
+              {
+                "azureSqlDatabaseName": "intinfra-dev-sqldb",
+                "azureSqlServerName": "intinfra-sdc-dev-sql",
+                "integrationRuntimeName": "AutoResolveIntegrationRuntime"
+              }
+            ]
+          }
+        },
+        {
+          "dataFactoryName": "intinfra-sdc-dev-adf022",
+          "resourceGroupName": "rg-intinfra-dev",
+          "managedIdentity": true,
+          "globalParameters": {},
+          "tags": {},
+          "network": {
+            "publicNetworkAccess": false,
+            "privateEndpoints": []
+          },
+          "integrationRuntimes": [],
+          "linkedServices": {
+            "azureKeyVault": [],
+            "sqlServer": [],
+            "azureSqlDatabase": []
+          }
+        }
+      ]
+    },
+      "roleAssignments": {
+      "value": [
+        {
+          "name": "woah",
+          "resourceGroupName": "rg-intinfra-dev",
+          "principals": [
+            {
+              "appName": "intinfra-sdc-dev-app04-fn",
+              "assignmentTargets": [
+                {
+                  "resourceType": "Microsoft.Storage/storageAccounts",
+                  "resourceName": "intinfrasdcdevruntimesa",
+                  "roleDefinitionIds": [
+                    "ba92f5b4-2d11-453d-a403-e96b0029c9fe"
+                  ],
+                  "childResources": [
+                  ]
+                }
+              ]
+            },
+            {
+              "appName": "intinfra-sdc-dev-app03-web",
+              "assignmentTargets": [
+                {
+                  "resourceType": "Microsoft.Storage/storageAccounts",
+                  "resourceName": "intinfrasdcdevruntimesa",
+                  "roleDefinitionIds": [
+                    "ba92f5b4-2d11-453d-a403-e96b0029c9fe"
+                  ],
+                  "childResources": [
+                  ]
+                }
+              ]
+            }
+          ],
+          "sharedAssignmentTargets": [
+            {
+              "resourceType": "Microsoft.KeyVault/vaults",
+              "resourceName": "intinfra-sdc-dev-kv-186",
+              "roleDefinitionIds": [
+                    "4633458b-17de-408a-b874-0445c86b69e6"
+              ],
+              "childResources": []
+            },
+            {
+              "resourceType": "Microsoft.ServiceBus/namespaces",
+              "resourceName": "intinfra-sdc-dev-sb-dj1",
+              "roleDefinitionIds": [
+                    "4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0"
+              ],
+              "childResources": []
+            }
+          ]
+        },
+        {
+          "name": "woahAgain",
+          "resourceGroupName": "rg-intinfra-dj",
+          "principals": [
+            {
+              "appName": "intinfra-sdc-dev-app03-las",
+              "assignmentTargets": [
+                {
+                  "resourceType": "Microsoft.Storage/storageAccounts",
+                  "resourceGroupName": "rg-intinfra-dev",
+                  "resourceName": "intinfrasdcdevruntimesa",
+                  "roleDefinitionIds": [
+                    "ba92f5b4-2d11-453d-a403-e96b0029c9fe"
+                  ],
+                  "childResources": [
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+} 

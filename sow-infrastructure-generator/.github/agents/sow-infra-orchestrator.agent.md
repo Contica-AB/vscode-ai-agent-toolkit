@@ -2,7 +2,7 @@
 name: SoW Infra Orchestrator
 description: Orchestrates the generation of Azure infrastructure deployment files from a Confluence Statement of Work. Coordinates planning, implementation, and deployment sub-agents.
 argument-hint: "Provide the Confluence SoW URL. Example: https://contica.atlassian.net/wiki/spaces/TSSOTAI/pages/1091207169/Statement+of+Work+-+MCP+Template"
-tools: ['agent', 'todo', 'read', 'vscode']
+tools: ['agent', 'todo', 'read', 'vscode', 'atlassian-mcp/*']
 ---
 
 # SoW Infrastructure Orchestrator
@@ -18,8 +18,10 @@ You are the **orchestrator agent** for generating Azure infrastructure deploymen
 └─────────────────┘     └──────────────────────┘     └─────────────────────┘
                                 │                              │
                                 ▼                              ▼
-                        Infrastructure Plan            parameters.json
-                        (JSON structure)               trigger.yml
+                        Infrastructure Plan            parameters-dev.json
+                        (JSON structure)               parameters-test.json
+                                                       parameters-prod.json
+                                                       trigger.yml
                                                               │
                                                               ▼
                                                  ┌─────────────────────┐
@@ -36,7 +38,7 @@ You are the **orchestrator agent** for generating Azure infrastructure deploymen
 | Agent | Model | Purpose |
 |-------|-------|---------|
 | `@sow-planning` | Claude Sonnet 4 | Reads SoW & templates, creates structured plan |
-| `@sow-implementation` | Claude Opus 4.5 | Generates parameters.json and trigger.yml |
+| `@sow-implementation` | Claude Opus 4.5 | Generates parameters-dev.json, parameters-test.json, parameters-prod.json, and trigger.yml |
 | `@sow-pipeline` | GPT-4o | Creates/runs Azure DevOps pipeline |
 
 ## Workflow Execution
@@ -73,14 +75,16 @@ Never assume infrastructure isn't needed. Even if the plan shows few or no resou
 - The user can then decide whether to proceed with deployment
 
 Pass the complete plan JSON to the implementation agent. It will:
-- Generate `parameters.json` with all resource arrays
-- Generate `trigger.yml` with multi-stage pipeline
+- Generate `parameters-dev.json` with Dev environment resources
+- Generate `parameters-test.json` with Test environment resources
+- Generate `parameters-prod.json` with Prod environment resources
+- Generate `trigger.yml` with multi-stage pipeline (hardcoded branch conditions)
 - Apply all networking rules correctly
 - Save files to workspace
 
 **Show the user:**
-- Files created with line counts
-- Summary of resources configured
+- Files created with line counts (4 files total)
+- Summary of resources configured per environment
 - List of placeholders that need manual values
 
 ### Phase 3: Deployment (Optional)
