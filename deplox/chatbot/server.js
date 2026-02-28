@@ -82,8 +82,8 @@ const SERVICE_SCHEMAS = {
   ],
 
   'apim': [
-    { key:'apimName', label:'API Management service name', type:'text',
-      q:'Name for the API Management service? (1–50 chars)',
+      validate: v => v.length < 1 || v.length > 50 ? 'Must be 1–50 characters.' : !/^[a-zA-Z]/.test(v) ? 'Must start with a letter.' : /[^a-zA-Z0-9-]/.test(v) ? 'Only letters, numbers and hyphens allowed.' : null },
+      q:'Name for the API Management service?\n• 1–50 chars, letters/numbers/hyphens only, must start with a letter\n• Must be globally unique across Azure (pick something specific)\n• Best practice: include org + purpose, e.g. contoso-integration-apim',
       validate: v => v.length < 1 || v.length > 50 ? 'Must be 1–50 characters.' : null },
     { key:'publisherEmail', label:'publisher email', type:'text',
       q:'Publisher email address? (used for system notifications)',
@@ -95,11 +95,11 @@ const SERVICE_SCHEMAS = {
       q:'Which SKU?\n• Consumption — serverless, pay-per-call, no VNet, fastest to deploy\n• Developer — dev/test only, no SLA, ~30–45 min to provision\n• Basic — production, SLA, ~30–45 min to provision\n• Standard — production + more scale, ~30–45 min to provision\n• Premium — multi-region, VNet integration, ~30–45 min to provision\n[!] All tiers except Consumption take 30–45 minutes to deploy.' },
     { key:'rateLimitCallsPerMinute', label:'rate limit (calls/min)', type:'text',
       defaultValue: '60',
-      q:'Rate limit per client IP — max calls per minute? (press Enter for default: 60)',
+      q:'Rate limit per client IP — max calls per minute?\n• Recommended: 60 for dev/test, 300–1000 for production APIs\n• Too low = legitimate users get blocked; too high = no protection\n• Applies globally across all APIs in this template\n• Press Enter to use default (60)',
       validate: v => (isNaN(parseInt(v)) || parseInt(v) < 1) ? 'Please enter a positive number.' : null },
     { key:'corsAllowedOrigins', label:'CORS allowed origins', type:'text',
       defaultValue: '*',
-      q:'CORS allowed origins? (press Enter for * = allow all, or enter a domain e.g. https://myapp.com)' },
+      q:'CORS allowed origins?\n• * = allow all origins (convenient for dev, risky for production)\n• Production best practice: specify exact domain, e.g. https://myapp.com\n• Multiple domains not supported in this template — use * or one domain\n• Press Enter to use default (*)',
   ],
 
   'integrationaccount': [
@@ -506,25 +506,26 @@ app.post('/api/chat', async (req, res) => {
     }
 
   } else if (session.state === 'collecting') {
-    // If user picks a service chip mid-flow, abandon current and start fresh
-    const switchSvc = detectService(message);
+    const param = currentParam(session);
+    // Only allow service switching at choice/button steps, not during free-text entry
+    // (prevents e.g. 'my-apim-service' from re-triggering APIM detection and resetting)
+    const isFreeText = param && (param.type === 'text' || param.type === 'text_optional' || param.type === 'rg_select');
+    const switchSvc = !isFreeText && detectService(message);
     if (switchSvc) {
       session.service   = switchSvc;
       session.schema    = buildSchema(switchSvc, session.collected);
       session.schemaIdx = 0;
       // fall through — state stays 'collecting', first question sent below
     } else {
-    const param = currentParam(session);
     if (param) {
       const value   = extractValue(param, message, subs);
       const valErr  = validationError(value);
 
       if (valErr) {
-        // Invalid input — re-ask same question with error hint, don't advance
-        session.state = session.state; // stay
+        // Invalid input — show clear error with the constraint that was violated
         directive   = '';
         nextChoices = choicesForParam(param, subs, session);
-        param._retryMsg = `[!] ${valErr}\n\n${param.q}`;
+        param._retryMsg = `❌ Invalid input: ${valErr}\n\nPlease try again — ${param.q}`;
       } else if (value !== null) {
         session.collected[param.key] = value;
         session.schemaIdx++;
@@ -536,6 +537,11 @@ app.post('/api/chat', async (req, res) => {
             session.schemaIdx++;
           }
         }
+      } else if (param.defaultValue !== undefined) {
+        // Empty input on a field with a default — accept the default
+        session.collected[param.key] = String(param.defaultValue);
+        session.schemaIdx++;
+        delete param._retryMsg;
       }
 
       const next = currentParam(session);
