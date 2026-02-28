@@ -722,8 +722,15 @@ app.post('/api/chat', async (req, res) => {
     } else if (['yes','ok','go','deploy','sure','proceed'].some(k => lower.includes(k))) {
       const config = buildDeployConfig(session);
       session.state = 'done';
-      directive     = 'DIRECTIVE: Tell the user the deployment is starting now. Be brief and enthusiastic.';
+      // Use direct text — never let the model guess deployment status
+      const svcLabel = SERVICE_LABELS[session.service] || session.service;
+      const deployingText = `Deployment initiated...\n\nDeploying — ${svcLabel}\nSubscription: ${config.subscriptionName || '—'}\nResource Group: ${config.resourceGroup || '—'}\nLocation: ${config.location || '—'}\n\nThis may take a few minutes. You will see the result below.`;
       sse(res, 'deploy_config', { config });
+      session.messages.push({ role: 'user', content: message });
+      session.messages.push({ role: 'assistant', content: deployingText });
+      sse(res, 'token', { content: deployingText });
+      sse(res, 'done');
+      return res.end();
     } else {
       // Unrecognised — re-show summary
       nextChoices = ['Yes, deploy', 'Edit a setting', 'Change service'];
