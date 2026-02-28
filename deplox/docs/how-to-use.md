@@ -12,42 +12,79 @@
 
 ## 1. First-Time Setup
 
-Run this **once** on a new machine. It checks all prerequisites, installs Ollama, and pulls the AI model.
+### Step 1 — Install Node.js (if missing)
 
-Open PowerShell and run:
-
+Check if you have it:
 ```powershell
-cd C:\path\to\deploxV0.01\chatbot
+node --version
+```
+If missing, install via winget:
+```powershell
+winget install OpenJS.NodeJS.LTS
+```
+Or download manually from https://nodejs.org (version 18 or higher).
+
+---
+
+### Step 2 — Install Azure CLI (if missing)
+
+Check if you have it:
+```powershell
+az --version
+```
+If missing, install via winget:
+```powershell
+winget install Microsoft.AzureCLI
+```
+Or download manually from https://aka.ms/installazurecliwindows.
+
+Then log in:
+```powershell
+az login
 ```
 
-What it does, step by step:
+Install the Bicep extension (required for deployments):
+```powershell
+az bicep install
+```
 
-| Step | What it checks / installs |
+---
+
+### Step 3 — Install Ollama + pull the AI model
+
+Option A — Run the automated setup script (recommended):
+```powershell
+cd C:\path\to\deploxV0.01\chatbot
+powershell -ExecutionPolicy Bypass -File .\setup-ollama.ps1
+```
+
+The script will:
+
+| Step | Action |
 |---|---|
-| 1 | Node.js ≥ 18 — must be installed manually from https://nodejs.org if missing |
-| 2 | `npm install` — installs Express (the only npm dependency) |
-| 3 | Ollama — installs via `winget` if not found, or prompts manual download |
-| 4 | Starts Ollama service if it isn't running |
-| 5 | Pulls `llama3.2:1b` model (~1 GB download, only once) |
-| 6 | Azure CLI — checks it's installed, warns if missing |
+| 1 | Check Node.js ≥ 18 |
+| 2 | Run `npm install` (installs Express) |
+| 3 | Install Ollama via `winget` if not found |
+| 4 | Start the Ollama service |
+| 5 | Pull `llama3.2:1b` model (~1 GB, only once) |
+| 6 | Verify Azure CLI is installed |
+
+Option B — Manual:
+```powershell
+# Install Ollama
+winget install Ollama.Ollama
+
+# Pull the model
+ollama pull llama3.2:1b
+
+# Install npm dependencies
+cd C:\path\to\deploxV0.01\chatbot
+npm install
+```
 
 When setup completes you'll see:
 ```
   Setup complete! Run:  powershell -ExecutionPolicy Bypass -File .\start.ps1
-```
-
-### Manual prerequisites (if setup script can't install them)
-
-| Tool | Where to get it |
-|---|---|
-| Node.js ≥ 18 | https://nodejs.org |
-| Azure CLI | https://aka.ms/installazurecliwindows |
-| Ollama | https://ollama.com/download |
-| Bicep | `az bicep install` (after Azure CLI is installed) |
-
-After installing Azure CLI, log in:
-```powershell
-az login
 ```
 
 ---

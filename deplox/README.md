@@ -47,16 +47,32 @@ Then open **http://localhost:3000** in your browser.
 | Event Grid | — |
 
 ## Prerequisites
-- [Node.js](https://nodejs.org) ≥ 18
-- [Azure CLI](https://aka.ms/installazurecliwindows) logged in via:
-  ```powershell
-  az login
-  ```
-- [Ollama](https://ollama.com) installed and the required model pulled:
-  ```powershell
-  ollama pull llama3.2:1b
-  ```
-  > Or run the automated setup script (handles Ollama install + model pull):
-  > ```powershell
-  > powershell -ExecutionPolicy Bypass -File .\chatbot\setup-ollama.ps1
-  > ```
+
+### 1. Node.js ≥ 18
+```powershell
+winget install OpenJS.NodeJS.LTS
+```
+Verify: `node --version`
+
+### 2. Azure CLI
+```powershell
+winget install Microsoft.AzureCLI
+az login
+az bicep install
+```
+
+### 3. Ollama + model
+
+**Option A — Automated (recommended):**
+```powershell
+powershell -ExecutionPolicy Bypass -File .\chatbot\setup-ollama.ps1
+```
+
+**Option B — Manual:**
+```powershell
+winget install Ollama.Ollama
+ollama pull llama3.2:1b
+cd chatbot && npm install
+```
+
+
