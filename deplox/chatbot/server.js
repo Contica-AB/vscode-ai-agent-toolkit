@@ -82,9 +82,9 @@ const SERVICE_SCHEMAS = {
   ],
 
   'apim': [
+    { key:'apimName', label:'API Management service name', type:'text',
+      q:'Name for the API Management service?\n• 1–50 chars, letters/numbers/hyphens, must start with a letter\n• Must be globally unique across Azure\n• Best practice: include org + purpose, e.g. contoso-integration-apim',
       validate: v => v.length < 1 || v.length > 50 ? 'Must be 1–50 characters.' : !/^[a-zA-Z]/.test(v) ? 'Must start with a letter.' : /[^a-zA-Z0-9-]/.test(v) ? 'Only letters, numbers and hyphens allowed.' : null },
-      q:'Name for the API Management service?\n• 1–50 chars, letters/numbers/hyphens only, must start with a letter\n• Must be globally unique across Azure (pick something specific)\n• Best practice: include org + purpose, e.g. contoso-integration-apim',
-      validate: v => v.length < 1 || v.length > 50 ? 'Must be 1–50 characters.' : null },
     { key:'publisherEmail', label:'publisher email', type:'text',
       q:'Publisher email address? (used for system notifications)',
       validate: v => !v.includes('@') ? 'Please enter a valid email address.' : null },
@@ -99,7 +99,7 @@ const SERVICE_SCHEMAS = {
       validate: v => (isNaN(parseInt(v)) || parseInt(v) < 1) ? 'Please enter a positive number.' : null },
     { key:'corsAllowedOrigins', label:'CORS allowed origins', type:'text',
       defaultValue: '*',
-      q:'CORS allowed origins?\n• * = allow all origins (convenient for dev, risky for production)\n• Production best practice: specify exact domain, e.g. https://myapp.com\n• Multiple domains not supported in this template — use * or one domain\n• Press Enter to use default (*)',
+      q:'CORS allowed origins?\n• * = allow all origins (convenient for dev, risky for production)\n• Production best practice: specify exact domain, e.g. https://myapp.com\n• Multiple domains not supported in this template — use * or one domain\n• Press Enter to use default (*)' },
   ],
 
   'integrationaccount': [
