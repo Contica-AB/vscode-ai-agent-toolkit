@@ -19,10 +19,13 @@ Interactive Azure Integration Services deployer — a local AI chatbot that guid
 ## Quick Start
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\deploy.ps1
+cd C:\projects\deploxV0.01    # adjust to your path
+.\chatbot\start.ps1
 ```
 
 Then open **http://localhost:3000** in your browser.
+
+> First time? Run setup first: `.\chatbot\setup-ollama.ps1`
 
 ## Documentation
 

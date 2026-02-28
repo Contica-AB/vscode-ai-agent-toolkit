@@ -10,41 +10,45 @@
 
 ---
 
+> **All commands below are run from the DeploX project root folder.**
+> Open PowerShell (5 or 7), navigate to the folder, then run the commands:
+> ```powershell
+> cd C:\projects\deploxV0.01    # adjust to wherever you put the folder
+> ```
+> If you get an execution policy error, run this once:
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+> ```
+
+---
+
 ## 1. First-Time Setup
 
 ### Step 1 — Install Node.js (if missing)
 
-Check if you have it:
 ```powershell
-node --version
+node --version    # check if already installed (need v18 or higher)
 ```
-If missing, install via winget:
+If missing:
 ```powershell
 winget install OpenJS.NodeJS.LTS
 ```
-Or download manually from https://nodejs.org (version 18 or higher).
+Or download manually from https://nodejs.org
 
 ---
 
 ### Step 2 — Install Azure CLI (if missing)
 
-Check if you have it:
 ```powershell
-az --version
+az --version    # check if already installed
 ```
-If missing, install via winget:
+If missing:
 ```powershell
 winget install Microsoft.AzureCLI
 ```
-Or download manually from https://aka.ms/installazurecliwindows.
-
-Then log in:
+Then log in and install Bicep:
 ```powershell
 az login
-```
-
-Install the Bicep extension (required for deployments):
-```powershell
 az bicep install
 ```
 
@@ -52,13 +56,12 @@ az bicep install
 
 ### Step 3 — Install Ollama + pull the AI model
 
-Option A — Run the automated setup script (recommended):
+**Option A — Automated (recommended):**
 ```powershell
-cd C:\path\to\deploxV0.01\chatbot
-powershell -ExecutionPolicy Bypass -File .\setup-ollama.ps1
+.\chatbot\setup-ollama.ps1
 ```
 
-The script will:
+The script handles:
 
 | Step | Action |
 |---|---|
@@ -69,22 +72,13 @@ The script will:
 | 5 | Pull `llama3.2:1b` model (~1 GB, only once) |
 | 6 | Verify Azure CLI is installed |
 
-Option B — Manual:
+**Option B — Manual:**
 ```powershell
-# Install Ollama
 winget install Ollama.Ollama
-
-# Pull the model
 ollama pull llama3.2:1b
-
-# Install npm dependencies
-cd C:\path\to\deploxV0.01\chatbot
+cd chatbot
 npm install
-```
-
-When setup completes you'll see:
-```
-  Setup complete! Run:  powershell -ExecutionPolicy Bypass -File .\start.ps1
+cd ..
 ```
 
 ---
@@ -94,9 +88,10 @@ When setup completes you'll see:
 Every time you want to use DeploX, open PowerShell and run:
 
 ```powershell
-cd C:\path\to\deploxV0.01\chatbot
-powershell -ExecutionPolicy Bypass -File .\start.ps1
+cd C:\projects\deploxV0.01    # adjust to your path
+.\chatbot\start.ps1
 ```
+
 
 This script:
 1. Kills anything already running on port 3000
