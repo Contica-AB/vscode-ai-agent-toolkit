@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── AI-powered service detection (fallback when keyword match fails) ────────
-async function detectServiceWithAI(message) {
+async function detectServiceWithAI(message, model = OLLAMA_MODEL) {
   const descriptions = {
     'servicebus':           'message queuing, pub/sub, decoupling microservices, topics and queues',
     'eventhub':             'high-throughput event streaming, telemetry, real-time data ingestion, IoT',
@@ -44,7 +44,7 @@ Reply with ONLY the service key or "none". No explanation.`;
   try {
     const r = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, options: { temperature: 0.1 } })
+      body: JSON.stringify({ model, prompt, stream: false, options: { temperature: 0.1 } })
     });
     const data = await r.json();
     const reply = (data.response || '').trim().toLowerCase().replace(/['"\s]/g, '');
@@ -53,7 +53,7 @@ Reply with ONLY the service key or "none". No explanation.`;
 }
 
 // ── AI-powered value extraction (fallback when pattern matching fails) ────────
-async function extractValueWithAI(param, message, subs) {
+async function extractValueWithAI(param, message, subs, model = OLLAMA_MODEL) {
   let prompt = '';
   if (param.type === 'choice') {
     prompt = `The user was asked to pick one of: [${param.choices.join(', ')}]\nThey said: "${message}"\nReturn ONLY the exact matching option, or "none" if no match.`;
@@ -67,7 +67,7 @@ async function extractValueWithAI(param, message, subs) {
   try {
     const r = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, options: { temperature: 0.1 } })
+      body: JSON.stringify({ model, prompt, stream: false, options: { temperature: 0.1 } })
     });
     const data = await r.json();
     const reply = (data.response || '').trim();
@@ -511,7 +511,7 @@ app.get('/api/ollama/status', async (_req, res) => {
     const r    = await fetch(`${OLLAMA_URL}/api/tags`);
     const data = await r.json();
     const models = (data.models || []).map(m => m.name);
-    res.json({ running: true, models, hasModel: models.some(m => m.startsWith(OLLAMA_MODEL)) });
+    res.json({ running: true, models, activeModel: OLLAMA_MODEL, hasModel: models.some(m => m.startsWith(OLLAMA_MODEL)) });
   } catch {
     res.json({ running: false, models: [], hasModel: false });
   }
@@ -519,7 +519,7 @@ app.get('/api/ollama/status', async (_req, res) => {
 
 /** Chat — state-machine driven, streams tokens via SSE */
 app.post('/api/chat', async (req, res) => {
-  const { message, sessionId } = req.body;
+  const { message, sessionId, model } = req.body;
   if (!message || !sessionId) return res.status(400).json({ error: 'message and sessionId required' });
 
   // ── Bootstrap session ──────────────────────────────────────────────────────
@@ -544,6 +544,9 @@ app.post('/api/chat', async (req, res) => {
   }
 
   const session = sessions.get(sessionId);
+  // Update active model if user changed it in UI
+  if (model) session.model = model;
+  const activeModel = session.model || OLLAMA_MODEL;
   const { subs } = session;
 
   // SSE headers
@@ -559,7 +562,7 @@ app.post('/api/chat', async (req, res) => {
   if (session.state === 'start') {
     // Try to detect service from first message
     let svc = detectService(message);
-    if (!svc) svc = await detectServiceWithAI(message);
+    if (!svc) svc = await detectServiceWithAI(message, activeModel);
     if (svc) {
       session.service   = svc;
       session.schema    = buildSchema(svc, session.collected);
@@ -613,7 +616,7 @@ app.post('/api/chat', async (req, res) => {
         delete param._retryMsg;
       } else {
         // AI fallback: user typed something but pattern matching didn't understand it
-        const aiValue = await extractValueWithAI(param, message, subs);
+        const aiValue = await extractValueWithAI(param, message, subs, activeModel);
         if (aiValue !== null) {
           session.collected[param.key] = typeof aiValue === 'object' ? aiValue : String(aiValue);
           session.schemaIdx++;
@@ -716,7 +719,7 @@ app.post('/api/chat', async (req, res) => {
     const ollamaRes = await fetch(`${OLLAMA_URL}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: OLLAMA_MODEL, messages: session.messages, stream: true, options: { temperature: 0.3 } })
+      body: JSON.stringify({ model: activeModel, messages: session.messages, stream: true, options: { temperature: 0.3 } })
     });
 
     if (!ollamaRes.ok) {
