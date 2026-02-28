@@ -769,6 +769,8 @@ async function startDeploy(config, card) {
   const reader  = res.body.getReader();
   const decoder = new TextDecoder();
   let   buf     = '';
+  let   lastError = '';
+  let   succeeded = false;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -782,12 +784,23 @@ async function startDeploy(config, card) {
         const cls = ev.type === 'success' ? 'success' : ev.type === 'error' ? 'error' : ev.type === 'warn' ? 'warn' : '';
         if (ev.message) appendTermLog(ev.message, cls);
         if (ev.type === 'success') {
+          succeeded = true;
           setStatus(`<span style="color:var(--success);font-weight:700;display:inline-flex;align-items:center;gap:5px"><span class="ic">${IC.checkCircle}</span>Deployed successfully!</span>`);
         } else if (ev.type === 'error') {
+          lastError = ev.message;
           setStatus(`<span style="color:var(--error);display:inline-flex;align-items:center;gap:5px"><span class="ic">${IC.xCircle}</span>${ev.message}</span>`);
         }
       } catch {}
     }
+  }
+
+  // Post actual result to chat — never rely on LLM to report deployment outcome
+  const svcLabel = config.serviceLabel || config.service;
+  if (succeeded) {
+    addMessage('bot', `Deployment complete.\n\n${svcLabel} has been deployed successfully to resource group <strong>${config.resourceGroup}</strong> in <strong>${config.location}</strong>.\n\nYou can find it in the <a href="https://portal.azure.com" target="_blank" style="color:var(--accent2)">Azure Portal</a>.`);
+  } else {
+    const errDetail = lastError ? `\n\n<span style="color:var(--error)">${lastError}</span>` : '';
+    addMessage('bot', `Deployment failed.${errDetail}\n\nCheck the terminal output above for the full error. You can fix the issue and try deploying again.`);
   }
 }
 
