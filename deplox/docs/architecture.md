@@ -103,55 +103,42 @@ Runs as a local process on port 11434. Only used to generate the conversational 
 
 ## Request Flow — Full Deployment
 
-```mermaid
-sequenceDiagram
-    participant U as User (Browser)
-    participant S as server.js
-    participant O as Ollama
-    participant AZ as Azure CLI
-    participant C as Azure Cloud
-
-    U->>S: Page load → GET /api/azure/context
-    S->>AZ: az account list
-    AZ-->>S: subscriptions[]
-    S-->>U: { subscriptions, locations }
-
-    U->>S: Click "Service Bus" chip → POST /api/chat
-    S->>S: detectService() → 'servicebus'
-    S->>S: state = 'collecting', load schema
-    S-->>U: SSE token: "Name for the Service Bus namespace?"
-    S-->>U: SSE choices: []  (no chips for text input)
-
-    loop For each schema param
-        U->>S: POST /api/chat (answer)
-        S->>S: extractValue() → validate → store in collected{}
-        S-->>U: SSE token: next question
-        S-->>U: SSE choices: [option1, option2, ...]
-    end
-
-    U->>S: POST /api/chat (last param answered)
-    S->>S: state = 'confirm'
-    S-->>U: SSE token: summary + "Shall I go ahead?"
-    S-->>U: SSE choices: ["Yes, deploy", "Cancel"]
-
-    U->>S: POST /api/chat "Yes, deploy"
-    S->>S: buildDeployConfig()
-    S-->>U: SSE deploy_config event → browser renders Deploy Card
-    U->>S: Deploy Card auto-calls POST /api/deploy
-
-    S->>AZ: az account set --subscription
-    AZ-->>S: OK
-    S->>AZ: az group create
-    AZ-->>S: OK
-    S->>AZ: az deployment group create --template-file servicebus.bicep
-    Note over S,AZ: stdout/stderr streamed live to browser
-    AZ->>C: ARM API call
-    C-->>AZ: Deployment complete
-    AZ-->>S: outputs: { namespaceId, namespaceName }
-    S-->>U: SSE log: "[+] Deployment outputs: namespaceId: ..."
-    S-->>U: SSE success: "Deployment completed successfully."
-
-    S-->>U: SSE choices: all service chips (start again)
+```
+  Browser                  server.js              Ollama         Azure CLI        Azure Cloud
+     │                         │                     │                │                │
+     │── GET /api/azure/context ──►                   │                │                │
+     │                         │──── az account list ─────────────────►                │
+     │                         │◄─── subscriptions[] ─────────────────┤                │
+     │◄── { subscriptions } ───┤                     │                │                │
+     │                         │                     │                │                │
+     │── POST /api/chat ────────►                     │                │                │
+     │   "Service Bus"          │── detectService() ──┤                │                │
+     │                         │   state=collecting   │                │                │
+     │◄── SSE: question ────────┤                     │                │                │
+     │                         │                     │                │                │
+     │  (loop: answer each param)                     │                │                │
+     │── POST /api/chat ────────►                     │                │                │
+     │   answer                 │── validate/store ───┤                │                │
+     │◄── SSE: next question ───┤                     │                │                │
+     │                         │                     │                │                │
+     │── POST /api/chat ────────►                     │                │                │
+     │   last answer            │── state=confirm ────┤                │                │
+     │◄── SSE: summary ─────────┤                     │                │                │
+     │◄── SSE: ["Yes","Cancel"] ┤                     │                │                │
+     │                         │                     │                │                │
+     │── POST /api/chat ────────►                     │                │                │
+     │   "Yes, deploy"          │── buildDeployConfig()               │                │
+     │◄── SSE: deploy_config ───┤                     │                │                │
+     │                         │                     │                │                │
+     │── POST /api/deploy ──────►                     │                │                │
+     │                         │── az account set ──────────────────►  │                │
+     │                         │── az group create ─────────────────►  │                │
+     │                         │── az deployment group create ───────►  │                │
+     │                         │   (Bicep template)   │                │── ARM API ─────►│
+     │                         │                      │                │◄── complete ────┤
+     │◄── SSE: live logs ───────┤                     │                │                │
+     │◄── SSE: outputs ─────────┤                     │                │                │
+     │◄── SSE: success ─────────┤                     │                │                │
 ```
 
 ---
