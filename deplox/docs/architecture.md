@@ -104,41 +104,90 @@ Runs as a local process on port 11434. Only used to generate the conversational 
 ## Request Flow — Full Deployment
 
 ```
-  Browser                  server.js              Ollama         Azure CLI        Azure Cloud
-     │                         │                     │                │                │
-     │── GET /api/azure/context ──►                   │                │                │
-     │                         │──── az account list ─────────────────►                │
-     │                         │◄─── subscriptions[] ─────────────────┤                │
-     │◄── { subscriptions } ───┤                     │                │                │
-     │                         │                     │                │                │
-     │── POST /api/chat ────────►                     │                │                │
-     │   "Service Bus"          │── detectService() ──┤                │                │
-     │                         │   state=collecting   │                │                │
-     │◄── SSE: question ────────┤                     │                │                │
-     │                         │                     │                │                │
-     │  (loop: answer each param)                     │                │                │
-     │── POST /api/chat ────────►                     │                │                │
-     │   answer                 │── validate/store ───┤                │                │
-     │◄── SSE: next question ───┤                     │                │                │
-     │                         │                     │                │                │
-     │── POST /api/chat ────────►                     │                │                │
-     │   last answer            │── state=confirm ────┤                │                │
-     │◄── SSE: summary ─────────┤                     │                │                │
-     │◄── SSE: ["Yes","Cancel"] ┤                     │                │                │
-     │                         │                     │                │                │
-     │── POST /api/chat ────────►                     │                │                │
-     │   "Yes, deploy"          │── buildDeployConfig()               │                │
-     │◄── SSE: deploy_config ───┤                     │                │                │
-     │                         │                     │                │                │
-     │── POST /api/deploy ──────►                     │                │                │
-     │                         │── az account set ──────────────────►  │                │
-     │                         │── az group create ─────────────────►  │                │
-     │                         │── az deployment group create ───────►  │                │
-     │                         │   (Bicep template)   │                │── ARM API ─────►│
-     │                         │                      │                │◄── complete ────┤
-     │◄── SSE: live logs ───────┤                     │                │                │
-     │◄── SSE: outputs ─────────┤                     │                │                │
-     │◄── SSE: success ─────────┤                     │                │                │
++-----------+                +-------------+                   +-------------+          +---------------+
+|  Browser  |                |  server.js  |                   |  Azure CLI  |          |  Azure Cloud  |
++-----------+                +-------------+                   +-------------+          +---------------+
+      |                             |                                 |                         |
+      |----------------------------->                                 |                         |
+      |   GET /api/azure/context    |                                 |                         |
+      |                             |                                 |                         |
+      |                             |--------------------------------->                         |
+      |                             |         az account list         |                         |
+      |                             |                                 |                         |
+      |                             <---------------------------------|                         |
+      |                             |         subscriptions[]         |                         |
+      |                             |                                 |                         |
+      <-----------------------------|                                 |                         |
+      | { subscriptions, locations }|                                 |                         |
+      |                             |                                 |                         |
+      |                             |                                 |                         |
+      |----------------------------->                                 |                         |
+      | POST /api/chat  "Service Bus"                                 |                         |
+      |                             |                                 |                         |
+      |                             |-->                              |                         |
+      |                             |    detectService()  state=collecting                      |
+      |                             |                                 |                         |
+      <-----------------------------|                                 |                         |
+      |     SSE: first question     |                                 |                         |
+      |                             |                                 |                         |
+      |                             |                                 |                         |
+      |----------------------------->                                 |                         |
+      |   POST /api/chat  answer    |                                 |                         |
+      |                             |                                 |                         |
+      |                             |-->                              |                         |
+      |                             |    validate + store in collected{}                        |
+      |                             |                                 |                         |
+      <-----------------------------|                                 |                         |
+      | SSE: next question + choices|                                 |                         |
+      |                             |                                 |                         |
+      |                             |                                 |                         |
+      |----------------------------->                                 |                         |
+      | POST /api/chat  last answer |                                 |                         |
+      |                             |                                 |                         |
+      |                             |-->                              |                         |
+      |                             |    state = confirm              |                         |
+      |                             |                                 |                         |
+      <-----------------------------|                                 |                         |
+      | SSE: summary + ["Yes","Cancel"]                               |                         |
+      |                             |                                 |                         |
+      |                             |                                 |                         |
+      |----------------------------->                                 |                         |
+      | POST /api/chat  "Yes, deploy"                                 |                         |
+      |                             |                                 |                         |
+      |                             |-->                              |                         |
+      |                             |    buildDeployConfig()          |                         |
+      |                             |                                 |                         |
+      <-----------------------------|                                 |                         |
+      |  SSE: deploy_config event   |                                 |                         |
+      |                             |                                 |                         |
+      |----------------------------->                                 |                         |
+      |      POST /api/deploy       |                                 |                         |
+      |                             |                                 |                         |
+      |                             |                                 |                         |
+      |                             |--------------------------------->                         |
+      |                             |  az account set --subscription  |                         |
+      |                             |                                 |                         |
+      |                             |--------------------------------->                         |
+      |                             |         az group create         |                         |
+      |                             |                                 |                         |
+      |                             |--------------------------------->                         |
+      |                             | az deployment group create (Bicep)                        |
+      |                             |                                 |                         |
+      |                             |                                 |------------------------->
+      |                             |                                 |      ARM API call       |
+      |                             |                                 |                         |
+      |                             |                                 <-------------------------|
+      |                             |                                 |   deployment complete   |
+      |                             |                                 |                         |
+      |                             <---------------------------------|                         |
+      |                             |  outputs: { namespaceId, ... }  |                         |
+      |                             |                                 |                         |
+      <-----------------------------|                                 |                         |
+      | SSE: live logs + outputs + success                            |                         |
+      |                             |                                 |                         |
++-----------+                +-------------+                   +-------------+          +---------------+
+|  Browser  |                |  server.js  |                   |  Azure CLI  |          |  Azure Cloud  |
++-----------+                +-------------+                   +-------------+          +---------------+
 ```
 
 ---
