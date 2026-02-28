@@ -564,17 +564,44 @@ app.post('/api/chat', async (req, res) => {
     let svc = detectService(message);
     if (!svc) svc = await detectServiceWithAI(message, activeModel);
     if (svc) {
-      session.service   = svc;
-      session.schema    = buildSchema(svc, session.collected);
-      session.schemaIdx = 0;
-      session.state     = 'collecting';
-      const param = currentParam(session);
-      directive   = buildDirective(param, subs);
-      nextChoices = choicesForParam(param, subs, session);
+      // Don't jump straight to collecting — confirm understanding first
+      session._pendingService = svc;
+      session.state = 'confirming_service';
+      const svcLabel = SERVICE_LABELS[svc] || svc;
+      directive = `DIRECTIVE: The user described what they want and you identified it as "${svcLabel}". In 2-3 professional sentences: (1) restate what the user wants to achieve in your own words, (2) confirm that ${svcLabel} is the right Azure service for this need, (3) give one concrete reason why it is a good fit. End by asking if they want to proceed with deploying ${svcLabel}.`;
+      nextChoices = [`Yes, deploy ${svcLabel}`, 'Choose a different service'];
     } else {
       // Ask user to pick a service
       directive   = 'DIRECTIVE: Welcome the user and ask what Azure integration service they want to deploy.';
       nextChoices = Object.values(SERVICE_LABELS);
+    }
+
+  } else if (session.state === 'confirming_service') {
+    const svc      = session._pendingService;
+    const svcLabel = SERVICE_LABELS[svc] || svc;
+    const msg      = message.toLowerCase();
+    const confirmed = msg.includes('yes') || msg.includes('proceed') || msg.includes('go ahead')
+                   || msg.includes('deploy') || msg.includes('correct') || msg.includes('right');
+    const rejected  = msg.includes('no') || msg.includes('different') || msg.includes('change')
+                   || msg.includes('other') || msg.includes('cancel');
+    if (confirmed) {
+      session.service   = svc;
+      session.schema    = buildSchema(svc, session.collected);
+      session.schemaIdx = 0;
+      session.state     = 'collecting';
+      delete session._pendingService;
+      const param = currentParam(session);
+      directive   = buildDirective(param, subs);
+      nextChoices = choicesForParam(param, subs, session);
+    } else if (rejected) {
+      delete session._pendingService;
+      session.state = 'start';
+      directive   = 'DIRECTIVE: The user wants to choose a different service. Ask them what Azure service they would like to deploy.';
+      nextChoices = Object.values(SERVICE_LABELS);
+    } else {
+      // Ambiguous — let Ollama re-ask
+      directive   = `DIRECTIVE: The user's response was unclear. Re-confirm in one sentence: did they mean to deploy "${svcLabel}"? Ask them to confirm yes or choose a different service.`;
+      nextChoices = [`Yes, deploy ${svcLabel}`, 'Choose a different service'];
     }
 
   } else if (session.state === 'collecting') {
