@@ -394,6 +394,29 @@ function makeSummary(session) {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+// Returns a short readable label from a camelCase param key
+function paramLabel(key) {
+  return key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+}
+
+// Returns edit-choice buttons: "Edit: <label>" for every schema param
+function editableChoices(session) {
+  const schema = session.schema || [];
+  return schema
+    .filter(p => !p.key.startsWith('__') || ['__location','__rgName','__env'].includes(p.key))
+    .map(p => {
+      const label = p.editLabel || paramLabel(p.key.replace(/^__/, ''));
+      const current = session.collected[p.key];
+      const display = current ? `${label}: ${Array.isArray(current)?current.join(', '):current}` : label;
+      return `Edit: ${display}`;
+    });
+}
+
+// Find schema param by key
+function findParamByKey(session, key) {
+  return (session.schema || []).find(p => p.key === key);
+}
+
 
 /** Extract the first balanced JSON object from a string */
 function extractFirstJson(str) {
@@ -609,6 +632,17 @@ app.post('/api/chat', async (req, res) => {
     // Only allow service switching at choice/button steps, not during free-text entry
     // (prevents e.g. 'my-apim-service' from re-triggering APIM detection and resetting)
     const isFreeText = param && (param.type === 'text' || param.type === 'text_optional' || param.type === 'rg_select');
+
+    // Explicit "Change service" escape hatch — always allowed
+    const wantsChangeService = message === 'Change service'
+      || (!isFreeText && /\b(change service|different service|wrong service|start over|restart|never mind)\b/i.test(message));
+    if (wantsChangeService) {
+      delete session._pendingService;
+      session.service = null; session.schema = []; session.schemaIdx = 0; session.collected = {};
+      session.state = 'start';
+      directive   = 'DIRECTIVE: The user wants to choose a different Azure service. Acknowledge briefly and ask what they would like to deploy instead.';
+      nextChoices = Object.values(SERVICE_LABELS);
+    } else {
     const switchSvc = !isFreeText && detectService(message);
     if (switchSvc) {
       session.service   = switchSvc;
@@ -671,27 +705,78 @@ app.post('/api/chat', async (req, res) => {
       }
     }
     } // end else (not a service switch)
+    } // end wantsChangeService else
 
   } else if (session.state === 'confirm') {
     const lower = message.toLowerCase();
-    const switchSvc = detectService(message);
-    if (switchSvc) {
-      // User picked a different service at confirm screen — start that one
-      session.service   = switchSvc;
-      session.schema    = buildSchema(switchSvc, session.collected);
-      session.schemaIdx = 0;
-      session.state     = 'collecting';
-    } else if (['yes','ok','go','deploy','sure','proceed','yes, deploy'].some(k => lower.includes(k))) {
-      // Build and emit deploy config server-side — no LLM parsing needed
+    if (message === 'Change service' || /\b(change service|different service|start over)\b/i.test(lower)) {
+      delete session._pendingService;
+      session.service = null; session.schema = []; session.schemaIdx = 0; session.collected = {};
+      session.state = 'start';
+      directive   = 'DIRECTIVE: The user wants to deploy a different Azure service. Ask them what they would like to deploy.';
+      nextChoices = Object.values(SERVICE_LABELS);
+    } else if (message === 'Edit a setting' || /\b(edit|change|modify|update|fix)\b/i.test(lower)) {
+      session.state = 'editing';
+      session._editingKey = null;
+      nextChoices = editableChoices(session);
+    } else if (['yes','ok','go','deploy','sure','proceed'].some(k => lower.includes(k))) {
       const config = buildDeployConfig(session);
       session.state = 'done';
       directive     = 'DIRECTIVE: Tell the user the deployment is starting now. Be brief and enthusiastic.';
-      // Emit deploy_config immediately
       sse(res, 'deploy_config', { config });
     } else {
-      session.state = 'start';
-      session.service = null; session.schema = []; session.schemaIdx = 0; session.collected = {};
-      nextChoices   = Object.values(SERVICE_LABELS);
+      // Unrecognised — re-show summary
+      nextChoices = ['Yes, deploy', 'Edit a setting', 'Change service'];
+    }
+
+  } else if (session.state === 'editing') {
+    if (!session._editingKey) {
+      // Pick mode — user clicked "Edit: <label>: <value>", extract the param key
+      // Button format: "Edit: <Label>: <current>" or "Edit: <Label>"
+      const stripped = message.replace(/^Edit:\s*/i, '').split(':')[0].trim();
+      const found = (session.schema || []).find(p => {
+        const label = p.editLabel || paramLabel(p.key.replace(/^__/, ''));
+        return label.toLowerCase() === stripped.toLowerCase();
+      });
+      if (found) {
+        session._editingKey = found.key;
+        delete found._retryMsg;
+        nextChoices = choicesForParam(found, subs, session);
+      } else {
+        // Unrecognised — re-show list
+        nextChoices = editableChoices(session);
+      }
+    } else {
+      // Value entry mode — validate then save
+      const key   = session._editingKey;
+      const param = findParamByKey(session, key);
+      if (param) {
+        const value  = extractValue(param, message, subs);
+        const valErr = validationError(value);
+        if (valErr) {
+          param._retryMsg = `❌ Invalid input: ${valErr}\n\nPlease try again — ${param.q}`;
+          nextChoices = choicesForParam(param, subs, session);
+        } else if (value !== null) {
+          session.collected[key] = value;
+          delete param._retryMsg;
+          delete session._editingKey;
+          session.state = 'confirm';
+          nextChoices = ['Yes, deploy', 'Edit a setting', 'Change service'];
+        } else {
+          // AI extraction fallback
+          const aiValue = await extractValueWithAI(param, message, subs, activeModel);
+          if (aiValue !== null && !validationError(aiValue)) {
+            session.collected[key] = aiValue;
+            delete param._retryMsg;
+            delete session._editingKey;
+            session.state = 'confirm';
+            nextChoices = ['Yes, deploy', 'Edit a setting', 'Change service'];
+          } else {
+            param._retryMsg = null;
+            nextChoices = choicesForParam(param, subs, session);
+          }
+        }
+      }
     }
 
   } else {
@@ -712,7 +797,7 @@ app.post('/api/chat', async (req, res) => {
   // ── Respond: collecting state → direct text, no LLM ─────────────────────
   // Only use Ollama for start (welcome/service picker) and confirm states
   const useDirectText = !useOllamaForRetry &&
-    ((session.state === 'collecting' || session.state === 'confirm')
+    ((session.state === 'collecting' || session.state === 'confirm' || session.state === 'editing')
     || (session.state === 'start' && nextChoices?.length > 0 && !directive));
 
   if (useDirectText) {
@@ -726,7 +811,15 @@ app.post('/api/chat', async (req, res) => {
         ? (next._retryMsg || next.q)
         : 'Something went wrong. Please refresh and try again.');
     } else if (session.state === 'confirm') {
-      text = skipPrefix + `Here's a summary of what will be deployed:\n\n${makeSummary(session)}\n\nShall I go ahead?`;
+      text = skipPrefix + `Here's a summary of what will be deployed:\n\n${makeSummary(session)}\n\nWould you like to deploy with these settings?`;
+      nextChoices = ['Yes, deploy', 'Edit a setting', 'Change service'];
+    } else if (session.state === 'editing') {
+      if (!session._editingKey) {
+        text = skipPrefix + 'Which setting would you like to change?';
+      } else {
+        const editParam = findParamByKey(session, session._editingKey);
+        text = skipPrefix + (editParam ? (editParam._retryMsg || editParam.q) : 'Please enter the new value.');
+      }
     } else {
       text = 'What would you like to deploy next?';
     }
