@@ -69,13 +69,13 @@ The script handles:
 | 2 | Run `npm install` (installs Express) |
 | 3 | Install Ollama via `winget` if not found |
 | 4 | Start the Ollama service |
-| 5 | Pull `llama3.2:1b` model (~1 GB, only once) |
+| 5 | Pull `llama3.1:8b` model (~1 GB, only once) |
 | 6 | Verify Azure CLI is installed |
 
 **Option B — Manual:**
 ```powershell
 winget install Ollama.Ollama
-ollama pull llama3.2:1b
+ollama pull llama3.1:8b
 cd chatbot
 npm install
 cd ..
@@ -102,7 +102,7 @@ This script:
 You'll see:
 ```
   DeploX chatbot running at http://localhost:3000
-  Model: llama3.2:1b   Press Ctrl+C to stop.
+  Model: llama3.1:8b   Press Ctrl+C to stop.
 ```
 
 > **Keep this PowerShell window open** while using the app. Closing it stops the server.
@@ -288,7 +288,7 @@ Then refresh the browser.
 
 ### "model not found" error
 ```powershell
-ollama pull llama3.2:1b
+ollama pull llama3.1:8b
 ```
 
 ### Port 3000 already in use

@@ -1,7 +1,7 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-    Sets up Ollama and pulls the llama3.2 model for DeploX chatbot.
+    Sets up Ollama and pulls the llama3.1:8b model for DeploX chatbot.
 #>
 
 $ErrorActionPreference = "Stop"
@@ -67,19 +67,19 @@ try {
 }
 
 # -- 5. Pull model -----------------------------------------------------------
-Write-Step "Pulling llama3.2 model (approx 2 GB -- this may take a while)..."
+Write-Step "Pulling llama3.1:8b model (approx 5 GB -- this may take a while)..."
 try {
     $tags = Invoke-WebRequest -Uri "http://localhost:11434/api/tags" -UseBasicParsing | ConvertFrom-Json
-    $has = $tags.models | Where-Object { $_.name -like "llama3.2*" }
+    $has = $tags.models | Where-Object { $_.name -like "llama3.1*" }
     if ($has) {
-        Write-OK "llama3.2 already pulled"
+        Write-OK "llama3.1:8b already pulled"
     } else {
-        ollama pull llama3.2
-        Write-OK "llama3.2 pulled"
+        ollama pull llama3.1:8b
+        Write-OK "llama3.1:8b pulled"
     }
 } catch {
     Write-Warn "Could not check model status: $_"
-    Write-Warn "Run manually: ollama pull llama3.2"
+    Write-Warn "Run manually: ollama pull llama3.1:8b"
 }
 
 # -- 6. Check az CLI ---------------------------------------------------------

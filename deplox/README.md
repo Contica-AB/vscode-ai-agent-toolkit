@@ -74,7 +74,7 @@ powershell -ExecutionPolicy Bypass -File .\chatbot\setup-ollama.ps1
 **Option B — Manual:**
 ```powershell
 winget install Ollama.Ollama
-ollama pull llama3.2:1b
+ollama pull llama3.1:8b
 cd chatbot && npm install
 ```
 

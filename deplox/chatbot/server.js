@@ -9,7 +9,7 @@ const { spawn, execSync } = require('child_process');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 const OLLAMA_URL   = process.env.OLLAMA_URL   || 'http://localhost:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:1b';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.1:8b';
 const OLLAMA_EXE   = process.env.OLLAMA_EXE   ||
   (process.platform === 'win32'
     ? require('path').join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe')
