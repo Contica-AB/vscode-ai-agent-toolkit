@@ -19,14 +19,79 @@ const MODULES_DIR  = path.join(__dirname, '..', 'modules');
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ── AI-powered service detection (fallback when keyword match fails) ────────
+async function detectServiceWithAI(message) {
+  const descriptions = {
+    'servicebus':           'message queuing, pub/sub, decoupling microservices, topics and queues',
+    'eventhub':             'high-throughput event streaming, telemetry, real-time data ingestion, IoT',
+    'logicapp-consumption': 'serverless workflow automation, connectors, pay per execution',
+    'logicapp-standard':    'hosted workflow automation, dedicated compute, vnet support',
+    'apim':                 'API gateway, rate limiting, developer portal, API management',
+    'integrationaccount':   'B2B EDI integration, AS2, X12, EDIFACT, schemas and maps',
+    'functionapp':          'serverless code, event-driven functions, background jobs',
+    'keyvault':             'secrets management, certificates, encryption keys, credentials storage',
+    'eventgrid':            'event routing, reactive architecture, serverless event handling',
+  };
+  const list = Object.entries(descriptions).map(([k,v]) => `${k}: ${v}`).join('\n');
+  const prompt = `You are an Azure service classifier. Given a user message, return ONLY the service key that best matches what they want to deploy, or "none" if unclear.
+
+Services:
+${list}
+
+User: "${message}"
+
+Reply with ONLY the service key or "none". No explanation.`;
+  try {
+    const r = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, options: { temperature: 0.1 } })
+    });
+    const data = await r.json();
+    const reply = (data.response || '').trim().toLowerCase().replace(/['"\s]/g, '');
+    return SERVICE_LABELS[reply] ? reply : null;
+  } catch { return null; }
+}
+
+// ── AI-powered value extraction (fallback when pattern matching fails) ────────
+async function extractValueWithAI(param, message, subs) {
+  let prompt = '';
+  if (param.type === 'choice') {
+    prompt = `The user was asked to pick one of: [${param.choices.join(', ')}]\nThey said: "${message}"\nReturn ONLY the exact matching option, or "none" if no match.`;
+  } else if (param.type === 'text') {
+    prompt = `The user was asked: "${param.label}"\nThey replied: "${message}"\nExtract and return ONLY the value they provided. Return "none" if no clear value.`;
+  } else if (param.type === 'subscription') {
+    const names = subs.map(s => s.name).join(', ');
+    prompt = `Pick the best matching Azure subscription from: [${names}]\nBased on: "${message}"\nReturn ONLY the exact subscription name or "none".`;
+  } else { return null; }
+
+  try {
+    const r = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, options: { temperature: 0.1 } })
+    });
+    const data = await r.json();
+    const reply = (data.response || '').trim();
+    if (!reply || reply.toLowerCase() === 'none') return null;
+    if (param.type === 'choice') {
+      return param.choices.find(c => c.toLowerCase() === reply.toLowerCase()) || null;
+    }
+    if (param.type === 'subscription') {
+      return subs.find(s => s.name.toLowerCase() === reply.toLowerCase()) || null;
+    }
+    if (param.validate) { const err = param.validate(reply); if (err) return null; }
+    return reply;
+  } catch { return null; }
+}
+
 // ── In-memory session store ──────────────────────────────────────────────────
 const sessions = new Map();
 
 // ── System prompt (simple — state machine does the heavy lifting) ─────────────
-const SYSTEM_PROMPT = `You are IntegrationBot, a friendly Azure deployment assistant.
-Be brief and warm. You will receive a DIRECTIVE telling you exactly what to ask.
-Ask that one thing naturally. Never ask more than one thing at a time.
-Acknowledge answers briefly before continuing.`;
+const SYSTEM_PROMPT = `You are DeploX, a friendly Azure deployment assistant built by Ahmed Bayoumy.
+You help users deploy Azure integration services through natural conversation.
+Be concise, warm and helpful. Understand what users mean even when they don't use exact Azure terms.
+When you receive a DIRECTIVE, follow it precisely and ask that one thing naturally.
+Never ask more than one question at a time. Acknowledge answers briefly before continuing.`;
 
 // ── Parameter schemas ─────────────────────────────────────────────────────────
 const LOCATIONS = ['swedencentral','westeurope','northeurope','eastus','eastus2','westus','westus2','uksouth','ukwest','australiaeast','southeastasia','japaneast','centralus'];
@@ -489,10 +554,12 @@ app.post('/api/chat', async (req, res) => {
   // ── State machine: process user message ───────────────────────────────────
   let directive = '';
   let nextChoices = null;
+  let useOllamaForRetry = false;
 
   if (session.state === 'start') {
     // Try to detect service from first message
-    const svc = detectService(message);
+    let svc = detectService(message);
+    if (!svc) svc = await detectServiceWithAI(message);
     if (svc) {
       session.service   = svc;
       session.schema    = buildSchema(svc, session.collected);
@@ -539,11 +606,29 @@ app.post('/api/chat', async (req, res) => {
             session.schemaIdx++;
           }
         }
-      } else if (param.defaultValue !== undefined) {
-        // Empty input on a field with a default — accept the default
+      } else if (param.defaultValue !== undefined && !message.trim()) {
+        // Truly empty input on a field with a default — accept the default
         session.collected[param.key] = String(param.defaultValue);
         session.schemaIdx++;
         delete param._retryMsg;
+      } else {
+        // AI fallback: user typed something but pattern matching didn't understand it
+        const aiValue = await extractValueWithAI(param, message, subs);
+        if (aiValue !== null) {
+          session.collected[param.key] = typeof aiValue === 'object' ? aiValue : String(aiValue);
+          session.schemaIdx++;
+          delete param._retryMsg;
+          if (param.key === '__rgPick' && aiValue !== '+ Create new') {
+            session.collected.__rgName = aiValue;
+            if (session.schema[session.schemaIdx]?.key === '__rgName') session.schemaIdx++;
+          }
+        }
+        // if still null — re-ask naturally via Ollama instead of raw question text
+        else {
+          directive = `DIRECTIVE: The user seems unsure. Gently re-ask them for their ${param.label}. Remind them: ${param.q}`;
+          nextChoices = choicesForParam(param, subs, session);
+          useOllamaForRetry = true;
+        }
       }
 
       const next = currentParam(session);
@@ -596,8 +681,9 @@ app.post('/api/chat', async (req, res) => {
 
   // ── Respond: collecting state → direct text, no LLM ─────────────────────
   // Only use Ollama for start (welcome/service picker) and confirm states
-  const useDirectText = (session.state === 'collecting' || session.state === 'confirm')
-                     || (session.state === 'start' && nextChoices?.length > 0 && !directive);
+  const useDirectText = !useOllamaForRetry &&
+    ((session.state === 'collecting' || session.state === 'confirm')
+    || (session.state === 'start' && nextChoices?.length > 0 && !directive));
 
   if (useDirectText) {
     let text = '';
