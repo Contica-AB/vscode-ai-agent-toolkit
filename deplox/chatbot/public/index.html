@@ -252,7 +252,7 @@
     <div class="header-right">
       <div class="status-pill">
         <div class="dot-status loading" id="ollama-dot"></div>
-        <select id="model-select" title="Active AI model" style="background:transparent;border:none;color:#e2e8f0;font-size:.8rem;cursor:pointer;outline:none;max-width:140px" onchange="onModelChange(this.value)">
+        <select id="model-select" title="Active AI model" style="background:transparent;border:none;color:#e2e8f0;font-size:.8rem;cursor:pointer;outline:none;max-width:220px" onchange="onModelChange(this.value)">
           <option value="">Checking…</option>
         </select>
       </div>
@@ -503,6 +503,20 @@ input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
 
+// ── Model descriptions ────────────────────────────────────────────────────────
+const MODEL_TAGS = {
+  'llama3.2:1b':     '⚡ Fastest · very light',
+  'llama3.2:3b':     '⚡ Fast · good balance',
+  'llama3.2:latest': '⚡ Fast · good balance',
+  'llama3.1:8b':     '🧠 Smart · slower',
+  'llama3.1:latest': '🧠 Smart · slower',
+  'gpt-oss:20b':     '🏆 Best quality · slowest',
+};
+function modelLabel(m) {
+  const tag = MODEL_TAGS[m] || '';
+  return tag ? `${m}  —  ${tag}` : m;
+}
+
 // ── Status checks ─────────────────────────────────────────────────────────────
 let activeModel = localStorage.getItem('deplox_model') || '';
 
@@ -521,7 +535,7 @@ async function checkStatus() {
     if (d.running && d.models.length) {
       dot.className = 'dot-status ok';
       sel.innerHTML = d.models.map(m =>
-        `<option value="${m}" style="background:#1e2235;color:#e2e8f0" ${(activeModel||d.activeModel)===m?'selected':''}>${m}</option>`
+        `<option value="${m}" style="background:#1e2235;color:#e2e8f0" ${(activeModel||d.activeModel)===m?'selected':''}>${modelLabel(m)}</option>`
       ).join('');
       if (!activeModel) { activeModel = d.activeModel || d.models[0]; localStorage.setItem('deplox_model', activeModel); }
     } else if (d.running) {
