@@ -54,7 +54,26 @@ az bicep install
 
 ---
 
-### Step 3 — Install Ollama + pull the AI model
+### Step 3 — Install Ollama + choose your AI model
+
+#### Choose a model based on your machine's RAM
+
+| Model | RAM needed | Download size | Quality | Command |
+|---|---|---|---|---|
+| `llama3.2:1b` | 4 GB | ~1 GB | Basic — fast, minimal reasoning | `ollama pull llama3.2:1b` |
+| `llama3.2:3b` | 6 GB | ~2 GB | Good — better responses | `ollama pull llama3.2:3b` |
+| `phi3.5:mini` | 6 GB | ~2.3 GB | Good — strong at following instructions | `ollama pull phi3.5:mini` |
+| `llama3.1:8b` ⭐ | 10 GB | ~5 GB | Great — reliable reasoning, less hallucination | `ollama pull llama3.1:8b` |
+| `mistral:7b` | 10 GB | ~4.5 GB | Great — excellent instruction following | `ollama pull mistral:7b` |
+
+> **Default model is `llama3.1:8b`** — recommended if you have 16 GB+ RAM.
+> To use a different model, edit line 12 in `chatbot/server.js`:
+> ```javascript
+> const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';  // change this
+> ```
+> Or set the environment variable before starting: `$env:OLLAMA_MODEL = 'mistral:7b'`
+
+#### Install Ollama + pull your chosen model
 
 **Option A — Automated (recommended):**
 ```powershell
@@ -69,13 +88,13 @@ The script handles:
 | 2 | Run `npm install` (installs Express) |
 | 3 | Install Ollama via `winget` if not found |
 | 4 | Start the Ollama service |
-| 5 | Pull `llama3.1:8b` model (~1 GB, only once) |
+| 5 | Pull `llama3.1:8b` model (~5 GB, only once) |
 | 6 | Verify Azure CLI is installed |
 
-**Option B — Manual:**
+**Option B — Manual (pick your model from the table above):**
 ```powershell
 winget install Ollama.Ollama
-ollama pull llama3.1:8b
+ollama pull llama3.1:8b    # replace with your chosen model
 cd chatbot
 npm install
 cd ..

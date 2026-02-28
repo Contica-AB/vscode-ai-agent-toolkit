@@ -66,17 +66,29 @@ az bicep install
 
 ### 3. Ollama + model
 
+Choose a model based on your RAM:
+
+| Model | RAM needed | Quality | Command |
+|---|---|---|---|
+| `llama3.2:1b` | 4 GB | Basic | `ollama pull llama3.2:1b` |
+| `llama3.2:3b` | 6 GB | Good | `ollama pull llama3.2:3b` |
+| `phi3.5:mini` | 6 GB | Good | `ollama pull phi3.5:mini` |
+| `llama3.1:8b` ⭐ | 10 GB | Great | `ollama pull llama3.1:8b` |
+| `mistral:7b` | 10 GB | Great | `ollama pull mistral:7b` |
+
 **Option A — Automated (recommended):**
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\chatbot\setup-ollama.ps1
+.\chatbot\setup-ollama.ps1
 ```
 
 **Option B — Manual:**
 ```powershell
 winget install Ollama.Ollama
-ollama pull llama3.1:8b
+ollama pull llama3.1:8b    # replace with your chosen model
 cd chatbot && npm install
 ```
+
+> To change the model: edit `chatbot/server.js` line 12, or set `$env:OLLAMA_MODEL = 'your-model'` before starting.
 
 ---
 
