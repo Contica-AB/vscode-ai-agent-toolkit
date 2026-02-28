@@ -1,0 +1,95 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "8908494644924785463"
+    }
+  },
+  "parameters": {
+    "namespaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Event Hubs namespace name"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location"
+      }
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "allowedValues": [
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "eventHubs": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Event Hubs to create"
+      }
+    },
+    "messageRetentionInDays": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Message retention in days"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.EventHub/namespaces",
+      "apiVersion": "2022-10-01-preview",
+      "name": "[parameters('namespaceName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('sku')]",
+        "tier": "[parameters('sku')]",
+        "capacity": 1
+      },
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "copy": {
+        "name": "ehubs",
+        "count": "[length(parameters('eventHubs'))]"
+      },
+      "type": "Microsoft.EventHub/namespaces/eventhubs",
+      "apiVersion": "2022-10-01-preview",
+      "name": "[format('{0}/{1}', parameters('namespaceName'), parameters('eventHubs')[copyIndex()])]",
+      "properties": {
+        "messageRetentionInDays": "[parameters('messageRetentionInDays')]",
+        "partitionCount": 2
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces', parameters('namespaceName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "namespaceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.EventHub/namespaces', parameters('namespaceName'))]"
+    },
+    "namespaceName": {
+      "type": "string",
+      "value": "[parameters('namespaceName')]"
+    }
+  }
+}

@@ -4,6 +4,20 @@ AI-powered tools for Azure consulting, built to run inside VS Code with GitHub C
 
 ## Projects
 
+### [DeploX](deplox/) ⚠️ EXPERIMENTAL — POC
+
+> **First proof of concept** demonstrating how to build a self-service portal for deploying Azure resources through a conversational AI interface using existing Bicep templates. Templates included are basic starters — more will be developed as needed. Do not use in production.
+
+A local AI chatbot (runs at `localhost:3000`) that guides you through deploying Azure Integration Services via Bicep templates — no Azure Portal, no YAML pipelines, no memorizing CLI flags.
+
+**Supported Services:** Service Bus, Event Hubs, Logic App (Consumption & Standard), Function App, API Management, Integration Account, Key Vault, Event Grid
+
+**How it works:** Run `deploy.ps1` → open browser → chat with the AI → confirm → Azure resource is deployed.
+
+**Requirements:** Node.js ≥ 18, Azure CLI, Ollama with `llama3.2:1b`
+
+---
+
 ### [SoW Infrastructure Generator](sow-infrastructure-generator/)
 
 Automated Azure infrastructure deployment file generation from Confluence Statements of Work. Uses a 4-agent chain with specialized models for optimal performance.

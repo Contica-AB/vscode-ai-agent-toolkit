@@ -1,0 +1,105 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "4326161051184564681"
+    }
+  },
+  "parameters": {
+    "namespaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Service Bus namespace name"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location"
+      }
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "allowedValues": [
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "queues": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Queues to create"
+      }
+    },
+    "topics": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Topics to create"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ServiceBus/namespaces",
+      "apiVersion": "2022-10-01-preview",
+      "name": "[parameters('namespaceName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('sku')]",
+        "tier": "[parameters('sku')]"
+      },
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "copy": {
+        "name": "sbQueues",
+        "count": "[length(parameters('queues'))]"
+      },
+      "type": "Microsoft.ServiceBus/namespaces/queues",
+      "apiVersion": "2022-10-01-preview",
+      "name": "[format('{0}/{1}', parameters('namespaceName'), parameters('queues')[copyIndex()])]",
+      "properties": {
+        "enablePartitioning": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', parameters('namespaceName'))]"
+      ]
+    },
+    {
+      "copy": {
+        "name": "sbTopics",
+        "count": "[length(parameters('topics'))]"
+      },
+      "type": "Microsoft.ServiceBus/namespaces/topics",
+      "apiVersion": "2022-10-01-preview",
+      "name": "[format('{0}/{1}', parameters('namespaceName'), parameters('topics')[copyIndex()])]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ServiceBus/namespaces', parameters('namespaceName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "namespaceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ServiceBus/namespaces', parameters('namespaceName'))]"
+    },
+    "namespaceName": {
+      "type": "string",
+      "value": "[parameters('namespaceName')]"
+    }
+  }
+}

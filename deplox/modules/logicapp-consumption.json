@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "12887938662505565422"
+    }
+  },
+  "parameters": {
+    "logicAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Logic App name"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location"
+      }
+    },
+    "integrationAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Integration Account resource ID (optional)"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2019-05-01",
+      "name": "[parameters('logicAppName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "state": "Enabled",
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "triggers": {},
+          "actions": {}
+        },
+        "integrationAccount": "[if(not(equals(parameters('integrationAccountId'), '')), createObject('id', parameters('integrationAccountId')), null())]"
+      }
+    }
+  ],
+  "outputs": {
+    "logicAppId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Logic/workflows', parameters('logicAppName'))]"
+    },
+    "logicAppName": {
+      "type": "string",
+      "value": "[parameters('logicAppName')]"
+    }
+  }
+}

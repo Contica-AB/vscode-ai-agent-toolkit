@@ -1,0 +1,86 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "4261295808235864584"
+    }
+  },
+  "parameters": {
+    "apimName": {
+      "type": "string",
+      "metadata": {
+        "description": "APIM service name"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location"
+      }
+    },
+    "publisherEmail": {
+      "type": "string",
+      "metadata": {
+        "description": "Publisher email"
+      }
+    },
+    "publisherName": {
+      "type": "string",
+      "metadata": {
+        "description": "Publisher name"
+      }
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Developer",
+      "allowedValues": [
+        "Consumption",
+        "Developer",
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ApiManagement/service",
+      "apiVersion": "2022-08-01",
+      "name": "[parameters('apimName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('sku')]",
+        "capacity": "[if(equals(parameters('sku'), 'Consumption'), 0, 1)]"
+      },
+      "properties": {
+        "publisherEmail": "[parameters('publisherEmail')]",
+        "publisherName": "[parameters('publisherName')]"
+      },
+      "tags": "[parameters('tags')]"
+    }
+  ],
+  "outputs": {
+    "apimId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ApiManagement/service', parameters('apimName'))]"
+    },
+    "apimName": {
+      "type": "string",
+      "value": "[parameters('apimName')]"
+    },
+    "gatewayUrl": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ApiManagement/service', parameters('apimName')), '2022-08-01').gatewayUrl]"
+    }
+  }
+}

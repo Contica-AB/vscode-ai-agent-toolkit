@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DeploX — Azure Chatbot</title>
+<style>
+  :root {
+    --bg:        #0d0f17;
+    --surface:   #161925;
+    --surface2:  #1e2235;
+    --border:    #2a2f45;
+    --accent:    #3b82f6;
+    --accent2:   #60a5fa;
+    --success:   #22c55e;
+    --warn:      #f59e0b;
+    --error:     #ef4444;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --user-bg:   #1d4ed8;
+    --bot-bg:    #1e2235;
+    --radius:    12px;
+    --font:      'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; font-family: var(--font); background: var(--bg); color: var(--text); }
+
+  /* ── Layout ── */
+  #app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; background: var(--surface);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    gap: 12px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; font-weight: 700; }
+  .logo-icon { font-size: 1.5rem; }
+  .version-badge {
+    font-size: 0.65rem; background: var(--border); color: var(--muted);
+    padding: 2px 7px; border-radius: 20px; font-weight: 600; letter-spacing: .04em;
+  }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.75rem; padding: 4px 10px;
+    background: var(--surface2); border-radius: 20px; border: 1px solid var(--border);
+  }
+  .dot-status { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background .3s; }
+  .dot-status.ok  { background: var(--success); }
+  .dot-status.err { background: var(--error); }
+  .dot-status.loading { background: var(--warn); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  #new-chat-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    padding: 5px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+    transition: all .2s;
+  }
+  #new-chat-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+  /* ── Chat area ── */
+  #chat-wrap { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+  #chat-wrap::-webkit-scrollbar { width: 6px; }
+  #chat-wrap::-webkit-scrollbar-track { background: transparent; }
+  #chat-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Messages ── */
+  .msg-row { display: flex; gap: 10px; max-width: 780px; animation: fadeUp .25s ease; }
+  .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-row.bot  { align-self: flex-start; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  }
+  .avatar.bot  { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #7c3aed 100%); }
+  .avatar.user { background: #4338ca; }
+
+  .bubble {
+    padding: 11px 15px; border-radius: var(--radius); line-height: 1.6; font-size: 0.92rem;
+    max-width: 640px; word-break: break-word;
+  }
+  .msg-row.user .bubble { background: var(--user-bg); border-bottom-right-radius: 3px; }
+  .msg-row.bot  .bubble { background: var(--bot-bg); border-bottom-left-radius: 3px; border: 1px solid var(--border); }
+
+  .bubble code { background: #0f1117; padding: 1px 5px; border-radius: 4px; font-size: .85em; font-family: 'Cascadia Code', 'Consolas', monospace; }
+  .bubble pre  { background: #0f1117; padding: 10px 12px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
+  .bubble pre code { background: none; padding: 0; font-size: .85em; }
+  .bubble strong { color: #fff; }
+  .bubble a { color: var(--accent2); }
+  .timestamp { font-size: 0.68rem; color: var(--muted); margin-top: 4px; text-align: right; }
+  .msg-row.bot .timestamp { text-align: left; }
+
+  /* ── Choice chips ── */
+  .choice-row {
+    display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px;
+  }
+  .choice-chip {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 14px; border-radius: 20px;
+    font-size: .82rem; cursor: pointer; transition: all .18s;
+    white-space: nowrap;
+  }
+  .choice-chip:hover { background: #1e3a5f; border-color: var(--accent); color: var(--accent2); }
+  .choice-chip.selected { background: var(--accent); border-color: var(--accent); color: #fff; cursor: default; }
+  .choice-row.disabled .choice-chip:not(.selected) { opacity: .35; cursor: default; pointer-events: none; }
+
+  /* ── Typing indicator ── */
+  #typing { display: none; align-self: flex-start; }
+  #typing .bubble { display: flex; gap: 5px; align-items: center; padding: 12px 16px; }
+  .tdot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: bounce .9s infinite; }
+  .tdot:nth-child(2) { animation-delay: .2s; }
+  .tdot:nth-child(3) { animation-delay: .4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  /* ── Welcome card ── */
+  .welcome-card {
+    align-self: center; text-align: center; padding: 36px 28px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    max-width: 520px; margin: auto 0;
+  }
+  .welcome-card h1 { font-size: 1.6rem; margin-bottom: 8px; }
+  .welcome-card p  { color: var(--muted); margin-bottom: 20px; font-size: 0.9rem; line-height: 1.6; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .chip {
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 20px; font-size: 0.8rem;
+    cursor: pointer; transition: all .2s; color: var(--text);
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent2); background: #1e293b; }
+
+  /* ── Deploy config card (inside message) ── */
+  .deploy-card {
+    margin-top: 12px; background: var(--surface); border: 1px solid var(--accent);
+    border-radius: 10px; overflow: hidden;
+  }
+  .deploy-card-header {
+    background: #1e3a5f; padding: 10px 14px;
+    display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9rem;
+  }
+  .deploy-params { padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; }
+  .param-row { display: flex; gap: 8px; font-size: .83rem; }
+  .param-key   { color: var(--muted); min-width: 160px; flex-shrink: 0; }
+  .param-val   { color: var(--text); word-break: break-all; }
+  .deploy-actions { padding: 12px 14px; display: flex; gap: 10px; border-top: 1px solid var(--border); }
+  .btn-deploy  { background: var(--accent); color: #fff; border: none; padding: 9px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .88rem; transition: background .2s; }
+  .btn-deploy:hover { background: var(--accent2); }
+  .btn-cancel  { background: none; color: var(--muted); border: 1px solid var(--border); padding: 9px 16px; border-radius: 8px; cursor: pointer; font-size: .88rem; transition: all .2s; }
+  .btn-cancel:hover { color: var(--error); border-color: var(--error); }
+
+  /* ── Terminal panel ── */
+  #terminal {
+    flex-shrink: 0; height: 0; overflow: hidden; background: #080b10;
+    border-top: 2px solid var(--border); transition: height .3s ease; display: flex; flex-direction: column;
+  }
+  #terminal.open { height: 280px; }
+  .term-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 14px; background: #0f1320; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .term-title { font-size: .8rem; color: var(--muted); font-family: monospace; }
+  .term-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 0 4px; }
+  .term-close:hover { color: var(--error); }
+
+  /* ── Azure account panel ── */
+  #azure-panel {
+    position: fixed; top: 52px; right: 16px; z-index: 100;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; width: 320px; box-shadow: 0 8px 32px #00000066;
+    display: none; flex-direction: column; overflow: hidden;
+  }
+  #azure-panel.open { display: flex; }
+  .ap-header {
+    padding: 14px 16px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .ap-header h3 { font-size: .9rem; font-weight: 600; }
+  .ap-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; }
+  .ap-close:hover { color: var(--error); }
+  .ap-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .ap-row { display: flex; flex-direction: column; gap: 3px; }
+  .ap-label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .ap-value { font-size: .88rem; color: var(--text); word-break: break-all; }
+  .ap-value.user { color: var(--accent2); font-weight: 600; }
+  .ap-divider { height: 1px; background: var(--border); }
+  .ap-sub-list { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
+  .ap-sub-item {
+    padding: 7px 10px; border-radius: 7px; cursor: pointer; font-size: .83rem;
+    border: 1px solid transparent; transition: all .15s; display: flex; align-items: center; gap: 8px;
+  }
+  .ap-sub-item:hover { background: var(--surface2); border-color: var(--border); }
+  .ap-sub-item.active { background: #1e3a5f; border-color: var(--accent); color: var(--accent2); }
+  .ap-actions { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+  .btn-login  { flex: 1; background: var(--accent); color: #fff; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-size: .83rem; font-weight: 600; transition: background .2s; }
+  .btn-login:hover { background: var(--accent2); }
+  .btn-logout { background: none; color: var(--error); border: 1px solid var(--error); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: .83rem; transition: all .2s; }
+  .btn-logout:hover { background: #2d1515; }
+  #ap-status { font-size: .78rem; color: var(--warn); padding: 0 16px 10px; min-height: 0; }
+  #term-log { flex: 1; overflow-y: auto; padding: 10px 14px; font-family: 'Cascadia Code','Consolas',monospace; font-size: .8rem; line-height: 1.6; }
+  #term-log::-webkit-scrollbar { width: 4px; }
+  #term-log::-webkit-scrollbar-thumb { background: var(--border); }
+  .tlog         { color: #94a3b8; }
+  .tlog.success { color: var(--success); font-weight: 700; }
+  .tlog.error   { color: var(--error);   font-weight: 700; }
+  .tlog.warn    { color: var(--warn); }
+
+  /* ── Input area ── */
+  #input-area {
+    display: flex; gap: 10px; padding: 14px 20px;
+    background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; align-items: flex-end;
+  }
+  #msg-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); padding: 10px 14px; font-size: .92rem; font-family: var(--font);
+    resize: none; outline: none; transition: border .2s; max-height: 140px; min-height: 44px;
+    line-height: 1.5;
+  }
+  #msg-input:focus { border-color: var(--accent); }
+  #msg-input::placeholder { color: var(--muted); }
+  #send-btn {
+    background: var(--accent); color: #fff; border: none;
+    width: 44px; height: 44px; border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s; flex-shrink: 0;
+  }
+  #send-btn:hover   { background: var(--accent2); }
+  #send-btn:disabled { background: var(--border); cursor: not-allowed; }
+  #send-btn svg { width: 18px; height: 18px; }
+  .logo-icon { display:flex; align-items:center; color: var(--accent2); }
+  .avatar svg { width: 18px; height: 18px; pointer-events: none; }
+  .chip-icon  { display:inline-flex; align-items:center; vertical-align:middle; margin-right:5px; }
+  .chip-icon svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ic { display:inline-flex; align-items:center; vertical-align:middle; }
+  .ic svg { stroke:currentColor; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 1.2s linear infinite; transform-origin: center; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 19 6 19 18 12 22 5 18 5 6"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="5" y1="6" x2="19" y2="6"/><line x1="5" y1="18" x2="19" y2="18"/></svg></span>
+      <span>DeploX</span>
+      <span class="version-badge">v0.01</span>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <div class="dot-status loading" id="ollama-dot"></div>
+        <span id="ollama-label">Checking Ollama…</span>
+      </div>
+      <div class="status-pill" id="azure-pill" style="cursor:pointer" title="Click to manage Azure account">
+        <div class="dot-status loading" id="azure-dot"></div>
+        <span id="azure-label">Checking Azure…</span>
+      <span style="color:var(--muted);font-size:.7rem;margin-left:2px;display:inline-flex;align-items:center"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </div>
+      <button id="new-chat-btn" title="Start new chat"><span class="ic"><svg viewBox="0 0 24 24" width="13" height="13" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span> New chat</button>
+    </div>
+  </header>
+
+  <!-- Azure account panel -->
+  <div id="azure-panel">
+    <div class="ap-header">
+      <h3><span class="ic" style="margin-right:6px"><svg viewBox="0 0 24 24" width="15" height="15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></span>Azure Account</h3>
+      <button class="ap-close" id="ap-close-btn">×</button>
+    </div>
+    <div class="ap-body">
+      <div class="ap-row">
+        <span class="ap-label">Signed in as</span>
+        <span class="ap-value user" id="ap-user">—</span>
+      </div>
+      <div class="ap-row">
+        <span class="ap-label">Tenant</span>
+        <span class="ap-value" id="ap-tenant">—</span>
+      </div>
+      <div class="ap-divider"></div>
+      <div class="ap-row">
+        <span class="ap-label">Select Subscription</span>
+        <div class="ap-sub-list" id="ap-sub-list">
+          <span style="color:var(--muted);font-size:.82rem">Loading…</span>
+        </div>
+      </div>
+    </div>
+    <div id="ap-status"></div>
+    <div class="ap-actions">
+      <button class="btn-login"  id="ap-login-btn">Sign in / Switch account</button>
+      <button class="btn-logout" id="ap-logout-btn">Sign out</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="chat-wrap">
+    <div class="welcome-card" id="welcome">
+      <div style="margin-bottom:14px;color:var(--accent2)"><svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
+      <h1>DeploX</h1>
+      <p>Your AI-powered Azure Integration deployment assistant.<br>
+         Just tell me what you'd like to deploy and I'll guide you through it.</p>
+      <div class="chip-row">
+        <div class="chip" onclick="quickSend('I want to deploy a Service Bus')"><img src="https://azure.microsoft.com/svghandler/service-bus/?width=22&height=22" width="22" height="22" style="vertical-align:middle;margin-right:6px;border-radius:4px">Service Bus</div>
+        <div class="chip" onclick="quickSend('I want to deploy an Event Hub')"><img src="https://azure.microsoft.com/svghandler/event-hubs/?width=22&height=22" width="22" height="22" style="vertical-align:middle;margin-right:6px;border-radius:4px">Event Hubs</div>
+        <div class="chip" onclick="quickSend('I want to deploy a Logic App Standard')"><img src="https://azure.microsoft.com/svghandler/logic-apps/?width=22&height=22" width="22" height="22" style="vertical-align:middle;margin-right:6px;border-radius:4px">Logic App Standard</div>
+<div class="chip" onclick="quickSend('I want to deploy a Logic App Consumption')"><img src="https://azure.microsoft.com/svghandler/logic-apps/?width=22&height=22" width="22" height="22" style="vertical-align:middle;margin-right:6px;border-radius:4px">Logic App Consumption</div>
+        <div class="chip" onclick="quickSend('I want to deploy an API Management')"><img src="https://azure.microsoft.com/svghandler/api-management/?width=22&height=22" width="22" height="22" style="vertical-align:middle;margin-right:6px;border-radius:4px">APIM</div>
+        <div class="chip" onclick="quickSend('I want to deploy a Function App')"><img src="https://azure.microsoft.com/svghandler/functions/?width=22&height=22" width="22" height="22" style="vertical-align:middle;margin-right:6px;border-radius:4px">Function App</div>
+        <div class="chip" onclick="quickSend('I want to deploy a Key Vault')"><img src="https://azure.microsoft.com/svghandler/key-vault/?width=22&height=22" width="22" height="22" style="vertical-align:middle;margin-right:6px;border-radius:4px">Key Vault</div>
+      </div>
+    </div>
+    <div id="typing" class="msg-row bot">
+      <div class="avatar bot"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none"><path d="M12 2.5c.28 0 .5.3.5.67 0 2.84 1.03 4.3 2.3 5.03C16.07 9 17.7 9 19.33 9c.37 0 .67.22.67.5s-.3.5-.67.5c-1.63 0-3.26 0-4.53.8-1.27.73-2.3 2.19-2.3 5.03 0 .37-.22.67-.5.67s-.5-.3-.5-.67c0-2.84-1.03-4.3-2.3-5.03C8.07 10 6.44 10 4.67 10 4.3 10 4 9.78 4 9.5S4.3 9 4.67 9c1.63 0 3.26 0 4.53-.8 1.27-.73 2.3-2.19 2.3-5.03 0-.37.22-.67.5-.67Z"/><path d="M19 14.5c.2 0 .36.2.36.46 0 1.32.48 2 1.07 2.33.59.34 1.35.34 2.11.34.2 0 .36.15.36.33s-.16.34-.36.34c-.76 0-1.52 0-2.11.33-.59.34-1.07 1.02-1.07 2.33 0 .26-.16.46-.36.46s-.36-.2-.36-.46c0-1.31-.48-1.99-1.07-2.33-.59-.33-1.35-.33-2.11-.33-.2 0-.36-.16-.36-.34s.16-.33.36-.33c.76 0 1.52 0 2.11-.34.59-.33 1.07-1.01 1.07-2.33 0-.26.16-.46.36-.46Z"/></svg></div>
+      <div class="bubble"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span></div>
+    </div>
+  </div>
+
+  <!-- Terminal panel -->
+  <div id="terminal">
+    <div class="term-header">
+      <span class="term-title"><span class="ic" style="margin-right:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></span>Deployment Output</span>
+      <button class="term-close" id="term-close-btn" title="Close">×</button>
+    </div>
+    <div id="term-log"></div>
+  </div>
+
+  <!-- Input -->
+  <div id="input-area">
+    <textarea id="msg-input" rows="1" placeholder="What would you like to deploy?"></textarea>
+    <button id="send-btn" title="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ── SVG Icon constants ────────────────────────────────────────────────────────
+const IC = {
+  bot:  `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.5c.28 0 .5.3.5.67 0 2.84 1.03 4.3 2.3 5.03C16.07 9 17.7 9 19.33 9c.37 0 .67.22.67.5s-.3.5-.67.5c-1.63 0-3.26 0-4.53.8-1.27.73-2.3 2.19-2.3 5.03 0 .37-.22.67-.5.67s-.5-.3-.5-.67c0-2.84-1.03-4.3-2.3-5.03C8.07 10 6.44 10 4.67 10 4.3 10 4 9.78 4 9.5S4.3 9 4.67 9c1.63 0 3.26 0 4.53-.8 1.27-.73 2.3-2.19 2.3-5.03 0-.37.22-.67.5-.67Z"/><path d="M19 14.5c.2 0 .36.2.36.46 0 1.32.48 2 1.07 2.33.59.34 1.35.34 2.11.34.2 0 .36.15.36.33s-.16.34-.36.34c-.76 0-1.52 0-2.11.33-.59.34-1.07 1.02-1.07 2.33 0 .26-.16.46-.36.46s-.36-.2-.36-.46c0-1.31-.48-1.99-1.07-2.33-.59-.33-1.35-.33-2.11-.33-.2 0-.36-.16-.36-.34s.16-.33.36-.33c.76 0 1.52 0 2.11-.34.59-.33 1.07-1.01 1.07-2.33 0-.26.16-.46.36-.46Z"/></svg>`,
+  user: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>`,
+  check:`<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  ring: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>`,
+  rocket:`<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>`,
+  loader:`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spin"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`,
+  checkCircle:`<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+  xCircle:`<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+};
+
+const azurePanel  = document.getElementById('azure-panel');
+const apStatus    = document.getElementById('ap-status');
+
+function openAzurePanel() {
+  azurePanel.classList.add('open');
+  loadAzureAccount();
+}
+function closeAzurePanel() { azurePanel.classList.remove('open'); }
+
+document.getElementById('azure-pill').onclick    = () => azurePanel.classList.contains('open') ? closeAzurePanel() : openAzurePanel();
+document.getElementById('ap-close-btn').onclick  = closeAzurePanel;
+
+async function loadAzureAccount() {
+  apStatus.textContent = '';
+  document.getElementById('ap-user').textContent   = 'Loading…';
+  document.getElementById('ap-tenant').textContent = '—';
+
+  const [acctRes, ctxRes] = await Promise.all([
+    fetch('/api/azure/account'),
+    fetch('/api/azure/context')
+  ]);
+  const acct = await acctRes.json();
+  const ctx  = await ctxRes.json();
+
+  if (!acct.loggedIn) {
+    document.getElementById('ap-user').textContent   = 'Not signed in';
+    document.getElementById('ap-tenant').textContent = '—';
+    document.getElementById('ap-sub-list').innerHTML = '<span style="color:var(--muted);font-size:.82rem">Sign in to see subscriptions</span>';
+    return;
+  }
+
+  document.getElementById('ap-user').textContent   = acct.user;
+  document.getElementById('ap-tenant').textContent = acct.tenant || '—';
+
+  // Render subscription list
+  const list = document.getElementById('ap-sub-list');
+  list.innerHTML = '';
+  if (!ctx.subscriptions.length) {
+    list.innerHTML = '<span style="color:var(--muted);font-size:.82rem">No subscriptions found</span>';
+    return;
+  }
+  ctx.subscriptions.forEach(sub => {
+    const item = document.createElement('div');
+    item.className = 'ap-sub-item' + (sub.id === acct.subscription?.id ? ' active' : '');
+    item.innerHTML = `<span class="sub-check ic">${sub.id === acct.subscription?.id ? IC.check : IC.ring}</span><span>${sub.name}</span>`;
+    item.title = sub.id;
+    item.onclick = () => switchSubscription(sub.id, sub.name);
+    list.appendChild(item);
+  });
+
+  // Update header pill
+  updateAzurePill(true, acct.subscription?.name || acct.user);
+}
+
+async function switchSubscription(id, name) {
+  apStatus.textContent = `Switching to ${name}…`;
+  apStatus.style.color = 'var(--warn)';
+  try {
+    const r = await fetch('/api/azure/subscription', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscriptionId: id })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      apStatus.textContent = `Active: ${name}`;
+      apStatus.style.color = 'var(--success)';
+      updateAzurePill(true, name);
+      // Refresh sub list highlights
+      document.querySelectorAll('.ap-sub-item').forEach(el => {
+        const isActive = el.title === id;
+        el.classList.toggle('active', isActive);
+        el.querySelector('.sub-check').innerHTML = isActive ? IC.check : IC.ring;
+      });
+      // Reset sessions so new subscription is used
+      await fetch(`/api/session/${sessionId}`, { method: 'DELETE' });
+      sessionId = Math.random().toString(36).slice(2);
+      sessionStorage.setItem('il_session', sessionId);
+    } else {
+      apStatus.textContent = 'Failed to switch subscription.';
+      apStatus.style.color = 'var(--error)';
+    }
+  } catch { apStatus.textContent = 'Error switching subscription.'; apStatus.style.color = 'var(--error)'; }
+}
+
+document.getElementById('ap-login-btn').onclick = async () => {
+  apStatus.textContent = 'Opening browser for sign-in…';
+  apStatus.style.color = 'var(--warn)';
+  document.getElementById('ap-login-btn').disabled = true;
+
+  const res = await fetch('/api/azure/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  const reader = res.body.getReader(); const decoder = new TextDecoder(); let buf = '';
+  while (true) {
+    const { done, value } = await reader.read(); if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    for (const line of buf.split('\n')) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const ev = JSON.parse(line.slice(6));
+        if (ev.message) { apStatus.textContent = ev.message; }
+        if (ev.type === 'success') { apStatus.style.color = 'var(--success)'; loadAzureAccount(); }
+        if (ev.type === 'error')   { apStatus.style.color = 'var(--error)'; }
+      } catch {}
+    }
+    buf = buf.split('\n').pop();
+  }
+  document.getElementById('ap-login-btn').disabled = false;
+};
+
+document.getElementById('ap-logout-btn').onclick = async () => {
+  if (!confirm('Sign out of Azure CLI?')) return;
+  await fetch('/api/azure/logout', { method: 'POST' });
+  updateAzurePill(false, 'Not signed in');
+  loadAzureAccount();
+};
+
+function updateAzurePill(ok, label) {
+  document.getElementById('azure-dot').className  = `dot-status ${ok ? 'ok' : 'err'}`;
+  document.getElementById('azure-label').textContent = label;
+}
+
+// Close panel when clicking outside
+document.addEventListener('click', e => {
+  if (!azurePanel.contains(e.target) && !document.getElementById('azure-pill').contains(e.target))
+    closeAzurePanel();
+});
+
+// ── Session ──────────────────────────────────────────────────────────────────
+let sessionId = Math.random().toString(36).slice(2);
+sessionStorage.setItem('il_session', sessionId);
+
+let pendingConfig = null;
+let isStreaming   = false;
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const chatWrap  = document.getElementById('chat-wrap');
+const input     = document.getElementById('msg-input');
+const sendBtn   = document.getElementById('send-btn');
+const typing    = document.getElementById('typing');
+const terminal  = document.getElementById('terminal');
+const termLog   = document.getElementById('term-log');
+const welcome   = document.getElementById('welcome');
+
+// ── Auto-resize textarea ──────────────────────────────────────────────────────
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+});
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+
+// ── Status checks ─────────────────────────────────────────────────────────────
+async function checkStatus() {
+  // Ollama
+  try {
+    const r = await fetch('/api/ollama/status');
+    const d = await r.json();
+    const dot   = document.getElementById('ollama-dot');
+    const label = document.getElementById('ollama-label');
+    if (d.running && d.hasModel) {
+      dot.className = 'dot-status ok'; label.textContent = `llama3.2 ready`;
+    } else if (d.running) {
+      dot.className = 'dot-status err'; label.textContent = `Model not pulled`;
+    } else {
+      dot.className = 'dot-status err'; label.textContent = `Ollama not running`;
+    }
+  } catch { document.getElementById('ollama-dot').className = 'dot-status err'; }
+
+  // Azure
+  try {
+    const r = await fetch('/api/azure/context');
+    const d = await r.json();
+    const dot   = document.getElementById('azure-dot');
+    const label = document.getElementById('azure-label');
+    if (d.subscriptions.length) {
+      const def = d.subscriptions.find(s => s.isDefault) || d.subscriptions[0];
+      dot.className = 'dot-status ok'; label.textContent = def.name;
+    } else {
+      dot.className = 'dot-status err'; label.textContent = 'Not logged in';
+    }
+  } catch { document.getElementById('azure-dot').className = 'dot-status err'; }
+}
+checkStatus();
+
+// ── Markdown-lite renderer ────────────────────────────────────────────────────
+function renderMd(text) {
+  // Strip DEPLOY_CONFIG and CHOICES lines from displayed text
+  text = text.replace(/DEPLOY_CONFIG:\s*\{[\s\S]*?\}(?=\s*$|\n\s*[^}\s])/g, '');
+  text = text.replace(/CHOICES:\[.*?\]/g, '');
+  return text.trim()
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\n/g,'<br>');
+}
+
+// ── Attach clickable choice chips below a message ─────────────────────────────
+function attachChoices(msgWrap, choices) {
+  // Remove any previous choice row on this message
+  const old = msgWrap.querySelector('.choice-row');
+  if (old) old.remove();
+
+  const row = document.createElement('div');
+  row.className = 'choice-row';
+
+  choices.forEach(label => {
+    const chip = document.createElement('button');
+    chip.className = 'choice-chip';
+    chip.textContent = label;
+    chip.onclick = () => {
+      // Mark selected, disable the whole row
+      row.querySelectorAll('.choice-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      row.classList.add('disabled');
+      // Send as a user message
+      send(label);
+    };
+    row.appendChild(chip);
+  });
+
+  msgWrap.appendChild(row);
+  scrollBottom();
+}
+
+// ── Add message to chat ───────────────────────────────────────────────────────
+function addMessage(role, html, deployConfig = null) {
+  if (welcome) welcome.style.display = 'none';
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `avatar ${role}`;
+  avatar.innerHTML = role === 'bot' ? IC.bot : IC.user;
+
+  const wrap = document.createElement('div');
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = html;
+
+  // Attach deploy card if config provided
+  if (deployConfig) bubble.appendChild(buildDeployCard(deployConfig));
+
+  const ts = document.createElement('div');
+  ts.className = 'timestamp';
+  ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  wrap.appendChild(bubble);
+  wrap.appendChild(ts);
+  row.appendChild(avatar);
+  row.appendChild(wrap);
+
+  // Insert before typing indicator
+  chatWrap.insertBefore(row, typing);
+  scrollBottom();
+  return bubble; // return so streaming can update it
+}
+
+// ── Build deploy status card (auto-deploys — user already confirmed in chat) ──
+function buildDeployCard(config) {
+  const card = document.createElement('div');
+  card.className = 'deploy-card';
+
+  const flat = {
+    Service:          config.service,
+    Subscription:     config.subscriptionName || config.subscriptionId,
+    'Resource Group': config.resourceGroup + (config.createResourceGroup ? ' (new)' : ''),
+    Location:         config.location,
+    ...config.params,
+    Tags: JSON.stringify(config.tags)
+  };
+  let rows = '';
+  for (const [k, v] of Object.entries(flat)) {
+    const val = Array.isArray(v) ? (v.length ? v.join(', ') : '(none)') : String(v);
+    rows += `<div class="param-row"><span class="param-key">${k}</span><span class="param-val">${val}</span></div>`;
+  }
+
+  card.innerHTML = `
+    <div class="deploy-card-header"><span class="ic" style="margin-right:6px">${IC.rocket}</span>Deploying — ${config.serviceLabel || config.service}</div>
+    <div class="deploy-params">${rows}</div>
+    <div class="deploy-actions"><span class="deploy-status" style="color:var(--warn);font-size:.83rem;display:inline-flex;align-items:center;gap:5px"><span class="ic">${IC.loader}</span>Starting deployment…</span></div>`;
+
+  // Auto-start deployment immediately
+  setTimeout(() => startDeploy(config, card), 100);
+  return card;
+}
+
+// ── Streaming send ────────────────────────────────────────────────────────────
+async function send(overrideText) {
+  const text = overrideText || input.value.trim();
+  if (!text || isStreaming) return;
+
+  input.value = ''; input.style.height = 'auto';
+  isStreaming = true; sendBtn.disabled = true;
+
+  addMessage('user', renderMd(text));
+  typing.style.display = 'flex';
+  scrollBottom();
+
+  // Create bot bubble (will be filled while streaming)
+  if (welcome) welcome.style.display = 'none';
+  const row    = document.createElement('div');
+  row.className = 'msg-row bot';
+  const avatar  = document.createElement('div');
+  avatar.className = 'avatar bot'; avatar.innerHTML = IC.bot;
+  const wrap    = document.createElement('div');
+  const bubble  = document.createElement('div');
+  bubble.className = 'bubble';
+  const ts      = document.createElement('div');
+  ts.className  = 'timestamp';
+  ts.textContent = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  wrap.appendChild(bubble); wrap.appendChild(ts);
+  row.appendChild(avatar); row.appendChild(wrap);
+  chatWrap.insertBefore(row, typing);
+
+  let rawText = '';
+  let deployConfig = null;
+  let pendingChoices = null;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, sessionId })
+    });
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let   buf     = '';
+
+    typing.style.display = 'none';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const ev = JSON.parse(line.slice(6));
+          if (ev.type === 'token') {
+            rawText += ev.content;
+            // Strip CHOICES and DEPLOY_CONFIG lines from visible text while streaming
+            bubble.innerHTML = renderMd(rawText);
+            scrollBottom();
+          } else if (ev.type === 'choices') {
+            pendingChoices = ev.choices;
+          } else if (ev.type === 'deploy_config') {
+            deployConfig = ev.config;
+          } else if (ev.type === 'error') {
+            bubble.innerHTML += `<br><span style="color:var(--error)">${ev.message}</span>`;
+          }
+        } catch {}
+      }
+    }
+
+    // Attach deploy card after stream finishes
+    if (deployConfig) bubble.appendChild(buildDeployCard(deployConfig));
+
+    // Attach choice chips after stream finishes
+    if (pendingChoices) attachChoices(wrap, pendingChoices);
+
+  } catch (err) {
+    typing.style.display = 'none';
+    bubble.innerHTML = `<span style="color:var(--error)">Connection error: ${err.message}</span>`;
+  }
+
+  isStreaming = false; sendBtn.disabled = false;
+  scrollBottom();
+  input.focus();
+}
+
+// ── Deploy ────────────────────────────────────────────────────────────────────
+async function startDeploy(config, card) {
+  const statusEl = card.querySelector('.deploy-status');
+  const setStatus = (html) => { if (statusEl) statusEl.innerHTML = html; };
+
+  terminal.classList.add('open');
+  termLog.innerHTML = '';
+  scrollBottom();
+
+  const res = await fetch('/api/deploy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ config })
+  });
+
+  const reader  = res.body.getReader();
+  const decoder = new TextDecoder();
+  let   buf     = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const ev = JSON.parse(line.slice(6));
+        const cls = ev.type === 'success' ? 'success' : ev.type === 'error' ? 'error' : ev.type === 'warn' ? 'warn' : '';
+        if (ev.message) appendTermLog(ev.message, cls);
+        if (ev.type === 'success') {
+          setStatus(`<span style="color:var(--success);font-weight:700;display:inline-flex;align-items:center;gap:5px"><span class="ic">${IC.checkCircle}</span>Deployed successfully!</span>`);
+        } else if (ev.type === 'error') {
+          setStatus(`<span style="color:var(--error);display:inline-flex;align-items:center;gap:5px"><span class="ic">${IC.xCircle}</span>${ev.message}</span>`);
+        }
+      } catch {}
+    }
+  }
+}
+
+function appendTermLog(msg, cls = '') {
+  const lines = msg.split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const el = document.createElement('div');
+    el.className = `tlog ${cls}`;
+    el.textContent = line;
+    termLog.appendChild(el);
+  }
+  termLog.scrollTop = termLog.scrollHeight;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function scrollBottom() { chatWrap.scrollTop = chatWrap.scrollHeight; }
+function quickSend(t)   { send(t); }
+
+document.getElementById('new-chat-btn').onclick = async () => {
+  await fetch(`/api/session/${sessionId}`, { method: 'DELETE' });
+  sessionStorage.removeItem('il_session');
+  location.reload();
+};
+
+document.getElementById('term-close-btn').onclick = () => terminal.classList.remove('open');
+sendBtn.onclick = () => send();
+</script>
+</body>
+</html>

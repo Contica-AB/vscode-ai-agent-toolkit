@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "4431130325289699190"
+    }
+  },
+  "parameters": {
+    "integrationAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Integration Account name"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location"
+      }
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Free",
+        "Basic",
+        "Standard"
+      ]
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Logic/integrationAccounts",
+      "apiVersion": "2019-05-01",
+      "name": "[parameters('integrationAccountName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "tags": "[parameters('tags')]",
+      "properties": {}
+    }
+  ],
+  "outputs": {
+    "integrationAccountId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Logic/integrationAccounts', parameters('integrationAccountName'))]"
+    },
+    "integrationAccountName": {
+      "type": "string",
+      "value": "[parameters('integrationAccountName')]"
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "322945473729694137"
+    }
+  },
+  "parameters": {
+    "topicName": {
+      "type": "string",
+      "metadata": {
+        "description": "Event Grid topic name"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.EventGrid/topics",
+      "apiVersion": "2022-06-15",
+      "name": "[parameters('topicName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "inputSchema": "EventGridSchema",
+        "publicNetworkAccess": "Enabled"
+      }
+    }
+  ],
+  "outputs": {
+    "topicId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.EventGrid/topics', parameters('topicName'))]"
+    },
+    "topicName": {
+      "type": "string",
+      "value": "[parameters('topicName')]"
+    },
+    "topicEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.EventGrid/topics', parameters('topicName')), '2022-06-15').endpoint]"
+    }
+  }
+}
