@@ -202,6 +202,7 @@ function extractValue(param, msg, subs) {
     return val.length ? val : null;
   }
   if (param.type === 'text') {
+    if (param.defaultValue !== undefined && msg.trim().startsWith('Use default (')) return String(param.defaultValue);
     if (['ok','yes','no','sure','next','skip','proceed'].includes(lower)) return null;
     const val = msg.trim();
     if (!val.length) return null;
@@ -280,6 +281,7 @@ function choicesForParam(param, subs, session) {
     return [...rgs.map(rg => rg.name).sort(), '+ Create new'];
   }
   if (param.type === 'list_optional' || param.type === 'text_optional') return ['Skip'];
+  if (param.type === 'text' && param.defaultValue !== undefined) return [`Use default (${param.defaultValue})`];
   return null;
 }
 
