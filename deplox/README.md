@@ -48,5 +48,15 @@ Then open **http://localhost:3000** in your browser.
 
 ## Prerequisites
 - [Node.js](https://nodejs.org) ≥ 18
-- [Azure CLI](https://aka.ms/installazurecliwindows) (logged in via `az login`)
-- [Ollama](https://ollama.com) with `llama3.2:1b` pulled
+- [Azure CLI](https://aka.ms/installazurecliwindows) logged in via:
+  ```powershell
+  az login
+  ```
+- [Ollama](https://ollama.com) installed and the required model pulled:
+  ```powershell
+  ollama pull llama3.2:1b
+  ```
+  > Or run the automated setup script (handles Ollama install + model pull):
+  > ```powershell
+  > powershell -ExecutionPolicy Bypass -File .\chatbot\setup-ollama.ps1
+  > ```
