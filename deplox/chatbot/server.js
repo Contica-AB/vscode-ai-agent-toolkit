@@ -93,7 +93,7 @@ const SERVICE_SCHEMAS = {
     { key:'sku', label:'SKU', type:'choice',
       choices:['Consumption','Developer','Basic','Standard','Premium'],
       q:'Which SKU?\n• Consumption — serverless, pay-per-call, no VNet, fastest to deploy\n• Developer — dev/test only, no SLA, ~30–45 min to provision\n• Basic — production, SLA, ~30–45 min to provision\n• Standard — production + more scale, ~30–45 min to provision\n• Premium — multi-region, VNet integration, ~30–45 min to provision\n[!] All tiers except Consumption take 30–45 minutes to deploy.' },
-    { key:'rateLimitCallsPerMinute', label:'rate limit (calls/min)', type:'text',
+    { key:'rateLimitCallsPerMinute', label:'rate limit (calls/min)', type:'text', paramType:'int',
       defaultValue: '60',
       q:'Rate limit per client IP — max calls per minute?\n• Recommended: 60 for dev/test, 300–1000 for production APIs\n• Too low = legitimate users get blocked; too high = no protection\n• Applies globally across all APIs in this template\n• Press Enter to use default (60)',
       validate: v => (isNaN(parseInt(v)) || parseInt(v) < 1) ? 'Please enter a positive number.' : null },
