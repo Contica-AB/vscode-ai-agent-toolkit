@@ -796,8 +796,28 @@ async function startDeploy(config, card) {
 
   // Post actual result to chat — never rely on LLM to report deployment outcome
   const svcLabel = config.serviceLabel || config.service;
+  const sub  = config.subscriptionId;
+  const rg   = config.resourceGroup;
+
+  // Build Azure Portal deep-link per service type
+  const PORTAL_PATHS = {
+    'apim':                 `Microsoft.ApiManagement/service/${config.params.apimName}`,
+    'servicebus':           `Microsoft.ServiceBus/namespaces/${config.params.namespaceName}`,
+    'eventhub':             `Microsoft.EventHub/namespaces/${config.params.namespaceName}`,
+    'logicapp-consumption': `Microsoft.Logic/workflows/${config.params.logicAppName}`,
+    'logicapp-standard':    `Microsoft.Web/sites/${config.params.logicAppName}`,
+    'functionapp':          `Microsoft.Web/sites/${config.params.functionAppName}`,
+    'keyvault':             `Microsoft.KeyVault/vaults/${config.params.keyVaultName}`,
+    'eventgrid':            `Microsoft.EventGrid/topics/${config.params.topicName}`,
+    'integrationaccount':   `Microsoft.Logic/integrationAccounts/${config.params.accountName}`,
+  };
+  const providerPath = PORTAL_PATHS[config.service];
+  const portalLink = (sub && rg && providerPath)
+    ? `https://portal.azure.com/#resource/subscriptions/${sub}/resourceGroups/${rg}/providers/${providerPath}/overview`
+    : `https://portal.azure.com/#browse/resourcegroups`;
+
   if (succeeded) {
-    addMessage('bot', `Deployment complete.\n\n${svcLabel} has been deployed successfully to resource group <strong>${config.resourceGroup}</strong> in <strong>${config.location}</strong>.\n\nYou can find it in the <a href="https://portal.azure.com" target="_blank" style="color:var(--accent2)">Azure Portal</a>.`);
+    addMessage('bot', `Deployment complete.\n\n<strong>${svcLabel}</strong> is live in resource group <strong>${rg}</strong> (${config.location}).\n\n<a href="${portalLink}" target="_blank" style="color:var(--accent2);text-decoration:underline">Open in Azure Portal →</a>`);
   } else {
     const errDetail = lastError ? `\n\n<span style="color:var(--error)">${lastError}</span>` : '';
     addMessage('bot', `Deployment failed.${errDetail}\n\nCheck the terminal output above for the full error. You can fix the issue and try deploying again.`);
