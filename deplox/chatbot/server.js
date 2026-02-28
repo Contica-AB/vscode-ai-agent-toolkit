@@ -29,7 +29,7 @@ Ask that one thing naturally. Never ask more than one thing at a time.
 Acknowledge answers briefly before continuing.`;
 
 // ── Parameter schemas ─────────────────────────────────────────────────────────
-const LOCATIONS = ['westeurope','northeurope','eastus','eastus2','westus','westus2','uksouth','ukwest','australiaeast','southeastasia','japaneast','centralus'];
+const LOCATIONS = ['swedencentral','westeurope','northeurope','eastus','eastus2','westus','westus2','uksouth','ukwest','australiaeast','southeastasia','japaneast','centralus'];
 
 const SERVICE_SCHEMAS = {
   'servicebus': [
@@ -358,7 +358,7 @@ app.get('/api/azure/context', (_req, res) => {
   res.json({
     subscriptions: subs.map(s => ({ id: s.id, name: s.name, isDefault: s.isDefault })),
     locations: [
-      'westeurope','northeurope','eastus','eastus2','westus','westus2',
+      'swedencentral','westeurope','northeurope','eastus','eastus2','westus','westus2',
       'uksouth','ukwest','australiaeast','southeastasia','japaneast','centralus'
     ]
   });
