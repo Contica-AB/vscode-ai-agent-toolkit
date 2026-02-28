@@ -9,48 +9,48 @@ DeploX is a **local-first** deployment toolkit. There is no cloud backend — ev
 ## High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Developer Machine                        │
-│                                                                 │
-│  Browser (localhost:3000)                                       │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │  index.html  (Single-page app — HTML + CSS + Vanilla JS) │   │
-│  │                                                          │   │
-│  │  ┌─────────────┐   ┌──────────────┐  ┌───────────────┐  │   │
-│  │  │ Chat Window │   │ Choice Chips │  │ Deploy Card   │  │   │
-│  │  │ (SSE stream)│   │ (buttons)    │  │ (log terminal)│  │   │
-│  │  └──────┬──────┘   └──────┬───────┘  └───────┬───────┘  │   │
-│  └─────────┼────────────────┼──────────────────┼───────────┘   │
-│            │  POST /api/chat │                  │ POST /api/deploy│
-│            ▼                ▼                  ▼               │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │              Node.js  server.js  (Express)               │   │
-│  │                                                          │   │
-│  │  ┌────────────────────┐   ┌──────────────────────────┐   │   │
-│  │  │   State Machine    │   │    Deploy Pipeline       │   │   │
-│  │  │  start → collecting│   │  1. az account set       │   │   │
-│  │  │  → confirm → done  │   │  2. az group create      │   │   │
-│  │  └────────┬───────────┘   │  3. az deployment group  │   │   │
-│  │           │               │     create (Bicep)       │   │   │
-│  │  ┌────────▼───────────┐   │  4. zip-deploy (opt.)    │   │   │
-│  │  │  SESSION STORE     │   │  5. surface outputs      │   │   │
-│  │  │  (in-memory Map)   │   └──────────┬───────────────┘   │   │
-│  │  └────────────────────┘              │                   │   │
-│  └───────────────┬──────────────────────┼───────────────────┘   │
-│                  │                      │                       │
-│        ┌─────────▼──────────┐  ┌────────▼────────────────┐     │
-│        │  Ollama (local LLM) │  │  Azure CLI (az)         │     │
-│        │  llama3.2:1b        │  │  + Bicep modules        │     │
-│        │  port 11434         │  │  modules/*.bicep        │     │
-│        └─────────────────────┘  └─────────────────────────┘     │
-│                                          │                      │
-└──────────────────────────────────────────┼──────────────────────┘
-                                           │  ARM REST API
-                                           ▼
-                                  ┌─────────────────┐
-                                  │  Azure Cloud    │
-                                  │  (subscription) │
-                                  └─────────────────┘
++-----------------------------------------------------------------------+
+|                          Developer Machine                            |
+|                                                                       |
+|   Browser  (localhost:3000)                                           |
+|   +-------------------------------------------------------------------+|
+|   |  index.html  (Single-page app -- HTML + CSS + Vanilla JS)        ||
+|   |                                                                   ||
+|   |  +----------------+   +--------------+   +----------------+      ||
+|   |  |  Chat Window   |   | Choice Chips |   |  Deploy Card   |      ||
+|   |  |  (SSE stream)  |   |  (buttons)   |   | (log terminal) |      ||
+|   |  +-------+--------+   +------+-------+   +-------+--------+      ||
+|   +----------|--------------------|-------------------|---------------+|
+|              |  POST /api/chat    |                   | POST /api/deploy|
+|              v                   v                   v               |
+|   +-------------------------------------------------------------------+|
+|   |                 Node.js  server.js  (Express)                    ||
+|   |                                                                   ||
+|   |  +----------------------+    +-----------------------------+     ||
+|   |  |    State Machine     |    |      Deploy Pipeline        |     ||
+|   |  |  start -> collecting |    |  1. az account set          |     ||
+|   |  |  -> confirm -> done  |    |  2. az group create         |     ||
+|   |  +----------+-----------+    |  3. az deployment group     |     ||
+|   |             |                |     create  (Bicep)         |     ||
+|   |  +----------v-----------+    |  4. zip-deploy  (optional)  |     ||
+|   |  |   SESSION STORE      |    |  5. surface outputs         |     ||
+|   |  |   (in-memory Map)    |    +--------------+--------------+     ||
+|   |  +----------------------+                   |                   ||
+|   +---------------------------+-----------------|-------------------+|
+|                               |                 |                    |
+|        +----------------------v--+   +----------v-----------------+  |
+|        |   Ollama  (local LLM)   |   |   Azure CLI  (az)          |  |
+|        |   llama3.2:1b           |   |   + Bicep modules          |  |
+|        |   port 11434            |   |   modules/*.bicep          |  |
+|        +-------------------------+   +----------------------------+  |
+|                                                    |                 |
++----------------------------------------------------|-----------------+
+                                                     |   ARM REST API
+                                                     v
+                                            +------------------+
+                                            |   Azure Cloud    |
+                                            |   (subscription) |
+                                            +------------------+
 ```
 
 ---
@@ -195,27 +195,27 @@ Runs as a local process on port 11434. Only used to generate the conversational 
 ## State Machine Detail
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         STATE MACHINE                       │
-│                                                             │
-│   ┌───────┐  service detected  ┌────────────┐              │
-│   │ start │ ─────────────────► │ collecting │              │
-│   └───────┘                    └─────┬──────┘              │
-│       ▲                              │ all params filled    │
-│       │                              ▼                      │
-│       │                        ┌─────────┐                 │
-│       │          cancel        │ confirm │                 │
-│       │ ◄──────────────────── │         │                 │
-│       │                        └────┬────┘                 │
-│       │                             │ "yes, deploy"        │
-│       │                             ▼                      │
-│       │                        ┌──────┐                    │
-│       └──────────────────────  │ done │                    │
-│            next message        └──────┘                    │
-│                                                             │
-│  Service switch: detected at ANY state → reset to           │
-│  collecting for new service (keeps subscription + env)      │
-└─────────────────────────────────────────────────────────────┘
++---------------------------------------------------------------+
+|                       STATE MACHINE                           |
+|                                                               |
+|   +-------+    service detected    +------------+            |
+|   | start | ----------------------> | collecting |            |
+|   +-------+                        +-----+------+            |
+|       ^                                  | all params filled  |
+|       |                                  v                    |
+|       |                            +---------+               |
+|       |          cancel            | confirm |               |
+|       | <------------------------- |         |               |
+|       |                            +----+----+               |
+|       |                                 | "yes, deploy"      |
+|       |                                 v                    |
+|       |                            +--------+               |
+|       +--------------------------- |  done  |               |
+|           next message             +--------+               |
+|                                                               |
+|  Service switch: detected at ANY state -> reset to            |
+|  collecting for new service (keeps subscription + env)        |
++---------------------------------------------------------------+
 ```
 
 **Session data structure:**
