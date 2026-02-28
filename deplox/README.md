@@ -78,4 +78,16 @@ ollama pull llama3.2:1b
 cd chatbot && npm install
 ```
 
+---
+
+## Authors & Credits
+
+| Role | Name |
+|---|---|
+| **Designed & built by** | Ahmed Bayoumy |
+| **AI coding assistant** | GitHub Copilot CLI |
+| **Underlying AI model** | Claude (Anthropic) via GitHub Copilot |
+
+> This project was conceived, designed, and developed by **Ahmed Bayoumy** using **GitHub Copilot CLI** powered by **Claude** as an AI pair-programmer.
+
 
