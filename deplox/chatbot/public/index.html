@@ -252,7 +252,7 @@
     <div class="header-right">
       <div class="status-pill">
         <div class="dot-status loading" id="ollama-dot"></div>
-        <select id="model-select" title="Active AI model" style="background:transparent;border:none;color:inherit;font-size:.8rem;cursor:pointer;outline:none;max-width:140px" onchange="onModelChange(this.value)">
+        <select id="model-select" title="Active AI model" style="background:transparent;border:none;color:#e2e8f0;font-size:.8rem;cursor:pointer;outline:none;max-width:140px" onchange="onModelChange(this.value)">
           <option value="">Checking…</option>
         </select>
       </div>
@@ -521,13 +521,13 @@ async function checkStatus() {
     if (d.running && d.models.length) {
       dot.className = 'dot-status ok';
       sel.innerHTML = d.models.map(m =>
-        `<option value="${m}" ${(activeModel||d.activeModel)===m?'selected':''}>${m}</option>`
+        `<option value="${m}" style="background:#1e2235;color:#e2e8f0" ${(activeModel||d.activeModel)===m?'selected':''}>${m}</option>`
       ).join('');
       if (!activeModel) { activeModel = d.activeModel || d.models[0]; localStorage.setItem('deplox_model', activeModel); }
     } else if (d.running) {
-      dot.className = 'dot-status err'; sel.innerHTML = '<option>No models pulled</option>';
+      dot.className = 'dot-status err'; sel.innerHTML = '<option style="background:#1e2235;color:#e2e8f0">No models pulled</option>';
     } else {
-      dot.className = 'dot-status err'; sel.innerHTML = '<option>Ollama offline</option>';
+      dot.className = 'dot-status err'; sel.innerHTML = '<option style="background:#1e2235;color:#e2e8f0">Ollama offline</option>';
     }
   } catch { document.getElementById('ollama-dot').className = 'dot-status err'; }
 
