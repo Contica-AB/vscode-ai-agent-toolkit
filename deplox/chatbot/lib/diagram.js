@@ -14,14 +14,14 @@ export function generateMermaid(plan, mode = 'preview', deployResults = null) {
   if (!data.nodes.length) return '';
 
   const lines = [];
-  lines.push('flowchart LR');
+  lines.push('flowchart TD');
   lines.push('');
 
   // Top-level resource group subgraph
   const rgLabel = data.resourceGroup || 'Resource Group';
   const meta = [data.subscription, data.location].filter(Boolean).join(' · ');
-  lines.push(`  subgraph RG["☁️ ${rgLabel}${meta ? ' (' + meta + ')' : ''}"]`);
-  lines.push('    direction LR');
+  lines.push(`  subgraph RG["☁️ ${rgLabel}${meta ? ' (' + meta + ')' : ''}"]
+    direction TB`);
 
   // Render each service as a subgraph with its internal resources
   for (const node of data.nodes) {

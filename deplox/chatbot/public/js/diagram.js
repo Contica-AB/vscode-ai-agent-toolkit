@@ -27,8 +27,10 @@ function initMermaid() {
     },
     flowchart: {
       htmlLabels: true,
-      useMaxWidth: true,
+      useMaxWidth: false,
       curve: 'basis',
+      nodeSpacing: 30,
+      rankSpacing: 40,
     },
     securityLevel: 'loose',
   });
@@ -54,11 +56,14 @@ export async function renderDiagram(mermaidSyntax, container) {
     const { svg } = await mermaid.render(id, mermaidSyntax);
     container.innerHTML = svg;
 
-    // Make SVG responsive
+    // Make SVG fit within container while keeping aspect ratio
     const svgEl = container.querySelector('svg');
     if (svgEl) {
+      svgEl.removeAttribute('width');
       svgEl.style.maxWidth = '100%';
+      svgEl.style.maxHeight = '100%';
       svgEl.style.height = 'auto';
+      svgEl.style.width = 'auto';
     }
     return svgEl;
   } catch (err) {
