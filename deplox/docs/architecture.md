@@ -65,24 +65,30 @@ Single HTML file, no framework, no build step.
 | Section | Purpose |
 |---|---|
 | **Chat window** | Streams tokens from the server via SSE. Renders bot/user messages. |
-| **Model dropdown** | Top-right pill — lists all installed Ollama models with descriptions. Selection is saved to localStorage and sent with every chat request. |
+| **Model dropdown** | Top-right pill — lists only the Ollama models actually installed (fetched live from `/api/ollama/status` on page load). Labels are auto-derived from model parameter size. Selection saved to localStorage and sent with every chat request. |
 | **Choice chips** | Dynamic buttons rendered from server-sent `choices` events. Used for subscriptions, SKUs, regions, service picks, edit targets, and confirm actions. |
-| **Welcome chips** | Always-visible shortcut buttons for each Azure service on the home screen. |
+| **Welcome chips** | Shortcut buttons for each Azure service on the home screen. |
+| **Template explore chips** | "Explore included templates" section on the home screen — one chip per service. Clicking immediately explains that service's Bicep template in chat. |
+| **Learn mode** | Triggered by the "Learn about Azure services" chip or any question about Azure. Streams Q&A answers with a Microsoft Learn docs link appended. |
 | **Deploy card** | Auto-renders when server emits a `deploy_config` event. Shows the exact config being deployed and a terminal-style log of deployment steps. |
 | **Login bar** | Top-right — shows logged-in user, subscription, and logout button. |
 
 ### 2. Backend Server — `chatbot/server.js`
-Express app, ~800 lines. No database. All state is in-memory.
+Express app, ~1100 lines. No database. All state is in-memory.
 
 | Module | Purpose |
 |---|---|
 | **SESSION STORE** | `Map<sessionId, SessionObject>`. New session per page load. |
-| **STATE MACHINE** | Seven states: `start` → `confirming_service` → `collecting` → `confirm` → `editing` → `done`. Controls what question to ask next and when to involve Ollama. |
+| **STATE MACHINE** | Eight states: `start` → `confirming_service` → `collecting` → `confirm` → `editing` → `done`, plus `learning` (parallel path from `start`). Controls what question to ask next and when to involve Ollama. |
 | **SERVICE_SCHEMAS** | Parameter definitions for each Azure service. Each param has key, label, type, validation, and optional `skipIf` logic. |
 | **COMMON_SCHEMA** | Shared params appended to every service: subscription, resource group, location, environment tag. |
+| **loadBicepContext()** | Reads all nine `.bicep` files at startup. Returns two maps: `BICEP_TEMPLATES` (stripped to param/resource/output lines — small context for Q&A) and `BICEP_FULL` (full source for template explain walkthroughs). |
+| **fetchLearnContent()** | Fetches the live Microsoft Learn page for a service (6 s timeout, HTML stripped to plain text, max 4000 chars). Results cached in memory per URL. Injected into Ollama context during learn mode Q&A. |
+| **LEARN_INTENT_WORDS** | Array of phrases that trigger learn mode automatically from `start` state (e.g. "what is", "explain", "when should I use"). |
 | **buildDeployConfig()** | Assembles collected answers into an ARM-compatible deploy config object. |
 | **Deploy pipeline** | Spawns `az` CLI commands in sequence; streams stdout/stderr back to browser via SSE. |
-| **Ollama integration** | Used for `start`, `confirming_service`, and `confirming_service` retry states. All `collecting`, `confirm`, `editing`, and `done` states use direct text — no LLM. Deployment outcome (success/failure/portal link) is always factual, never LLM-generated. |
+| **PORTAL_PATHS** | Maps each service key to its Azure Portal ARM provider path. Used to build a direct deep-link to the deployed resource after a successful deployment. |
+| **Ollama integration** | Used for: `start` (service detection/welcome), `confirming_service` (why this service fits), `learning` (Q&A with Bicep + MS Learn context), `wantsTemplateExplain` (Bicep design walkthrough). All `collecting`, `confirm`, `editing`, and `done` states use direct text — no LLM. Deployment outcome (success/failure/portal link) is always factual, never LLM-generated. |
 
 ### 3. Bicep Modules — `modules/*.bicep`
 One Bicep file per Azure service. Each is self-contained — no shared modules or dependencies between them.
@@ -100,9 +106,9 @@ One Bicep file per Azure service. Each is self-contained — no shared modules o
 | `eventgrid.bicep` | Event Grid custom topic |
 
 ### 4. Local AI — Ollama (`llama3.1:8b`)
-Runs as a local process on port 11434. Used to generate conversational responses in `start` (welcome/service picker) and `confirming_service` (understanding confirmation + explanation) states. All structured states — `collecting`, `confirm`, `editing`, `done` — bypass Ollama and use direct deterministic text. Deployment results (success/failure/portal link) are derived entirely from the `az` CLI output — the LLM never reports deployment status.
+Runs as a local process on port 11434. The active model is fetched live from `/api/tags` on page load — the UI dropdown shows only models actually installed. Labels are inferred from the parameter size in the model name. The selected model is stored per-session and can be switched without restarting the server.
 
-The active model is selected at runtime via the UI dropdown and stored per-session. Multiple models can be installed and switched without restarting the server.
+Used for conversational generation in: `start` (welcome/service detection), `confirming_service` (why this service), `learning` (Q&A answers, template design walkthroughs). All structured states (`collecting`, `confirm`, `editing`, `done`) use deterministic direct text — Ollama is never called. Deployment results, portal links, and factual status messages are derived entirely from `az` CLI output.
 
 ---
 
@@ -200,54 +206,62 @@ The active model is selected at runtime via the UI dropdown and stored per-sessi
 ## State Machine Detail
 
 ```
-+---------------------------------------------------------------------------------+
-|                              STATE MACHINE                                      |
-+---------------------------------------------------------------------------------+
-|                                                                                 |
-|    +-------+    service detected    +----------------------+                    |
-|    | start | ----------------------> | confirming_service   |                   |
-|    +-------+    (keyword or AI)     |  AI explains why &   |                   |
-|        ^                            |  asks to confirm      |                   |
-|        |                            +----------+-----------+                    |
-|        |   "Choose different"                  |                                |
-|        | <------------------------------------  | "Yes, deploy X"               |
-|        |                                       v                                |
-|        |                             +------------+                             |
-|        |        "Change service"     | collecting |  ← one param at a time     |
-|        | <-------------------------- +-----+------+  ← full validation          |
-|        |                                   |                                    |
-|        |                     all params filled                                  |
-|        |                                   v                                    |
-|        |                            +---------+                                 |
-|        |        "Change service"    | confirm |  ← summary shown               |
-|        | <------------------------- +---------+                                 |
-|        |                             /       \                                  |
-|        |          "Edit a setting"  /         \ "Yes, deploy"                  |
-|        |                           v           v                                |
-|        |                    +---------+    +--------+                           |
-|        |    edit done       | editing |    |  done  |                           |
-|        |    back to confirm +---------+    +--------+                           |
-|        |                         |              |                               |
-|        |                         |    next msg  |                               |
-|        +-------------------------+--------------+                               |
-|                                                                                 |
-|   Ollama used in:  start, confirming_service                                    |
-|   Direct text in:  collecting, confirm, editing, done                           |
-|   Deployment result: factual from az CLI output — LLM never reports status      |
-|                                                                                 |
-+---------------------------------------------------------------------------------+
++-------------------------------------------------------------------------------------------+
+|                                    STATE MACHINE                                          |
++-------------------------------------------------------------------------------------------+
+|                                                                                           |
+|    +-------+   learn intent / __learn__    +----------+                                  |
+|    | start | ------------------------------> | learning | ← Q&A loop (Ollama)            |
+|    +-------+   or __template_svc__          +----+-----+   Bicep context + MS Learn      |
+|        |                                         |          live fetch injected           |
+|        |                                         | "Deploy X now"                         |
+|        |   service detected                      |                                        |
+|        +-------> +----------------------+ <------+                                        |
+|                  | confirming_service   |                                                 |
+|        ^         |  AI explains why &   |                                                 |
+|        |         |  asks to confirm     |                                                 |
+|        |         +----------+-----------+                                                 |
+|        |   "Choose diff."   |                                                             |
+|        | <------------------+ "Yes, deploy X"                                            |
+|        |                    v                                                             |
+|        |          +------------+                                                          |
+|        |          | collecting |  ← one param at a time, full validation                 |
+|        | <------- +-----+------+  "Change service"                                       |
+|        |                |                                                                 |
+|        |      all params filled                                                           |
+|        |                v                                                                 |
+|        |         +---------+                                                              |
+|        |         | confirm |  ← summary shown                                            |
+|        | <------- +---------+  "Change service"                                          |
+|        |           /       \                                                              |
+|        |  "Edit"  /         \ "Yes, deploy"                                              |
+|        |         v           v                                                            |
+|        |   +---------+    +--------+                                                     |
+|        |   | editing |    |  done  |                                                     |
+|        |   +---------+    +--------+                                                     |
+|        |        |              |                                                          |
+|        +--------+--------------+  (any message resets)                                  |
+|                                                                                           |
+|  Ollama used in:  start, confirming_service, learning (Q&A + template explain)           |
+|  Direct text in:  collecting, confirm, editing, done                                     |
+|  Deployment result: factual from az CLI output — LLM never reports status                |
+|  Portal link: built from PORTAL_PATHS map + subscription ID — never LLM-generated       |
+|                                                                                           |
++-------------------------------------------------------------------------------------------+
 ```
 
 **Session data structure:**
 ```js
 {
-  state: 'start' | 'confirming_service' | 'collecting' | 'confirm' | 'editing' | 'done',
+  state: 'start' | 'confirming_service' | 'collecting' | 'confirm' | 'editing' | 'done' | 'learning',
   service: 'servicebus' | 'eventhub' | ... | null,
-  _pendingService: 'apim',          // set during confirming_service, cleared on confirm
-  schema: [ ...paramDefs ],         // deep-copied from SERVICE_SCHEMAS
-  schemaIdx: 2,                     // which param we're on
-  _editingKey: 'namespaceName',     // set during editing state, null when in pick mode
-  model: 'llama3.1:8b',             // active Ollama model for this session
+  _pendingService: 'apim',           // set during confirming_service, cleared on confirm
+  _learnService: 'servicebus',       // tracked in learning state, drives Bicep context + MS Learn URL
+  _pendingLearnLink: 'https://...',  // MS Learn URL to emit as learn_link SSE event after stream
+  schema: [ ...paramDefs ],          // deep-copied from SERVICE_SCHEMAS
+  schemaIdx: 2,                      // which param we're on
+  _editingKey: 'namespaceName',      // set during editing state, null when in pick mode
+  model: 'llama3.1:8b',              // active Ollama model for this session
   collected: {
     namespaceName: 'myapp-bus',
     sku: 'Standard',
