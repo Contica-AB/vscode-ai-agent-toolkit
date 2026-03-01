@@ -360,6 +360,7 @@ export function toggleSidebar() {
   const sb = sidebar();
   if (!sb) return;
   sb.classList.toggle('open');
+  localStorage.setItem('deplox_sidebar_open', sb.classList.contains('open') ? '1' : '0');
 }
 
 /* ── Update project badge in header ──────────────────────────────────────────── */
@@ -420,6 +421,10 @@ export async function initProjects() {
     setActiveProjectId(saved);
     updateBadge();
     renderProjectList();
+  }
+  // Restore sidebar open/closed state
+  if (localStorage.getItem('deplox_sidebar_open') === '1') {
+    sidebar()?.classList.add('open');
   }
 }
 
