@@ -7,6 +7,7 @@ import { scrollBottom } from './helpers.js';
 
 /* ── State ───────────────────────────────────────────────────────────────────── */
 let projectList = [];
+let detailProjectId = null;   // project currently shown in detail panel
 
 export function getActiveProjectId() { return activeProjectId; }
 
@@ -15,6 +16,7 @@ const sidebar       = () => document.getElementById('project-sidebar');
 const projectListEl = () => document.getElementById('project-list');
 const projectBadge  = () => document.getElementById('project-badge');
 const createForm    = () => document.getElementById('project-create-form');
+const detailPanel   = () => document.getElementById('project-detail-panel');
 
 /* ── API helpers ─────────────────────────────────────────────────────────────── */
 async function api(path, opts = {}) {
@@ -24,30 +26,6 @@ async function api(path, opts = {}) {
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
   return res.json();
-}
-
-/** Add a bot message to chat (local helper to avoid circular import with chat.js) */
-function addBotMessage(html) {
-  if (welcome) welcome.style.display = 'none';
-  const row = document.createElement('div');
-  row.className = 'msg-row bot';
-  const avatar = document.createElement('div');
-  avatar.className = 'avatar bot';
-  avatar.innerHTML = IC.bot;
-  const wrap = document.createElement('div');
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble';
-  bubble.innerHTML = html;
-  const ts = document.createElement('div');
-  ts.className = 'timestamp';
-  ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  wrap.appendChild(bubble);
-  wrap.appendChild(ts);
-  row.appendChild(avatar);
-  row.appendChild(wrap);
-  chatWrap.insertBefore(row, typing);
-  scrollBottom();
-  return bubble;
 }
 
 /* ── Load & render project list ──────────────────────────────────────────────── */
@@ -218,7 +196,8 @@ export async function submitCreateProject() {
     await loadProjects();
     await switchProject(project.id);
   } catch (e) {
-    addBotMessage( `Failed to create project: ${e.message || 'Unknown error'}`);
+    const msg = document.getElementById('pd-save-msg');
+    if (msg) { msg.textContent = `Create failed: ${e.message || 'Unknown error'}`; msg.className = 'ps-detail-save-msg err'; }
   }
 }
 
@@ -239,79 +218,141 @@ async function deleteProjectConfirm(id) {
   await loadProjects();
 }
 
-/* ── Project detail (deployment history + Azure status) ──────────────────────── */
+/* ── Show / hide detail panel ────────────────────────────────────────────────── */
+function showDetailView() {
+  const list = projectListEl();
+  const form = createForm();
+  const panel = detailPanel();
+  if (list) list.style.display = 'none';
+  if (form) form.style.display = 'none';
+  if (panel) panel.style.display = 'flex';
+}
+
+export function hideDetailView() {
+  const list = projectListEl();
+  const panel = detailPanel();
+  if (panel) panel.style.display = 'none';
+  if (list) list.style.display = 'flex';
+  detailProjectId = null;
+}
+
+/* ── Project detail (renders in sidebar panel) ───────────────────────────────── */
 async function showProjectDetail(id) {
   const project = await api(`/${id}`);
   if (!project || project.error) return;
 
-  if (welcome) welcome.style.display = 'none';
+  detailProjectId = id;
 
-  let html = `<strong>${escHtml(project.name)}</strong> — Project Details\n\n`;
+  // Title
+  const titleEl = document.getElementById('ps-detail-title');
+  if (titleEl) titleEl.textContent = project.name;
 
-  // Defaults
+  // Populate default inputs
   const d = project.defaults || {};
-  html += `<div style="margin:8px 0;padding:8px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);font-size:.84rem">`;
-  html += `<div style="font-weight:600;margin-bottom:6px;color:var(--accent2)">Defaults</div>`;
-  if (d.resourceGroup) html += `<div>Resource Group: <strong>${escHtml(d.resourceGroup)}</strong></div>`;
-  if (d.location) html += `<div>Location: <strong>${escHtml(d.location)}</strong></div>`;
-  if (d.environment) html += `<div>Environment: <strong>${escHtml(d.environment)}</strong></div>`;
-  if (d.subscription?.name) html += `<div>Subscription: <strong>${escHtml(d.subscription.name)}</strong></div>`;
-  html += `</div>`;
+  const rgEl  = document.getElementById('pd-rg');
+  const locEl = document.getElementById('pd-loc');
+  const envEl = document.getElementById('pd-env');
+  if (rgEl)  rgEl.value  = d.resourceGroup || '';
+  if (locEl) locEl.value = d.location || '';
+  if (envEl) envEl.value = d.environment || '';
 
-  // Deployment history
+  // Clear save message
+  const saveMsg = document.getElementById('pd-save-msg');
+  if (saveMsg) saveMsg.textContent = '';
+
+  // Render deployment history
+  const deployListEl = document.getElementById('pd-deploy-list');
   const deploys = project.deployments || [];
-  if (deploys.length === 0) {
-    html += `\n<div style="color:var(--muted);font-size:.85rem;margin-top:10px">No deployments yet.</div>`;
-  } else {
-    html += `\n<div style="margin-top:10px;font-weight:600;font-size:.85rem">Deployment History (${deploys.length})</div>`;
-    for (const dep of deploys.slice(0, 10)) {
-      const icon = dep.status === 'succeeded' ? '✅' : dep.status === 'partial' ? '⚠️' : '❌';
-      const date = new Date(dep.timestamp).toLocaleString();
-      const services = (dep.services || []).map(s => s.serviceLabel || s.service).join(', ') || dep.service || '?';
-      html += `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:.83rem">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span>${icon} <strong>v${dep.version}</strong> — ${escHtml(services)}</span>
-          <span style="font-size:.72rem;color:var(--muted)">${date}</span>
-        </div>
-      </div>`;
+  if (deployListEl) {
+    if (deploys.length === 0) {
+      deployListEl.innerHTML = '<div class="ps-deploy-empty">No deployments yet.</div>';
+    } else {
+      deployListEl.innerHTML = deploys.slice(0, 20).map(dep => {
+        const icon = dep.status === 'succeeded' ? '✅' : dep.status === 'partial' ? '⚠️' : '❌';
+        const date = new Date(dep.timestamp).toLocaleDateString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        const services = (dep.services || []).map(s => s.serviceLabel || s.service).join(', ') || dep.service || '?';
+        return `<div class="ps-deploy-row">
+          <span class="ps-deploy-icon">${icon}</span>
+          <span class="ps-deploy-ver">v${dep.version}</span>
+          <span class="ps-deploy-svc">${escHtml(services)}</span>
+          <span class="ps-deploy-date">${date}</span>
+        </div>`;
+      }).join('');
     }
   }
 
-  // Azure status button
-  html += `\n<div style="margin-top:12px"><button class="proj-azure-check-btn" data-id="${id}" style="background:var(--accent);color:#fff;border:none;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:.83rem;font-weight:600">Check Azure Status</button></div>`;
+  // Clear Azure results
+  const azureResults = document.getElementById('pd-azure-results');
+  if (azureResults) azureResults.innerHTML = '';
 
-  addBotMessage( html);
+  showDetailView();
+}
 
-  // Attach azure check handler
-  setTimeout(() => {
-    document.querySelectorAll('.proj-azure-check-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        btn.textContent = 'Checking...';
-        try {
-          const status = await api(`/${btn.dataset.id}/azure-status`);
-          let statusHtml = `<strong>Azure Status</strong> — ${escHtml(status.summary)}\n\n`;
-          if (status.services?.length) {
-            for (const svc of status.services) {
-              const syncIcon = svc.syncStatus === 'in-sync' ? '✅'
-                : svc.syncStatus === 'local-ahead' ? '⬆️'
-                : svc.syncStatus === 'failed-in-azure' ? '❌'
-                : svc.syncStatus === 'deploying' ? '⏳'
-                : '❓';
-              statusHtml += `<div style="padding:4px 0;font-size:.84rem">${syncIcon} <strong>${escHtml(svc.serviceLabel)}</strong> — ${svc.syncStatus}${svc.azureTimestamp ? ` (Azure: ${new Date(svc.azureTimestamp).toLocaleString()})` : ''}</div>`;
-            }
-          } else {
-            statusHtml += `<div style="color:var(--muted);font-size:.84rem">No services to compare.</div>`;
-          }
-          addBotMessage( statusHtml);
-        } catch {
-          addBotMessage( 'Failed to check Azure status.');
-        }
-        btn.disabled = false;
-        btn.textContent = 'Check Azure Status';
-      });
+/* ── Save defaults from detail panel ─────────────────────────────────────────── */
+export async function saveProjectDefaults() {
+  if (!detailProjectId) return;
+  const rg  = document.getElementById('pd-rg')?.value?.trim() || '';
+  const loc = document.getElementById('pd-loc')?.value?.trim() || '';
+  const env = document.getElementById('pd-env')?.value?.trim() || '';
+  const msg = document.getElementById('pd-save-msg');
+
+  try {
+    await api(`/${detailProjectId}`, {
+      method: 'PUT',
+      body: { defaults: { resourceGroup: rg, location: loc, environment: env } },
     });
-  }, 100);
+    if (msg) {
+      msg.textContent = 'Saved!';
+      msg.className = 'ps-detail-save-msg ok';
+      setTimeout(() => { msg.textContent = ''; msg.className = 'ps-detail-save-msg'; }, 2000);
+    }
+    // Refresh list data
+    await loadProjects();
+  } catch {
+    if (msg) {
+      msg.textContent = 'Save failed.';
+      msg.className = 'ps-detail-save-msg err';
+    }
+  }
+}
+
+/* ── Check Azure status from detail panel ────────────────────────────────────── */
+export async function checkAzureStatus() {
+  if (!detailProjectId) return;
+  const btn = document.getElementById('pd-azure-btn');
+  const results = document.getElementById('pd-azure-results');
+  if (!btn || !results) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+  results.innerHTML = '<div class="ps-azure-loading">Querying Azure…</div>';
+
+  try {
+    const status = await api(`/${detailProjectId}/azure-status`);
+    if (status.services?.length) {
+      results.innerHTML = status.services.map(svc => {
+        const icon = svc.syncStatus === 'in-sync' ? '✅'
+          : svc.syncStatus === 'local-ahead' ? '⬆️'
+          : svc.syncStatus === 'failed-in-azure' ? '❌'
+          : svc.syncStatus === 'deploying' ? '⏳'
+          : '❓';
+        const ts = svc.azureTimestamp ? new Date(svc.azureTimestamp).toLocaleString() : '';
+        return `<div class="ps-azure-row">
+          <span>${icon}</span>
+          <span class="ps-azure-svc">${escHtml(svc.serviceLabel)}</span>
+          <span class="ps-azure-sync">${svc.syncStatus}</span>
+          ${ts ? `<span class="ps-azure-ts">${ts}</span>` : ''}
+        </div>`;
+      }).join('');
+    } else {
+      results.innerHTML = '<div class="ps-azure-empty">No services to compare.</div>';
+    }
+  } catch {
+    results.innerHTML = '<div class="ps-azure-empty" style="color:var(--error)">Failed to check Azure status.</div>';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Check Azure Status';
 }
 
 /* ── Toggle sidebar ──────────────────────────────────────────────────────────── */
@@ -349,30 +390,26 @@ function restoreMessages(messages) {
   for (const msg of messages) {
     if (msg.role === 'system') continue;
     const role = msg.role === 'user' ? 'user' : 'bot';
-    addLocalMessage(role, escHtml(msg.content).replace(/\n/g, '<br>'));
+    // Render message bubble directly (avoids circular import with chat.js)
+    const row = document.createElement('div');
+    row.className = `msg-row ${role}`;
+    const avatar = document.createElement('div');
+    avatar.className = `avatar ${role}`;
+    avatar.innerHTML = role === 'bot' ? IC.bot : IC.user;
+    const wrap = document.createElement('div');
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = escHtml(msg.content).replace(/\n/g, '<br>');
+    const ts = document.createElement('div');
+    ts.className = 'timestamp';
+    ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    wrap.appendChild(bubble);
+    wrap.appendChild(ts);
+    row.appendChild(avatar);
+    row.appendChild(wrap);
+    chatWrap.insertBefore(row, typing);
   }
   scrollBottom();
-}
-
-/** Render a message bubble (user or bot) without importing chat.js */
-function addLocalMessage(role, html) {
-  const row = document.createElement('div');
-  row.className = `msg-row ${role}`;
-  const avatar = document.createElement('div');
-  avatar.className = `avatar ${role}`;
-  avatar.innerHTML = role === 'bot' ? IC.bot : IC.user;
-  const wrap = document.createElement('div');
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble';
-  bubble.innerHTML = html;
-  const ts = document.createElement('div');
-  ts.className = 'timestamp';
-  ts.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  wrap.appendChild(bubble);
-  wrap.appendChild(ts);
-  row.appendChild(avatar);
-  row.appendChild(wrap);
-  chatWrap.insertBefore(row, typing);
 }
 
 /* ── Init: restore project from localStorage ─────────────────────────────────── */

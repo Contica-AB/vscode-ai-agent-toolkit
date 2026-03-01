@@ -87,6 +87,42 @@
         <p style="font-size:.78rem;color:var(--muted)">Create a project to scope your deployments.</p>
       </div>
     </div>
+
+    <!-- Project detail panel (replaces list when viewing a project) -->
+    <div id="project-detail-panel" class="ps-detail-panel" style="display:none">
+      <div class="ps-detail-header">
+        <button id="ps-detail-back" class="ps-detail-back" title="Back to list">← Back</button>
+        <span class="ps-detail-title" id="ps-detail-title"></span>
+      </div>
+      <div class="ps-detail-body">
+        <!-- Defaults (editable) -->
+        <div class="ps-detail-section">
+          <div class="ps-detail-section-title">Defaults</div>
+          <label class="ps-detail-label">Resource Group
+            <input type="text" id="pd-rg" class="ps-input" placeholder="e.g. rg-myproject"/>
+          </label>
+          <label class="ps-detail-label">Location
+            <input type="text" id="pd-loc" class="ps-input" placeholder="e.g. westeurope"/>
+          </label>
+          <label class="ps-detail-label">Environment
+            <input type="text" id="pd-env" class="ps-input" placeholder="e.g. dev"/>
+          </label>
+          <button id="pd-save-btn" class="ps-detail-save-btn">Save Defaults</button>
+          <div id="pd-save-msg" class="ps-detail-save-msg"></div>
+        </div>
+        <!-- Deployment history -->
+        <div class="ps-detail-section">
+          <div class="ps-detail-section-title">Deployment History</div>
+          <div id="pd-deploy-list" class="ps-deploy-list"></div>
+        </div>
+        <!-- Azure status -->
+        <div class="ps-detail-section">
+          <button id="pd-azure-btn" class="ps-detail-azure-btn">Check Azure Status</button>
+          <div id="pd-azure-results" class="ps-azure-results"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="ps-footer">
       <button id="proj-unscope-btn" class="ps-unscope-btn" title="Work without a project scope">Unscoped mode</button>
     </div>

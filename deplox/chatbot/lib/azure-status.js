@@ -13,9 +13,15 @@ export async function getAzureDeploymentStatus(project) {
   }
 
   const latestDeploy = project.deployments[0]; // newest first
-  const resourceGroup = project.defaults?.resourceGroup;
-  const subscriptionId = project.defaults?.subscription?.id;
   const localVersion = latestDeploy.version || project.deployments.length;
+
+  // Resolve resource group and subscription — prefer project defaults, fall back to latest deployment
+  const resourceGroup = project.defaults?.resourceGroup
+    || latestDeploy.resourceGroup
+    || null;
+  const subscriptionId = project.defaults?.subscription?.id
+    || latestDeploy.subscriptionId
+    || null;
 
   if (!resourceGroup || !subscriptionId) {
     return {

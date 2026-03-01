@@ -3,7 +3,8 @@ import { send, quickSend } from './chat.js';
 import { openAzurePanel, closeAzurePanel, handleLogin, handleLogout } from './azure-panel.js';
 import { checkStatus, showHistory, onModelChange } from './status.js';
 import {
-  initProjects, toggleSidebar, createNewProject, submitCreateProject, unscopeProject
+  initProjects, toggleSidebar, createNewProject, submitCreateProject, unscopeProject,
+  hideDetailView, saveProjectDefaults, checkAzureStatus
 } from './projects.js';
 
 // Expose to inline HTML handlers (welcome card chips, etc.)
@@ -47,6 +48,11 @@ document.getElementById('ps-close-btn').addEventListener('click', toggleSidebar)
 document.getElementById('proj-add-btn').addEventListener('click', createNewProject);
 document.getElementById('proj-create-btn').addEventListener('click', submitCreateProject);
 document.getElementById('proj-unscope-btn').addEventListener('click', unscopeProject);
+
+// ── Project detail panel ──────────────────────────────────────────────────────
+document.getElementById('ps-detail-back').addEventListener('click', hideDetailView);
+document.getElementById('pd-save-btn').addEventListener('click', saveProjectDefaults);
+document.getElementById('pd-azure-btn').addEventListener('click', checkAzureStatus);
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 initProjects();
