@@ -18,7 +18,7 @@ const MODULES_DIR  = path.join(__dirname, '..', 'modules');
 
 // ── Load Bicep files for learn mode ──────────────────────────────────────────
 function loadBicepContext() {
-  const files = {};
+  const slim = {}, full = {};
   const serviceMap = {
     'servicebus': 'servicebus.bicep', 'eventhub': 'eventhub.bicep',
     'logicapp-consumption': 'logicapp-consumption.bicep', 'logicapp-standard': 'logicapp-standard.bicep',
@@ -29,16 +29,15 @@ function loadBicepContext() {
   for (const [svc, file] of Object.entries(serviceMap)) {
     try {
       const raw = fs.readFileSync(path.join(MODULES_DIR, file), 'utf8');
-      // Keep only param and resource lines — strip comments and blank lines
-      const slim = raw.split('\n')
+      slim[svc] = raw.split('\n')
         .filter(l => /^\s*(param |resource |output |var )/.test(l) || /allowed\s*=/.test(l))
         .join('\n').trim();
-      files[svc] = slim;
-    } catch { files[svc] = '(template not found)'; }
+      full[svc] = raw.trim();
+    } catch { slim[svc] = full[svc] = '(template not found)'; }
   }
-  return files;
+  return { slim, full };
 }
-const BICEP_TEMPLATES = loadBicepContext();
+const { slim: BICEP_TEMPLATES, full: BICEP_FULL } = loadBicepContext();
 
 const LEARN_DOCS = {
   'servicebus':           'https://learn.microsoft.com/azure/service-bus-messaging/',
@@ -51,6 +50,29 @@ const LEARN_DOCS = {
   'eventgrid':            'https://learn.microsoft.com/azure/event-grid/',
   'integrationaccount':   'https://learn.microsoft.com/azure/logic-apps/logic-apps-enterprise-integration-create-integration-account'
 };
+
+const learnContentCache = new Map();
+async function fetchLearnContent(url) {
+  if (learnContentCache.has(url)) return learnContentCache.get(url);
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    const resp = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DeploX/1.0)' } });
+    clearTimeout(timer);
+    const html = await resp.text();
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&[a-z]+;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 4000);
+    learnContentCache.set(url, text);
+    return text;
+  } catch { return ''; }
+}
 
 const LEARN_INTENT_WORDS = [
   'what is','what are','explain','tell me about','how does','how do',
@@ -687,20 +709,41 @@ DIRECTIVE: Answer the user's question. Do not mention deploying unless the user 
       // Continue learning — update context if a new service is mentioned
       const mentionedSvc = detectService(message) || await detectServiceWithAI(message, activeModel);
       if (mentionedSvc) session._learnService = mentionedSvc;
-      const bicepSnippet = session._learnService ? BICEP_TEMPLATES[session._learnService] : '';
-      const templateNote = bicepSnippet
-        ? `
+      const svc = session._learnService;
+      const svcLabel = svc ? (SERVICE_LABELS[svc] || svc) : null;
+      const wantsTemplateExplain = /explain.*template|template.*explain|how.*template.*work|what.*template.*do|explain.*included|included.*template/i.test(message);
 
-DeploX template (Bicep source):
+      if (wantsTemplateExplain && svc) {
+        // Dedicated full-Bicep walkthrough
+        const fullBicep = BICEP_FULL[svc] || '(not found)';
+        directive = `You are DeploX. Walk through the following Bicep template for ${svcLabel} and explain clearly:
+1. What Azure resources get created (type, name pattern, SKU/tier)
+2. What parameters the user configures (name, type, default, allowed values)
+3. What outputs are produced
+Use short bullet points. Be specific.
+
+DeploX Bicep template:
+\`\`\`bicep
+${fullBicep}
 \`\`\`
-${bicepSnippet}
-\`\`\``
-        : '';
-      const docsLink = session._learnService ? LEARN_DOCS[session._learnService] : null;
-      session._pendingLearnLink = docsLink || null;
-      directive = `You are DeploX, an Azure integration services assistant. Answer clearly and professionally. Be concise but thorough.${templateNote}
 
-DIRECTIVE: Answer the user's question about Azure services. Do not push them to deploy.`;
+DIRECTIVE: Explain the template above — resources, parameters, and outputs.`;
+      } else {
+        // Regular Q&A — inject Bicep context + live MS Learn content
+        const docsUrl = svc ? LEARN_DOCS[svc] : null;
+        const learnContent = docsUrl ? await fetchLearnContent(docsUrl) : '';
+        const bicepSnippet = svc ? BICEP_TEMPLATES[svc] : '';
+        const templateNote = bicepSnippet
+          ? `\n\nDeploX template (Bicep source):\n\`\`\`\n${bicepSnippet}\n\`\`\``
+          : '';
+        const learnNote = learnContent
+          ? `\n\nFresh content from Microsoft Learn documentation:\n${learnContent}`
+          : '';
+        session._pendingLearnLink = docsUrl || null;
+        directive = `You are DeploX, an Azure integration services assistant. Answer clearly and professionally. Be concise but thorough.${templateNote}${learnNote}
+
+DIRECTIVE: Answer the user's question about Azure services using the documentation and template context above where relevant. Do not push them to deploy.`;
+      }
     }
 
   } else if (session.state === 'confirming_service') {
@@ -985,7 +1028,7 @@ DIRECTIVE: Answer the user's question about Azure services. Do not push them to 
       if (docsLink) sse(res, 'learn_link', { url: docsLink });
       const svcLabel = session._learnService ? (SERVICE_LABELS[session._learnService] || session._learnService) : null;
       nextChoices = svcLabel
-        ? [`Deploy ${svcLabel} now`, 'Keep learning']
+        ? [`Deploy ${svcLabel} now`, 'Explain the included template', 'Keep learning']
         : ['Keep learning'];
     }
 
