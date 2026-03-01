@@ -213,9 +213,9 @@ Used for conversational generation in: `start` (welcome/service detection), `con
 |                                     STATE MACHINE                                           |
 +---------------------------------------------------------------------------------------------+
 |                                                                                             |
-|  +-------+   learn intent / __learn__   +----------+                                       |
-|  | start | ---------------------------> | learning | <- Q&A loop (Ollama)                  |
-|  +-------+   or __template_svc__        +----+-----+    Bicep context + MS Learn fetched   |
+|  +-------+   learn intent / __learn__   +----------+                                        |
+|  | start | ---------------------------> | learning | <- Q&A loop (Ollama)                   |
+|  +-------+   or __template_svc__        +----+-----+    Bicep context + MS Learn fetched    |
 |      |                                       |                                              |
 |      |                                       | "Deploy X now"                               |
 |      |   service detected                    |                                              |
@@ -228,27 +228,27 @@ Used for conversational generation in: `start` (welcome/service detection), `con
 |      | <-----------------------+ "Yes, deploy X"                                            |
 |      |                         v                                                            |
 |      |               +------------+                                                         |
-|      |               | collecting | <- one param at a time, full validation                |
-|      | <------------ +-----+------+  "Change service"                                      |
+|      |               | collecting | <- one param at a time, full validation                 |
+|      | <------------ +-----+------+  "Change service"                                       |
 |      |                     |                                                                |
 |      |           all params filled                                                          |
 |      |                     v                                                                |
 |      |               +---------+                                                            |
-|      |               | confirm | <- summary shown                                          |
-|      | <------------ +---------+  "Change service"                                         |
+|      |               | confirm | <- summary shown                                           |
+|      | <------------ +---------+  "Change service"                                          |
 |      |                /       \                                                             |
-|      |   "Edit"      /         \ "Yes, deploy"                                             |
+|      |   "Edit"      /         \ "Yes, deploy"                                              |
 |      |              v           v                                                           |
 |      |        +---------+    +------+                                                       |
 |      |        | editing |    | done |                                                       |
 |      |        +---------+    +------+                                                       |
 |      |             |            |                                                           |
-|      +-------------+------------+  (any message resets to start)                           |
+|      +-------------+------------+  (any message resets to start)                            |
 |                                                                                             |
-|  Ollama used in:  start, confirming_service, learning (Q&A + template explain)             |
+|  Ollama used in:  start, confirming_service, learning (Q&A + template explain)              |
 |  Direct text in:  collecting, confirm, editing, done                                        |
-|  Deploy result:   factual from az CLI output  — LLM never reports status                   |
-|  Portal link:     built from PORTAL_PATHS + subscription ID — never LLM-generated          |
+|  Deploy result:   factual from az CLI output  — LLM never reports status                    |
+|  Portal link:     built from PORTAL_PATHS + subscription ID — never LLM-generated           |
 |                                                                                             |
 +---------------------------------------------------------------------------------------------+
 ```
