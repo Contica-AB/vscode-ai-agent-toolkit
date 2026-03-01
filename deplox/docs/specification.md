@@ -59,8 +59,9 @@ start → collecting → confirm → done
 
 **`confirm`**
 - Full deployment summary shown to user.
-- Two choices: "Yes, deploy" or "Cancel".
-- Cancel resets to `start`.
+- Estimated monthly cost fetched live from the [Azure Retail Prices API](https://learn.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices) and displayed inline (free, no auth required).
+- Three choices: "Yes, deploy", "Edit a setting", or "Change service".
+- Change service resets to `start`.
 
 **`done`**
 - Deployment is running (via Deploy Card in the UI).
@@ -126,6 +127,56 @@ When the user confirms, the server:
 6. **Surfaces outputs** — `az deployment group show --query properties.outputs` printed in the terminal log.
 
 All steps stream stdout/stderr to the browser via SSE in real time.
+
+### 6.1 Cost Estimation
+
+Before the user confirms a deployment, DeploX queries the **Azure Retail Prices API** to show an estimated monthly cost inline in the deployment summary.
+
+#### API details
+
+| Property | Value |
+|---|---|
+| **Endpoint** | `https://prices.azure.com/api/retail/prices` |
+| **Authentication** | None — the API is completely free and unauthenticated |
+| **Docs** | [Azure Retail Prices REST API](https://learn.microsoft.com/rest/api/cost-management/retail-prices/azure-retail-prices) |
+| **Timeout** | 8 seconds (`AbortSignal.timeout`) — silently omitted if unreachable |
+
+#### How queries are built
+
+Every query includes two base OData filters:
+```
+armRegionName eq '{location}'   — matches the user's selected Azure region
+priceType eq 'Consumption'      — retail pay-as-you-go rates only
+```
+
+Additional filters are added per service (`serviceName`, `skuName`, `unitOfMeasure`). Results are filtered client-side to `type === 'Consumption'` to exclude reserved/savings-plan rows.
+
+#### Per-service lookup strategy
+
+| Service | API filter | Meter matched | Calculation |
+|---|---|---|---|
+| **Service Bus (Standard)** | `serviceName eq 'Service Bus'` | `Standard Base Unit` where `unitOfMeasure` contains `1/Hour` | rate × 730 hrs |
+| **Service Bus (Premium)** | same | `Premium Messaging Unit` where `unitOfMeasure` contains `1/Hour` | rate × 730 hrs (per MU) |
+| **Service Bus (Basic)** | _(no API call)_ | — | Hardcoded: $0.05 per 1M operations |
+| **Event Hubs** | `serviceName eq 'Event Hubs'`, `unitOfMeasure eq '1 Hour'` | `{sku} Throughput Unit` or `Processing Unit` | rate × 730 hrs (per TU/PU) |
+| **Logic App Standard** | `serviceName eq 'Logic Apps'`, `skuName eq 'Standard'` | `Standard vCPU Duration` + `Standard Memory Duration` | (vCPU rate × cores × 730) + (memory rate × GB × 730). WS1 = 1 vCPU + 3.5 GB, WS2 = 2 vCPU + 7 GB, WS3 = 4 vCPU + 14 GB |
+| **Logic App Consumption** | `serviceName eq 'Logic Apps'` | `Consumption Built-in Actions` | Shows per-action price; no fixed cost |
+| **APIM (Consumption)** | _(no API call)_ | — | Hardcoded: $3.50 per 10K calls, 1M free |
+| **APIM (other SKUs)** | `serviceName eq 'API Management'`, `unitOfMeasure eq '1 Hour'` | `{sku} Unit` | rate × 730 hrs |
+| **Function App** | _(no API call)_ | — | Hardcoded: Consumption plan (Y1), first 1M executions free |
+| **Key Vault** | `serviceName eq 'Key Vault'` | `Operations` or `Secrets` matching `{sku}` | rate per 10K operations × 1 (assumes ~10K ops/month) |
+| **Event Grid** | _(no API call)_ | — | Hardcoded: $0.60 per 1M ops, first 100K free |
+| **Integration Account (Free)** | _(no API call)_ | — | Hardcoded: $0/month |
+| **Integration Account (Basic/Standard)** | `serviceName eq 'Logic Apps'` | `{sku} Unit` where `unitOfMeasure` contains `1/Month` | Flat monthly price from API |
+
+#### Key implementation notes
+
+- **730 hours/month** — standard Azure billing assumption for always-on resources.
+- **No `unitOfMeasure eq '1 Hour'` for Service Bus** — Service Bus meters use `1/Hour` (not `1 Hour`), so the filter is applied client-side via regex instead of in the OData query.
+- **Logic App Standard composite pricing** — the WS1/WS2/WS3 tiers are not discrete meters. The API returns separate vCPU and memory rates under `skuName eq 'Standard'`, which are multiplied by each tier's resource allocation.
+- **Integration Account meters** — billed under `serviceName eq 'Logic Apps'` (not a separate service), with meter names like `Standard Unit`, `Basic Unit`.
+- **Graceful degradation** — if the API is unreachable, slow (>8s), or returns no matching meter, the cost line is silently omitted from the summary. The user can still deploy.
+- All prices shown are **retail pay-as-you-go** — reservations, enterprise agreements, and negotiated discounts are not reflected.
 
 ---
 
