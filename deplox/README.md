@@ -18,14 +18,23 @@ Interactive Azure Integration Services deployer — a local AI chatbot that guid
 
 ## Quick Start
 
+Windows (PowerShell):
 ```powershell
 cd C:\projects\deploxV0.01    # adjust to your path
 .\chatbot\start.ps1
 ```
 
+macOS / Linux:
+```bash
+cd ~/projects/deploxV0.01    # adjust to your path
+bash chatbot/start.sh
+```
+
 Then open **http://localhost:3000** in your browser.
 
-> First time? Run setup first: `.\chatbot\setup-ollama.ps1`
+> First time? Run setup first:
+> - Windows: `.\chatbot\setup-ollama.ps1`
+> - macOS: `bash chatbot/setup-ollama.sh`
 
 ## Documentation
 

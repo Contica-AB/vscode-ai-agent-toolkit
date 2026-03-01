@@ -88,8 +88,15 @@ ollama pull llama3.1:8b    # quality option
 #### Install Ollama + pull your chosen model
 
 **Option A — Automated (recommended):**
+
+Windows (PowerShell):
 ```powershell
 .\chatbot\setup-ollama.ps1
+```
+
+macOS / Linux (bash):
+```bash
+bash chatbot/setup-ollama.sh
 ```
 
 The script handles:
@@ -116,18 +123,24 @@ cd ..
 
 ## 2. Starting the App
 
-Every time you want to use DeploX, open PowerShell and run:
+Every time you want to use DeploX:
 
+Windows (PowerShell):
 ```powershell
 cd C:\projects\deploxV0.01    # adjust to your path
 .\chatbot\start.ps1
 ```
 
+macOS / Linux:
+```bash
+cd ~/projects/deploxV0.01    # adjust to your path
+bash chatbot/start.sh
+```
 
-This script:
-1. Kills anything already running on port 3000
-2. Starts Ollama in the background (with Intel GPU support if available)
-3. Opens your browser at **http://localhost:3000** automatically
+Both scripts:
+1. Kill anything already running on port 3000
+2. Start Ollama in the background if not already running
+3. Open your browser at **http://localhost:3000** automatically
 4. Starts the Node.js server
 
 You'll see:
