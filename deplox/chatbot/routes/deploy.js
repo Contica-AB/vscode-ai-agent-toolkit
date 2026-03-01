@@ -157,6 +157,7 @@ router.post('/', (req, res) => {
           } else {
             proc = spawn('zip', ['-r', zipFile, '.'], { cwd: cfg.codePath, shell: false });
           }
+          proc.on('error', err => reject(new Error(`Failed to start zip process: ${err.message}`)));
           proc.stderr.on('data', d => sse(res, 'log', { message: d.toString().trimEnd() }));
           proc.on('close', code => code === 0 ? resolve() : reject(new Error('Failed to zip code folder')));
         }));

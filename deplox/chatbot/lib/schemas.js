@@ -45,9 +45,8 @@ export const SERVICE_SCHEMAS = {
       validate: v => /[^a-z0-9]/.test(v) || v.length < 3 || v.length > 24 ? 'Must be 3–24 lowercase letters and numbers only.' : null },
     { key:'skuName', label:'plan size', type:'choice', choices:['WS1','WS2','WS3'],
       q:'Which hosting plan?\n• WS1 — 1 core, 3.5 GB RAM\n• WS2 — 2 cores, 7 GB RAM\n• WS3 — 4 cores, 14 GB RAM' },
-    { key:'__codePath', label:'workflows folder', type:'text',
-      q:'Path to your local Logic App workflows folder? (e.g. C:\\Projects\\my-logicapp)\nLeave blank to skip code deployment and only create the infrastructure.',
-      validate: () => null },
+    { key:'__codePath', label:'workflows folder', type:'text_optional',
+      q:'Path to your local Logic App workflows folder? (e.g. C:\\Projects\\my-logicapp)\nClick **Skip** to only create the infrastructure without deploying code.' },
   ],
 
   'apim': [
@@ -89,9 +88,8 @@ export const SERVICE_SCHEMAS = {
     { key:'runtime', label:'runtime', type:'choice',
       choices:['dotnet','dotnet-isolated','node','python','java'],
       q:'Which runtime?\n• dotnet / dotnet-isolated — C# functions\n• node — JavaScript/TypeScript\n• python — Python functions\n• java — Java functions' },
-    { key:'__codePath', label:'function code folder', type:'text',
-      q:'Path to your local function code folder to deploy? (e.g. C:\\Projects\\my-func)\nLeave blank to skip code deployment and only create the infrastructure.',
-      validate: () => null },
+    { key:'__codePath', label:'function code folder', type:'text_optional',
+      q:'Path to your local function code folder to deploy? (e.g. C:\\Projects\\my-func)\nClick **Skip** to only create the infrastructure without deploying code.' },
   ],
 
   'keyvault': [

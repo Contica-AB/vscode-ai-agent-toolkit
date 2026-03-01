@@ -124,15 +124,39 @@ cd chatbot && npm install
 | Feature | Description |
 |---|---|
 | **Conversational deployment** | Describe what you need in plain language — the AI identifies the right Azure service and confirms before asking questions |
+| **Multi-service deployment** | Plan and deploy multiple Azure services in a single session. Shared infrastructure params (subscription, resource group, location) are asked once and reused across services |
+| **Architecture diagrams** | Mermaid.js-powered diagrams show how your planned services connect — displayed inline in chat and in a dedicated collapsible panel. Post-deploy diagrams include portal deep-links |
 | **Service confirmation** | The AI explains why the detected service fits your need and asks for confirmation before collecting parameters |
+| **Plan review** | After configuring each service, add it to a deployment plan. Review the full multi-service plan with an architecture diagram before deploying |
 | **Pre-deploy editing** | Review all settings in a summary screen. Edit any parameter — with full validation — before deploying |
 | **Mid-flow service change** | Change your mind at any point by clicking "Change service" or typing it |
+| **Batch deployment** | Deploy all planned services sequentially with per-service progress tracking and status indicators |
 | **Factual deployment output** | Deployment start and result messages are hard-coded from actual CLI output — the AI never guesses deployment status |
-| **Azure Portal deep-link** | After a successful deployment, a direct link opens the deployed resource in the Azure Portal |
+| **Azure Portal deep-link** | After a successful deployment, direct links open deployed resources in the Azure Portal — both in chat messages and in the post-deploy diagram |
 | **Learn mode** | Ask questions about any Azure service. Answers use Ollama's knowledge + the actual Bicep template + live Microsoft Learn documentation |
 | **Explore included templates** | Dedicated chips on the welcome screen open a guided walkthrough of each Bicep template — design choices, parameters, and outputs |
 | **Deployment history** | Every deployment (success or failure) is logged to `deplox-history.json`. View past deployments via the **History** button in the header — shows service, date, resource group, result, and portal link |
 | **Dynamic model dropdown** | Lists only the Ollama models actually installed. Labels are inferred automatically from model parameter size |
+
+### Multi-Service Flow
+
+```
+start → detect service → collect params → confirm → add to plan
+                                                      ↓
+                                              plan review (diagram)
+                                              ↙           ↘
+                                     add another       deploy all
+                                     service           (batch)
+```
+
+### Architecture Diagrams
+
+Diagrams are generated deterministically (no LLM involvement) based on a relationship graph of Azure services. The system knows which services commonly connect (e.g. APIM → Function App → Service Bus → Key Vault) and renders:
+
+- **Preview diagrams** during plan review — showing planned resources and their connections
+- **Post-deploy diagrams** after deployment — with clickable links to each resource in the Azure Portal
+
+Diagram generation uses Mermaid.js syntax rendered client-side. The relationship graph and internal resource mappings are defined in `chatbot/lib/relationships.js`.
 
 ---
 
