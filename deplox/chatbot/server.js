@@ -15,6 +15,45 @@ const OLLAMA_EXE   = process.env.OLLAMA_EXE   ||
     ? require('path').join(process.env.LOCALAPPDATA || '', 'Programs', 'Ollama', 'ollama.exe')
     : 'ollama');
 const MODULES_DIR  = path.join(__dirname, '..', 'modules');
+const HISTORY_FILE = path.join(__dirname, '..', 'deplox-history.json');
+
+// ── Deployment history helpers ────────────────────────────────────────────────
+const PORTAL_PATHS_SRV = {
+  servicebus:           'Microsoft.ServiceBus/namespaces',
+  eventhub:             'Microsoft.EventHub/namespaces',
+  'logicapp-consumption':'Microsoft.Logic/workflows',
+  'logicapp-standard':  'Microsoft.Web/sites',
+  apim:                 'Microsoft.ApiManagement/service',
+  functionapp:          'Microsoft.Web/sites',
+  keyvault:             'Microsoft.KeyVault/vaults',
+  eventgrid:            'Microsoft.EventGrid/topics',
+  integrationaccount:   'Microsoft.Logic/integrationAccounts',
+};
+
+function appendHistory(record) {
+  try {
+    let history = [];
+    if (fs.existsSync(HISTORY_FILE)) {
+      try { history = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8')); } catch {}
+    }
+    history.unshift(record);          // newest first
+    if (history.length > 200) history = history.slice(0, 200);
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf8');
+  } catch (e) { console.error('[history] write failed:', e.message); }
+}
+
+function buildPortalLink(config) {
+  const sub  = config.subscriptionId;
+  const rg   = config.resourceGroup;
+  const pp   = PORTAL_PATHS_SRV[config.service];
+  const name = config.params?.namespaceName || config.params?.logicAppName
+             || config.params?.functionAppName || config.params?.serviceName
+             || config.params?.vaultName || config.params?.topicName
+             || config.params?.accountName || config.params?.eventHubNamespaceName || '';
+  return (sub && rg && pp && name)
+    ? `https://portal.azure.com/#resource/subscriptions/${sub}/resourceGroups/${rg}/providers/${pp}/${name}/overview`
+    : `https://portal.azure.com/#browse/resourcegroups`;
+}
 
 // ── Load Bicep files for learn mode ──────────────────────────────────────────
 function loadBicepContext() {
@@ -1211,20 +1250,46 @@ app.post('/api/deploy', (req, res) => {
     ));
     const cleanupAll = () => { cleanup(); try { fs.unlinkSync(zipFile); } catch {} };
     steps.reduce((p, fn) => p.then(fn), Promise.resolve())
-      .then(() => { emitOutputs(); cleanupAll(); sse(res, 'success', { message: 'Deployment completed successfully.' }); res.end(); })
-      .catch(err  => { cleanupAll(); sse(res, 'error',   { message: err.message });                        res.end(); });
+      .then(() => {
+        emitOutputs(); cleanupAll();
+        appendHistory({ id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`, timestamp: new Date().toISOString(), service: config.service, serviceLabel: config.serviceLabel, resourceGroup: config.resourceGroup, location: config.location, subscriptionId: config.subscriptionId, subscriptionName: config.subscriptionName, params: config.params, result: 'success', portalLink: buildPortalLink(config), error: null });
+        sse(res, 'success', { message: 'Deployment completed successfully.' }); res.end();
+      })
+      .catch(err => {
+        cleanupAll();
+        appendHistory({ id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`, timestamp: new Date().toISOString(), service: config.service, serviceLabel: config.serviceLabel, resourceGroup: config.resourceGroup, location: config.location, subscriptionId: config.subscriptionId, subscriptionName: config.subscriptionName, params: config.params, result: 'failed', portalLink: null, error: err.message });
+        sse(res, 'error', { message: err.message }); res.end();
+      });
     return;
   }
 
   steps.reduce((p, fn) => p.then(fn), Promise.resolve())
-    .then(() => { emitOutputs(); cleanup(); sse(res, 'success', { message: 'Deployment completed successfully.' }); res.end(); })
-    .catch(err  => { cleanup(); sse(res, 'error',   { message: err.message });                        res.end(); });
+    .then(() => {
+      emitOutputs(); cleanup();
+      appendHistory({ id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`, timestamp: new Date().toISOString(), service: config.service, serviceLabel: config.serviceLabel, resourceGroup: config.resourceGroup, location: config.location, subscriptionId: config.subscriptionId, subscriptionName: config.subscriptionName, params: config.params, result: 'success', portalLink: buildPortalLink(config), error: null });
+      sse(res, 'success', { message: 'Deployment completed successfully.' }); res.end();
+    })
+    .catch(err => {
+      cleanup();
+      appendHistory({ id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`, timestamp: new Date().toISOString(), service: config.service, serviceLabel: config.serviceLabel, resourceGroup: config.resourceGroup, location: config.location, subscriptionId: config.subscriptionId, subscriptionName: config.subscriptionName, params: config.params, result: 'failed', portalLink: null, error: err.message });
+      sse(res, 'error', { message: err.message }); res.end();
+    });
 });
 
 /** Clear a session */
 app.delete('/api/session/:id', (req, res) => {
   sessions.delete(req.params.id);
   res.json({ ok: true });
+});
+
+/** Deployment history */
+app.get('/api/history', (_req, res) => {
+  try {
+    const history = fs.existsSync(HISTORY_FILE)
+      ? JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'))
+      : [];
+    res.json(history);
+  } catch { res.json([]); }
 });
 
 /** Debug — list all active sessions and their chat history */
