@@ -4,6 +4,13 @@
 1. [First-Time Setup](#1-first-time-setup)
 2. [Starting the App](#2-starting-the-app)
 3. [Using the Chat UI](#3-using-the-chat-ui)
+   - [3.1 Switch AI model](#31-switch-ai-model)
+   - [3.2 Sign in to Azure](#32-sign-in-to-azure)
+   - [3.3 Describe what you want to deploy](#33-describe-what-you-want-to-deploy)
+   - [3.4 Answer the questions](#34-answer-the-questions)
+   - [3.5 Review and edit before deploying](#35-review-and-edit-before-deploying)
+   - [3.6 Watch the deployment](#36-watch-the-deployment)
+   - [3.7 Start a new session](#37-start-a-new-session)
 4. [Deploying Each Service](#4-deploying-each-service)
 5. [Stopping the App](#5-stopping-the-app)
 6. [Troubleshooting](#6-troubleshooting)
@@ -67,11 +74,14 @@ az bicep install
 | `mistral:7b` | 10 GB | ~4.5 GB | Great — excellent instruction following | `ollama pull mistral:7b` |
 
 > **Default model is `llama3.1:8b`** — recommended if you have 16 GB+ RAM.
-> To use a different model, edit line 12 in `chatbot/server.js`:
-> ```javascript
-> const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';  // change this
-> ```
-> Or set the environment variable before starting: `$env:OLLAMA_MODEL = 'mistral:7b'`
+> To switch models at any time, use the **model dropdown in the top-right corner of the UI** — it shows all installed models with a short description. Your selection is saved across sessions.
+> To change the default, set the environment variable before starting: `$env:OLLAMA_MODEL = 'mistral:7b'`
+
+You can pull multiple models and switch freely in the UI:
+```powershell
+ollama pull llama3.2:3b    # fast option
+ollama pull llama3.1:8b    # quality option
+```
 
 #### Install Ollama + pull your chosen model
 
@@ -130,28 +140,46 @@ You'll see:
 
 ## 3. Using the Chat UI
 
-### 3.1 Sign in to Azure
+### 3.1 Switch AI model
+
+In the **top-right corner** you will see a dropdown showing all installed Ollama models with a short description:
+
+| Label | Meaning |
+|---|---|
+| `llama3.2:1b  —  Fastest · very light` | Minimal reasoning, instant responses |
+| `llama3.2:3b  —  Fast · good balance` | Good quality, still fast |
+| `llama3.1:8b  —  Smart · slower` | Recommended for best accuracy |
+| `gpt-oss:20b  —  Best quality · slowest` | Maximum reasoning, slowest |
+
+Click the dropdown and select a model. Your choice is saved automatically and applies to all future messages in the session.
+
+### 3.2 Sign in to Azure
 
 When the page loads, check the **top-right corner**:
 
 - If you see your name and subscription → you're already signed in ✅
 - If you see a **Sign in** button → click it. A browser login window opens. Complete the Microsoft login flow.
 
-### 3.2 Pick a service to deploy
+### 3.3 Describe what you want to deploy
 
-The welcome screen shows quick-launch chips for all supported services:
+You do not have to click a button — just describe what you need in plain language:
 
-```
-[ Service Bus ]  [ Event Hubs ]  [ Logic App Standard ]  [ Logic App Consumption ]
-[ APIM ]  [ Function App ]  [ Key Vault ]  [ More... ]
-```
+- *"I need to manage and secure my APIs"*
+- *"Set up a message queue for my orders service"*
+- *"I want to host a serverless function in Azure"*
 
-Click any chip to start that deployment. You can also type what you want, e.g.:
-- *"I want to deploy a Service Bus"*
-- *"Set up a Key Vault"*
-- *"Logic App Standard"*
+The AI identifies the right Azure service and **confirms its understanding before asking any questions**:
 
-### 3.3 Answer the questions
+> *"It sounds like you want to centralise and secure access to your APIs. Azure API Management is the right service for this — it provides a single gateway with built-in rate limiting, authentication and monitoring. Shall I proceed with deploying API Management?"*
+
+Two buttons appear:
+
+- **Yes, deploy API Management** — moves to parameter collection
+- **Choose a different service** — shows the full service list
+
+You can also click the service chips on the welcome screen to go directly.
+
+### 3.4 Answer the questions
 
 The bot asks one question at a time. For each question:
 
@@ -159,16 +187,17 @@ The bot asks one question at a time. For each question:
 |---|---|
 | **Text** | Type the value and press Enter |
 | **Choice buttons** | Click one of the chip buttons shown below the message |
+| **Default value** | Click the **Use default (X)** button to accept the suggested value |
 | **Optional (Skip)** | Click **Skip** or type `skip` to leave it blank |
 | **Comma-separated list** | Type `queue1, queue2, queue3` — or click **Skip** for none |
 
-If you enter an invalid value (wrong length, wrong characters), the bot shows an error and asks again.
+If you enter an invalid value (wrong length, wrong characters), the bot shows a clear error and asks again.
 
-> **Tip:** You can switch to a different service at any point — just click a service chip or type the service name. Your subscription and environment selections are kept.
+> **Changed your mind mid-way?** Click the **Change service** button or type *"start over"* / *"wrong service"* at any point. Your subscription selection is kept.
 
-### 3.4 Review and confirm
+### 3.5 Review and edit before deploying
 
-After all questions are answered, the bot shows a **summary** of what will be deployed:
+After all questions are answered, the bot shows a **full summary** of what will be deployed:
 
 ```
 Service: Service Bus
@@ -181,14 +210,19 @@ sku: Standard
 queues: orders, notifications
 ```
 
-Then two buttons appear:
+Three buttons appear:
 
-- **Yes, deploy** — starts the deployment
-- **Cancel** — goes back to the service picker
+| Button | Action |
+|---|---|
+| **Yes, deploy** | Starts the deployment immediately |
+| **Edit a setting** | Shows every setting as a button — click any to change its value. Full validation runs on the new value. Returns to this summary when done. |
+| **Change service** | Resets and lets you pick a different service |
 
-### 3.5 Watch the deployment
+You can edit as many settings as you like before confirming.
 
-When you confirm, a **terminal card** appears in the chat with live log output:
+### 3.6 Watch the deployment
+
+When you confirm, a **deployment card** appears in the chat showing the exact config being deployed. A **terminal panel** opens at the bottom with live log output:
 
 ```
 [~] Setting subscription: My Azure Sub
@@ -197,14 +231,24 @@ When you confirm, a **terminal card** appears in the chat with live log output:
 ...
 [+] Deployment outputs:
     namespaceId: /subscriptions/.../servicebus/myapp-bus
-    namespaceName: myapp-bus
 
 Deployment completed successfully.
 ```
 
-When done, the service chips reappear so you can deploy something else.
+When the deployment finishes, the chat shows the actual result — success or failure — with no guessing from the AI:
 
-### 3.6 Start a new session
+**On success:**
+> Deployment complete. **Service Bus** is live in resource group **my-rg** (westeurope).
+> [Open in Azure Portal →](https://portal.azure.com/...)
+
+The portal link goes **directly to the deployed resource** — not just the portal homepage.
+
+**On failure:**
+> Deployment failed.
+> `{"code": "NameInUse", ...}`
+> Check the terminal output above for the full error.
+
+### 3.7 Start a new session
 
 - **Refresh the page** — always starts a completely fresh session (no stale state)
 - **New Chat button** (if available) — resets the chat while keeping the page loaded
@@ -252,12 +296,16 @@ Questions asked:
 
 ### API Management
 Questions asked:
-1. Service name (1–50 chars)
+1. Service name (1–50 chars, must start with a letter, letters/numbers/hyphens, globally unique)
 2. Publisher email
 3. Publisher organisation name
 4. SKU: `Consumption` / `Developer` / `Basic` / `Standard` / `Premium`
+5. Rate limit per client IP — max calls per minute (default: 60)
+6. CORS allowed origins (default: `*`)
 
 > ⚠️ All tiers except **Consumption** take **30–45 minutes** to provision. The terminal log will show activity throughout — this is normal.
+>
+> The deployed APIM includes a global rate-limiting policy, a global CORS policy, and a sample Echo API pre-configured.
 
 ### Integration Account
 Questions asked:

@@ -88,7 +88,7 @@ ollama pull llama3.1:8b    # replace with your chosen model
 cd chatbot && npm install
 ```
 
-> To change the model: edit `chatbot/server.js` line 12, or set `$env:OLLAMA_MODEL = 'your-model'` before starting.
+> To change the model: use the **model dropdown in the top-right of the UI** — it lists all installed Ollama models with descriptions. Your choice is saved automatically. You can also set `$env:OLLAMA_MODEL = 'your-model'` before starting to change the default.
 
 ---
 

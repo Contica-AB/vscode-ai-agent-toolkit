@@ -65,9 +65,10 @@ Single HTML file, no framework, no build step.
 | Section | Purpose |
 |---|---|
 | **Chat window** | Streams tokens from the server via SSE. Renders bot/user messages. |
-| **Choice chips** | Dynamic buttons rendered from server-sent `choices` events. Used for subscriptions, SKUs, regions, and service picks. |
+| **Model dropdown** | Top-right pill — lists all installed Ollama models with descriptions. Selection is saved to localStorage and sent with every chat request. |
+| **Choice chips** | Dynamic buttons rendered from server-sent `choices` events. Used for subscriptions, SKUs, regions, service picks, edit targets, and confirm actions. |
 | **Welcome chips** | Always-visible shortcut buttons for each Azure service on the home screen. |
-| **Deploy card** | Auto-renders when server emits a `deploy_config` event. Shows a terminal-style log of deployment steps. |
+| **Deploy card** | Auto-renders when server emits a `deploy_config` event. Shows the exact config being deployed and a terminal-style log of deployment steps. |
 | **Login bar** | Top-right — shows logged-in user, subscription, and logout button. |
 
 ### 2. Backend Server — `chatbot/server.js`
@@ -76,12 +77,12 @@ Express app, ~800 lines. No database. All state is in-memory.
 | Module | Purpose |
 |---|---|
 | **SESSION STORE** | `Map<sessionId, SessionObject>`. New session per page load. |
-| **STATE MACHINE** | Five states: `start` → `collecting` → `confirm` → `done`. Controls what question to ask next. |
+| **STATE MACHINE** | Seven states: `start` → `confirming_service` → `collecting` → `confirm` → `editing` → `done`. Controls what question to ask next and when to involve Ollama. |
 | **SERVICE_SCHEMAS** | Parameter definitions for each Azure service. Each param has key, label, type, validation, and optional `skipIf` logic. |
 | **COMMON_SCHEMA** | Shared params appended to every service: subscription, resource group, location, environment tag. |
 | **buildDeployConfig()** | Assembles collected answers into an ARM-compatible deploy config object. |
 | **Deploy pipeline** | Spawns `az` CLI commands in sequence; streams stdout/stderr back to browser via SSE. |
-| **Ollama integration** | Used only for `start` state (welcome/service picker). All collecting/confirm states use direct text — no LLM. |
+| **Ollama integration** | Used for `start`, `confirming_service`, and `confirming_service` retry states. All `collecting`, `confirm`, `editing`, and `done` states use direct text — no LLM. Deployment outcome (success/failure/portal link) is always factual, never LLM-generated. |
 
 ### 3. Bicep Modules — `modules/*.bicep`
 One Bicep file per Azure service. Each is self-contained — no shared modules or dependencies between them.
@@ -98,8 +99,10 @@ One Bicep file per Azure service. Each is self-contained — no shared modules o
 | `keyvault.bicep` | Key Vault + access policy for deploying user |
 | `eventgrid.bicep` | Event Grid custom topic |
 
-### 4. Local AI — Ollama (`llama3.2:1b`)
-Runs as a local process on port 11434. Only used to generate the conversational greeting when a user first arrives. All structured questions (collecting params, confirm screen) bypass Ollama entirely and use direct text — this is intentional, because small models hallucinate when given strict formatting directives.
+### 4. Local AI — Ollama (`llama3.1:8b`)
+Runs as a local process on port 11434. Used to generate conversational responses in `start` (welcome/service picker) and `confirming_service` (understanding confirmation + explanation) states. All structured states — `collecting`, `confirm`, `editing`, `done` — bypass Ollama and use direct deterministic text. Deployment results (success/failure/portal link) are derived entirely from the `az` CLI output — the LLM never reports deployment status.
+
+The active model is selected at runtime via the UI dropdown and stored per-session. Multiple models can be installed and switched without restarting the server.
 
 ---
 
@@ -197,41 +200,54 @@ Runs as a local process on port 11434. Only used to generate the conversational 
 ## State Machine Detail
 
 ```
-+---------------------------------------------------------------+
-|                    STATE MACHINE                              |
-+---------------------------------------------------------------+
-|                                                               |
-|    +-------+    service detected    +------------+            |
-|    | start | ----------------------> | collecting |           |
-|    +-------+                        +-----+------+            |
-|        ^                                  |                   |
-|        |                    all params filled                 |
-|        |                                  v                   |
-|        |                           +---------+                |
-|        |        cancel             | confirm |                |
-|        | <------------------------ +---------+                |
-|        |                                  |                   |
-|        |                      "yes, deploy"                   |
-|        |                                  v                   |
-|        |                           +--------+                 |
-|        +-------------------------> |  done  |                 |
-|                                    +--------+                 |
-|                                                               |
-|   next message -> resets to start                             |
-|                                                               |
-|   Service switch at ANY state -> resets to                    |
-|   collecting (keeps subscription + env tag)                   |
-|                                                               |
-+---------------------------------------------------------------+
++---------------------------------------------------------------------------------+
+|                              STATE MACHINE                                      |
++---------------------------------------------------------------------------------+
+|                                                                                 |
+|    +-------+    service detected    +----------------------+                    |
+|    | start | ----------------------> | confirming_service   |                   |
+|    +-------+    (keyword or AI)     |  AI explains why &   |                   |
+|        ^                            |  asks to confirm      |                   |
+|        |                            +----------+-----------+                    |
+|        |   "Choose different"                  |                                |
+|        | <------------------------------------  | "Yes, deploy X"               |
+|        |                                       v                                |
+|        |                             +------------+                             |
+|        |        "Change service"     | collecting |  ← one param at a time     |
+|        | <-------------------------- +-----+------+  ← full validation          |
+|        |                                   |                                    |
+|        |                     all params filled                                  |
+|        |                                   v                                    |
+|        |                            +---------+                                 |
+|        |        "Change service"    | confirm |  ← summary shown               |
+|        | <------------------------- +---------+                                 |
+|        |                             /       \                                  |
+|        |          "Edit a setting"  /         \ "Yes, deploy"                  |
+|        |                           v           v                                |
+|        |                    +---------+    +--------+                           |
+|        |    edit done       | editing |    |  done  |                           |
+|        |    back to confirm +---------+    +--------+                           |
+|        |                         |              |                               |
+|        |                         |    next msg  |                               |
+|        +-------------------------+--------------+                               |
+|                                                                                 |
+|   Ollama used in:  start, confirming_service                                    |
+|   Direct text in:  collecting, confirm, editing, done                           |
+|   Deployment result: factual from az CLI output — LLM never reports status      |
+|                                                                                 |
++---------------------------------------------------------------------------------+
 ```
 
 **Session data structure:**
 ```js
 {
-  state: 'start' | 'collecting' | 'confirm' | 'done',
+  state: 'start' | 'confirming_service' | 'collecting' | 'confirm' | 'editing' | 'done',
   service: 'servicebus' | 'eventhub' | ... | null,
-  schema: [ ...paramDefs ],   // deep-copied from SERVICE_SCHEMAS
-  schemaIdx: 2,               // which param we're on
+  _pendingService: 'apim',          // set during confirming_service, cleared on confirm
+  schema: [ ...paramDefs ],         // deep-copied from SERVICE_SCHEMAS
+  schemaIdx: 2,                     // which param we're on
+  _editingKey: 'namespaceName',     // set during editing state, null when in pick mode
+  model: 'llama3.1:8b',             // active Ollama model for this session
   collected: {
     namespaceName: 'myapp-bus',
     sku: 'Standard',
