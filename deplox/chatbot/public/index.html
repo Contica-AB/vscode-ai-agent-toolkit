@@ -311,6 +311,11 @@
         <div class="chip" onclick="quickSend('I want to deploy a Function App')"><img src="https://azure.microsoft.com/svghandler/functions/?width=22&height=22" width="22" height="22" style="vertical-align:middle;margin-right:6px;border-radius:4px">Function App</div>
         <div class="chip" onclick="quickSend('I want to deploy a Key Vault')"><img src="https://azure.microsoft.com/svghandler/key-vault/?width=22&height=22" width="22" height="22" style="vertical-align:middle;margin-right:6px;border-radius:4px">Key Vault</div>
       </div>
+      <div class="chip-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:12px">
+        <div class="chip" style="background:var(--surface);border-color:var(--muted);color:var(--muted)" onclick="send('__learn__')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learn about Azure services
+        </div>
+      </div>
     </div>
     <div id="typing" class="msg-row bot">
       <div class="avatar bot"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none"><path d="M12 2.5c.28 0 .5.3.5.67 0 2.84 1.03 4.3 2.3 5.03C16.07 9 17.7 9 19.33 9c.37 0 .67.22.67.5s-.3.5-.67.5c-1.63 0-3.26 0-4.53.8-1.27.73-2.3 2.19-2.3 5.03 0 .37-.22.67-.5.67s-.5-.3-.5-.67c0-2.84-1.03-4.3-2.3-5.03C8.07 10 6.44 10 4.67 10 4.3 10 4 9.78 4 9.5S4.3 9 4.67 9c1.63 0 3.26 0 4.53-.8 1.27-.73 2.3-2.19 2.3-5.03 0-.37.22-.67.5-.67Z"/><path d="M19 14.5c.2 0 .36.2.36.46 0 1.32.48 2 1.07 2.33.59.34 1.35.34 2.11.34.2 0 .36.15.36.33s-.16.34-.36.34c-.76 0-1.52 0-2.11.33-.59.34-1.07 1.02-1.07 2.33 0 .26-.16.46-.36.46s-.36-.2-.36-.46c0-1.31-.48-1.99-1.07-2.33-.59-.33-1.35-.33-2.11-.33-.2 0-.36-.16-.36-.34s.16-.33.36-.33c.76 0 1.52 0 2.11-.34.59-.33 1.07-1.01 1.07-2.33 0-.26.16-.46.36-.46Z"/></svg></div>
@@ -671,7 +676,8 @@ async function send(overrideText) {
   input.value = ''; input.style.height = 'auto';
   isStreaming = true; sendBtn.disabled = true;
 
-  addMessage('user', renderMd(text));
+  if (text !== '__learn__') addMessage('user', renderMd(text));
+  else addMessage('user', 'I want to learn about Azure services');
   typing.style.display = 'flex';
   scrollBottom();
 
@@ -728,6 +734,8 @@ async function send(overrideText) {
             pendingChoices = ev.choices;
           } else if (ev.type === 'deploy_config') {
             deployConfig = ev.config;
+          } else if (ev.type === 'learn_link') {
+            bubble.innerHTML += `<br><br><a href="${ev.url}" target="_blank" style="color:var(--accent2);font-size:.85rem;text-decoration:underline">Official documentation on Microsoft Learn →</a>`;
           } else if (ev.type === 'error') {
             bubble.innerHTML += `<br><span style="color:var(--error)">${ev.message}</span>`;
           }

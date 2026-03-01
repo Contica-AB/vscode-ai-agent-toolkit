@@ -16,6 +16,49 @@ const OLLAMA_EXE   = process.env.OLLAMA_EXE   ||
     : 'ollama');
 const MODULES_DIR  = path.join(__dirname, '..', 'modules');
 
+// ── Load Bicep files for learn mode ──────────────────────────────────────────
+function loadBicepContext() {
+  const files = {};
+  const serviceMap = {
+    'servicebus': 'servicebus.bicep', 'eventhub': 'eventhub.bicep',
+    'logicapp-consumption': 'logicapp-consumption.bicep', 'logicapp-standard': 'logicapp-standard.bicep',
+    'apim': 'apim.bicep', 'functionapp': 'functionapp.bicep',
+    'keyvault': 'keyvault.bicep', 'eventgrid': 'eventgrid.bicep',
+    'integrationaccount': 'integrationaccount.bicep'
+  };
+  for (const [svc, file] of Object.entries(serviceMap)) {
+    try {
+      const raw = fs.readFileSync(path.join(MODULES_DIR, file), 'utf8');
+      // Keep only param and resource lines — strip comments and blank lines
+      const slim = raw.split('\n')
+        .filter(l => /^\s*(param |resource |output |var )/.test(l) || /allowed\s*=/.test(l))
+        .join('\n').trim();
+      files[svc] = slim;
+    } catch { files[svc] = '(template not found)'; }
+  }
+  return files;
+}
+const BICEP_TEMPLATES = loadBicepContext();
+
+const LEARN_DOCS = {
+  'servicebus':           'https://learn.microsoft.com/azure/service-bus-messaging/',
+  'eventhub':             'https://learn.microsoft.com/azure/event-hubs/',
+  'logicapp-consumption': 'https://learn.microsoft.com/azure/logic-apps/',
+  'logicapp-standard':    'https://learn.microsoft.com/azure/logic-apps/',
+  'apim':                 'https://learn.microsoft.com/azure/api-management/',
+  'functionapp':          'https://learn.microsoft.com/azure/azure-functions/',
+  'keyvault':             'https://learn.microsoft.com/azure/key-vault/',
+  'eventgrid':            'https://learn.microsoft.com/azure/event-grid/',
+  'integrationaccount':   'https://learn.microsoft.com/azure/logic-apps/logic-apps-enterprise-integration-create-integration-account'
+};
+
+const LEARN_INTENT_WORDS = [
+  'what is','what are','explain','tell me about','how does','how do',
+  'when should','when to use','difference between','compare','vs ','versus',
+  'learn','understand','overview','help me understand','why would','what can'
+];
+
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -583,6 +626,27 @@ app.post('/api/chat', async (req, res) => {
   let useOllamaForRetry = false;
 
   if (session.state === 'start') {
+    // Check for learn intent before trying to deploy
+    const lowerMsg = message.toLowerCase();
+    const isLearnIntent = LEARN_INTENT_WORDS.some(w => lowerMsg.includes(w))
+      && !['deploy','create','set up','provision','spin up','i want to deploy','lets deploy'].some(w => lowerMsg.includes(w));
+
+    if (isLearnIntent || message === '__learn__') {
+      session.state = 'learning';
+      session._learnService = detectService(message) || null;
+      const bicepSnippet = session._learnService ? BICEP_TEMPLATES[session._learnService] : '';
+      const templateNote = bicepSnippet
+        ? `
+
+DeploX template for this service (Bicep source):
+\`\`\`
+${bicepSnippet}
+\`\`\``
+        : '';
+      directive = `You are DeploX, an Azure integration services assistant. Answer the user's question about Azure services clearly and professionally. Be concise but thorough. Focus on practical use cases, when to choose this service, and key concepts. If asked about the DeploX template, explain what it deploys based on the Bicep source provided.${templateNote}
+
+DIRECTIVE: Answer the user's question. Do not mention deploying unless the user asks about it.`;
+    } else {
     // Try to detect service from first message
     let svc = detectService(message);
     if (!svc) svc = await detectServiceWithAI(message, activeModel);
@@ -597,6 +661,46 @@ app.post('/api/chat', async (req, res) => {
       // Ask user to pick a service
       directive   = 'DIRECTIVE: Welcome the user and ask what Azure integration service they want to deploy.';
       nextChoices = Object.values(SERVICE_LABELS);
+    }
+    } // end isLearnIntent else
+
+  } else if (session.state === 'learning') {
+    // User is in learn mode — check if they want to deploy or keep learning
+    const lowerMsg = message.toLowerCase();
+    const wantsDeploy = message.startsWith('Deploy ') || ['deploy now','yes deploy','i want to deploy','lets deploy','go ahead and deploy'].some(w => lowerMsg.includes(w));
+    const svcFromBtn  = message.startsWith('Deploy ') ? detectService(message.replace(/^Deploy\s+/i,'')) : null;
+
+    if (wantsDeploy) {
+      const svc = svcFromBtn || session._learnService || detectService(message) || await detectServiceWithAI(message, activeModel);
+      if (svc) {
+        session._pendingService = svc;
+        session.state = 'confirming_service';
+        delete session._learnService;
+        const svcLabel = SERVICE_LABELS[svc] || svc;
+        directive = `DIRECTIVE: The user wants to deploy "${svcLabel}". Confirm your understanding, briefly say why it is a good fit, and ask if they want to proceed.`;
+        nextChoices = [`Yes, deploy ${svcLabel}`, 'Choose a different service'];
+      } else {
+        directive = 'DIRECTIVE: Ask the user which Azure service they would like to deploy.';
+        nextChoices = Object.values(SERVICE_LABELS);
+      }
+    } else {
+      // Continue learning — update context if a new service is mentioned
+      const mentionedSvc = detectService(message) || await detectServiceWithAI(message, activeModel);
+      if (mentionedSvc) session._learnService = mentionedSvc;
+      const bicepSnippet = session._learnService ? BICEP_TEMPLATES[session._learnService] : '';
+      const templateNote = bicepSnippet
+        ? `
+
+DeploX template (Bicep source):
+\`\`\`
+${bicepSnippet}
+\`\`\``
+        : '';
+      const docsLink = session._learnService ? LEARN_DOCS[session._learnService] : null;
+      session._pendingLearnLink = docsLink || null;
+      directive = `You are DeploX, an Azure integration services assistant. Answer clearly and professionally. Be concise but thorough.${templateNote}
+
+DIRECTIVE: Answer the user's question about Azure services. Do not push them to deploy.`;
     }
 
   } else if (session.state === 'confirming_service') {
@@ -873,6 +977,18 @@ app.post('/api/chat', async (req, res) => {
     }
 
     session.messages.push({ role: 'assistant', content: fullContent });
+
+    // Learn mode: append MS Learn link + action buttons after Ollama response
+    if (session.state === 'learning' && !nextChoices?.length) {
+      const docsLink = session._pendingLearnLink;
+      session._pendingLearnLink = null;
+      if (docsLink) sse(res, 'learn_link', { url: docsLink });
+      const svcLabel = session._learnService ? (SERVICE_LABELS[session._learnService] || session._learnService) : null;
+      nextChoices = svcLabel
+        ? [`Deploy ${svcLabel} now`, 'Keep learning']
+        : ['Keep learning'];
+    }
+
     if (nextChoices?.length) sse(res, 'choices', { choices: nextChoices });
     sse(res, 'done');
   } catch (err) {
