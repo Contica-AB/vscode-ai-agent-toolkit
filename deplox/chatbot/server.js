@@ -648,6 +648,26 @@ app.post('/api/chat', async (req, res) => {
   let useOllamaForRetry = false;
 
   if (session.state === 'start') {
+    // Template explain sentinel: __template_servicebus__ etc.
+    if (message.startsWith('__template_')) {
+      const svc = message.replace('__template_', '').replace(/__$/, '');
+      session.state = 'learning';
+      session._learnService = svc;
+      const svcLabel = SERVICE_LABELS[svc] || svc;
+      const fullBicep = BICEP_FULL[svc] || '(not found)';
+      directive = `You are DeploX. Walk through the following Bicep template for ${svcLabel} and explain clearly:
+1. What Azure resources get created (type, name pattern, SKU/tier)
+2. What parameters the user configures (name, type, default value, allowed values)
+3. What outputs are produced
+Use short bullet points. Be specific and professional.
+
+DeploX Bicep template:
+\`\`\`bicep
+${fullBicep}
+\`\`\`
+
+DIRECTIVE: Explain the template above — resources, parameters, and outputs.`;
+    } else {
     // Check for learn intent before trying to deploy
     const lowerMsg = message.toLowerCase();
     const isLearnIntent = LEARN_INTENT_WORDS.some(w => lowerMsg.includes(w))
@@ -685,6 +705,7 @@ DIRECTIVE: Answer the user's question. Do not mention deploying unless the user 
       nextChoices = Object.values(SERVICE_LABELS);
     }
     } // end isLearnIntent else
+    } // end __template__ else
 
   } else if (session.state === 'learning') {
     // User is in learn mode — check if they want to deploy or keep learning
