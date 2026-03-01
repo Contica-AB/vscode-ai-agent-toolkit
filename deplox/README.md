@@ -88,7 +88,23 @@ ollama pull llama3.1:8b    # replace with your chosen model
 cd chatbot && npm install
 ```
 
-> To change the model: use the **model dropdown in the top-right of the UI** — it lists all installed Ollama models with descriptions. Your choice is saved automatically. You can also set `$env:OLLAMA_MODEL = 'your-model'` before starting to change the default.
+> To change the model: use the **model dropdown in the top-right of the UI** — it lists only models actually installed on your machine (fetched live from Ollama on page load). Each model is automatically labelled by parameter size (e.g. 7b → *Balanced · good quality*). Your choice is saved automatically. You can also set `$env:OLLAMA_MODEL = 'your-model'` before starting to change the default.
+
+---
+
+## Features
+
+| Feature | Description |
+|---|---|
+| **Conversational deployment** | Describe what you need in plain language — the AI identifies the right Azure service and confirms before asking questions |
+| **Service confirmation** | The AI explains why the detected service fits your need and asks for confirmation before collecting parameters |
+| **Pre-deploy editing** | Review all settings in a summary screen. Edit any parameter — with full validation — before deploying |
+| **Mid-flow service change** | Change your mind at any point by clicking "Change service" or typing it |
+| **Factual deployment output** | Deployment start and result messages are hard-coded from actual CLI output — the AI never guesses deployment status |
+| **Azure Portal deep-link** | After a successful deployment, a direct link opens the deployed resource in the Azure Portal |
+| **Learn mode** | Ask questions about any Azure service. Answers use Ollama's knowledge + the actual Bicep template + live Microsoft Learn documentation |
+| **Explore included templates** | Dedicated chips on the welcome screen open a guided walkthrough of each Bicep template — design choices, parameters, and outputs |
+| **Dynamic model dropdown** | Lists only the Ollama models actually installed. Labels are inferred automatically from model parameter size |
 
 ---
 

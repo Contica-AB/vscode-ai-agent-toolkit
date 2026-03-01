@@ -6,11 +6,12 @@
 3. [Using the Chat UI](#3-using-the-chat-ui)
    - [3.1 Switch AI model](#31-switch-ai-model)
    - [3.2 Sign in to Azure](#32-sign-in-to-azure)
-   - [3.3 Describe what you want to deploy](#33-describe-what-you-want-to-deploy)
-   - [3.4 Answer the questions](#34-answer-the-questions)
-   - [3.5 Review and edit before deploying](#35-review-and-edit-before-deploying)
-   - [3.6 Watch the deployment](#36-watch-the-deployment)
-   - [3.7 Start a new session](#37-start-a-new-session)
+   - [3.3 Describe what you want to deploy — or learn first](#33-describe-what-you-want-to-deploy--or-learn-first)
+   - [3.4 Explore included templates](#34-explore-included-templates)
+   - [3.5 Answer the questions](#35-answer-the-questions)
+   - [3.6 Review and edit before deploying](#36-review-and-edit-before-deploying)
+   - [3.7 Watch the deployment](#37-watch-the-deployment)
+   - [3.8 Start a new session](#38-start-a-new-session)
 4. [Deploying Each Service](#4-deploying-each-service)
 5. [Stopping the App](#5-stopping-the-app)
 6. [Troubleshooting](#6-troubleshooting)
@@ -142,16 +143,19 @@ You'll see:
 
 ### 3.1 Switch AI model
 
-In the **top-right corner** you will see a dropdown showing all installed Ollama models with a short description:
+In the **top-right corner** you will see a dropdown showing every Ollama model installed on your machine. The list is fetched live from Ollama on page load — models you have not pulled will never appear.
 
-| Label | Meaning |
+Each model is labelled automatically based on its parameter size:
+
+| Size in name | Label shown |
 |---|---|
-| `llama3.2:1b  —  Fastest · very light` | Minimal reasoning, instant responses |
-| `llama3.2:3b  —  Fast · good balance` | Good quality, still fast |
-| `llama3.1:8b  —  Smart · slower` | Recommended for best accuracy |
-| `gpt-oss:20b  —  Best quality · slowest` | Maximum reasoning, slowest |
+| 1b – 2b | Fastest · very light |
+| 3b – 4b | Fast · light |
+| 7b – 9b | Balanced · good quality |
+| 10b – 20b | High quality · slower |
+| 21b + | Best quality · requires strong hardware |
 
-Click the dropdown and select a model. Your choice is saved automatically and applies to all future messages in the session.
+Models with no size in the name (e.g. `:latest` tags) show just the model name. Click the dropdown to switch at any time. Your choice is saved in the browser and applied to all future messages.
 
 ### 3.2 Sign in to Azure
 
@@ -178,6 +182,7 @@ The bot will answer using its own Azure knowledge plus the actual Bicep template
 
 - **Deploy [service] now** — transitions straight into the deployment flow
 - **Keep learning** — ask another question
+- **Explain the included template** — see section 3.4 below
 
 When you are ready to deploy, the AI identifies the right Azure service and **confirms its understanding before asking any questions**:
 
@@ -190,7 +195,21 @@ Two buttons appear:
 
 You can also click the service chips on the welcome screen to go directly.
 
-### 3.4 Answer the questions
+### 3.4 Explore included templates
+
+The welcome screen has a dedicated **"Explore included templates"** section below the service chips. Click any service name to get an immediate walkthrough of the Bicep template DeploX uses to deploy it.
+
+The explanation is written from the perspective of a solutions architect describing their own design choices. It covers:
+
+1. **Why Bicep** — why infrastructure-as-code was chosen and what advantages it brings
+2. **What the template deploys** — every Azure resource created, the SKU or tier selected, and why that default was chosen
+3. **What you can configure** — each parameter, what it controls, its default value and any restrictions
+4. **What was kept simple on purpose** — advanced options intentionally excluded to keep deployments reliable and focused
+5. **Outputs** — what values the template returns after a successful deployment and how to use them
+
+This is available for all nine supported services and does not start a deployment. After reading, you can click **Deploy [service] now** to continue into the deployment flow.
+
+### 3.5 Answer the questions
 
 The bot asks one question at a time. For each question:
 
@@ -206,7 +225,7 @@ If you enter an invalid value (wrong length, wrong characters), the bot shows a 
 
 > **Changed your mind mid-way?** Click the **Change service** button or type *"start over"* / *"wrong service"* at any point. Your subscription selection is kept.
 
-### 3.5 Review and edit before deploying
+### 3.6 Review and edit before deploying
 
 After all questions are answered, the bot shows a **full summary** of what will be deployed:
 
@@ -231,7 +250,7 @@ Three buttons appear:
 
 You can edit as many settings as you like before confirming.
 
-### 3.6 Watch the deployment
+### 3.7 Watch the deployment
 
 When you confirm, a **deployment card** appears in the chat showing the exact config being deployed. A **terminal panel** opens at the bottom with live log output:
 
@@ -259,7 +278,7 @@ The portal link goes **directly to the deployed resource** — not just the port
 > `{"code": "NameInUse", ...}`
 > Check the terminal output above for the full error.
 
-### 3.7 Start a new session
+### 3.8 Start a new session
 
 - **Refresh the page** — always starts a completely fresh session (no stale state)
 - **New Chat button** (if available) — resets the chat while keeping the page loaded
