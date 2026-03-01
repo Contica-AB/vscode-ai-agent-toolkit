@@ -7,12 +7,13 @@ import { MODULES_DIR } from '../lib/config.js';
 import { SERVICE_SCHEMAS } from '../lib/schemas.js';
 import { sse } from '../lib/sse.js';
 import { appendHistory, buildPortalLink } from '../lib/history.js';
+import { addDeployment, loadProject } from '../lib/projects.js';
 
 const router = Router();
 
 /** Deploy — runs az CLI, streams logs via SSE. Supports single or multi-config. */
 router.post('/', (req, res) => {
-  const { config, configs } = req.body;
+  const { config, configs, projectId } = req.body;
   const configList = configs || (config ? [config] : []);
   if (!configList.length) return res.status(400).json({ error: 'config or configs required' });
 
@@ -66,6 +67,7 @@ router.post('/', (req, res) => {
     portalLink: result === 'success' ? buildPortalLink(cfg) : null,
     error,
     batchId: configList.length > 1 ? batchId : undefined,
+    projectId: projectId || undefined,
   });
 
   const batchId = configList.length > 1 ? `batch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` : null;
@@ -219,6 +221,33 @@ router.post('/', (req, res) => {
         message: successCount === 1 ? 'Deployment completed successfully.' : 'Deployment failed.'
       });
     }
+
+    // Record deployment to project
+    if (projectId) {
+      try {
+        const services = configList.map((cfg, i) => ({
+          service: cfg.service,
+          serviceLabel: cfg.serviceLabel || cfg.service,
+          params: cfg.params,
+          result: deployResults[cfg.service]?.success ? 'success' : 'failed',
+          error: deployResults[cfg.service]?.error || null,
+          portalLink: deployResults[cfg.service]?.success ? buildPortalLink(cfg) : null,
+        }));
+        const status = successCount === total ? 'succeeded' : (successCount > 0 ? 'partial' : 'failed');
+        addDeployment(projectId, {
+          batchId,
+          services,
+          status,
+          resourceGroup: configList[0]?.resourceGroup,
+          location: configList[0]?.location,
+          subscriptionId: configList[0]?.subscriptionId,
+          subscriptionName: configList[0]?.subscriptionName,
+        });
+      } catch (e) {
+        console.error('[deploy] Failed to record deployment to project:', e.message);
+      }
+    }
+
     // Send post-deploy diagram data
     sse(res, 'deploy_complete', { deployResults, total, successCount });
     res.end();

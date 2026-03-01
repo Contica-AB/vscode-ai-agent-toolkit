@@ -4,9 +4,10 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const CHATBOT_DIR  = join(__dirname, '..');
-export const MODULES_DIR  = join(CHATBOT_DIR, '..', 'modules');
-export const HISTORY_FILE = join(CHATBOT_DIR, '..', 'deplox-history.json');
+export const CHATBOT_DIR   = join(__dirname, '..');
+export const MODULES_DIR   = join(CHATBOT_DIR, '..', 'modules');
+export const HISTORY_FILE  = join(CHATBOT_DIR, '..', 'deplox-history.json');
+export const PROJECTS_DIR  = join(CHATBOT_DIR, '..', 'projects');
 
 export const PORT         = process.env.PORT || 3000;
 export const OLLAMA_URL   = process.env.OLLAMA_URL   || 'http://localhost:11434';

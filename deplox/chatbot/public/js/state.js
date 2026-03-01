@@ -5,12 +5,18 @@ sessionStorage.setItem('il_session', sessionId);
 export let activeModel = localStorage.getItem('deplox_model') || '';
 export let isStreaming  = false;
 export let pendingConfig = null;
+export let activeProjectId = localStorage.getItem('deplox_active_project') || null;
 
 // Setters (ES module exports are live bindings — changes are visible everywhere)
-export function setSessionId(id)     { sessionId = id; }
+export function setSessionId(id)     { sessionId = id; sessionStorage.setItem('il_session', id); }
 export function setActiveModel(model) { activeModel = model; }
 export function setStreaming(val)     { isStreaming = val; }
 export function setPendingConfig(cfg) { pendingConfig = cfg; }
+export function setActiveProjectId(id) {
+  activeProjectId = id;
+  if (id) localStorage.setItem('deplox_active_project', id);
+  else localStorage.removeItem('deplox_active_project');
+}
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 export const chatWrap = document.getElementById('chat-wrap');

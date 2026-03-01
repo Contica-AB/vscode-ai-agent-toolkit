@@ -1,5 +1,5 @@
 import { IC } from './icons.js';
-import { terminal, termLog } from './state.js';
+import { terminal, termLog, activeProjectId } from './state.js';
 import { scrollBottom } from './helpers.js';
 import { showDiagramPanel } from './diagram.js';
 
@@ -55,7 +55,7 @@ async function startDeploy(config, card, addMessageFn) {
   const res = await fetch('/api/deploy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ config })
+    body: JSON.stringify({ config, projectId: activeProjectId })
   });
 
   const reader  = res.body.getReader();
@@ -115,7 +115,7 @@ async function startDeploy(config, card, addMessageFn) {
 }
 
 /** Build a multi-service deployment plan card */
-export function buildPlanCard(configs, plan, addMessageFn) {
+export function buildPlanCard(configs, plan, addMessageFn, projectId) {
   const card = document.createElement('div');
   card.className = 'deploy-card plan-card';
 
@@ -140,12 +140,12 @@ export function buildPlanCard(configs, plan, addMessageFn) {
     <div class="plan-services">${serviceRows}</div>
     <div class="deploy-actions"><span class="deploy-status" style="color:var(--warn);font-size:.83rem;display:inline-flex;align-items:center;gap:5px"><span class="ic">${IC.loader}</span>Starting deployment…</span></div>`;
 
-  setTimeout(() => startPlanDeploy(configs, plan, card, addMessageFn), 100);
+  setTimeout(() => startPlanDeploy(configs, plan, card, addMessageFn, projectId), 100);
   return card;
 }
 
 /** Execute multi-service deployment */
-async function startPlanDeploy(configs, plan, card, addMessageFn) {
+async function startPlanDeploy(configs, plan, card, addMessageFn, projectId) {
   const statusEl = card.querySelector('.deploy-status');
   const setStatus = (html) => { if (statusEl) statusEl.innerHTML = html; };
 
@@ -156,7 +156,7 @@ async function startPlanDeploy(configs, plan, card, addMessageFn) {
   const res = await fetch('/api/deploy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ configs })
+    body: JSON.stringify({ configs, projectId: projectId || activeProjectId })
   });
 
   const reader  = res.body.getReader();

@@ -1,6 +1,6 @@
 import { IC } from './icons.js';
 import {
-  sessionId, activeModel, isStreaming, setStreaming,
+  sessionId, activeModel, activeProjectId, isStreaming, setStreaming,
   chatWrap, input, sendBtn, typing, welcome
 } from './state.js';
 import { scrollBottom, renderMd } from './helpers.js';
@@ -109,7 +109,7 @@ export async function send(overrideText) {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, sessionId, model: activeModel })
+      body: JSON.stringify({ message: text, sessionId, model: activeModel, projectId: activeProjectId })
     });
 
     const reader  = res.body.getReader();
@@ -138,7 +138,7 @@ export async function send(overrideText) {
           } else if (ev.type === 'deploy_config') {
             deployConfig = ev.config;
           } else if (ev.type === 'deploy_plan') {
-            deployPlan = { configs: ev.configs, plan: ev.plan };
+            deployPlan = { configs: ev.configs, plan: ev.plan, projectId: ev.projectId };
           } else if (ev.type === 'diagram') {
             pendingDiagram = ev.mermaid;
           } else if (ev.type === 'learn_link') {
@@ -155,7 +155,7 @@ export async function send(overrideText) {
       showDiagramPanel(pendingDiagram);
     }
     if (deployConfig) bubble.appendChild(buildDeployCard(deployConfig, addMessage));
-    if (deployPlan) bubble.appendChild(buildPlanCard(deployPlan.configs, deployPlan.plan, addMessage));
+    if (deployPlan) bubble.appendChild(buildPlanCard(deployPlan.configs, deployPlan.plan, addMessage, deployPlan.projectId));
     if (pendingChoices) attachChoices(wrap, pendingChoices);
 
   } catch (err) {

@@ -14,12 +14,13 @@ import {
   paramLabel, editableChoices, findParamByKey
 } from '../lib/state-machine.js';
 import { generateMermaid } from '../lib/diagram.js';
+import { loadProject, saveProjectSession } from '../lib/projects.js';
 
 const router = Router();
 
 /** Chat — state-machine driven, streams tokens via SSE */
 router.post('/', async (req, res) => {
-  const { message, sessionId, model } = req.body;
+  const { message, sessionId, model, projectId } = req.body;
   if (!message || !sessionId) return res.status(400).json({ error: 'message and sessionId required' });
 
   // ── Bootstrap session ──────────────────────────────────────────────────────
@@ -32,6 +33,18 @@ router.post('/', async (req, res) => {
     if (defaultSub) preCollected.__subscription = defaultSub;
     if (autoEnv)    preCollected.__env           = autoEnv;
 
+    // Pre-populate from project defaults if project-scoped
+    if (projectId) {
+      const project = loadProject(projectId);
+      if (project?.defaults) {
+        const d = project.defaults;
+        if (d.subscription?.id) preCollected.__subscription = d.subscription;
+        if (d.resourceGroup)    { preCollected.__rgName = d.resourceGroup; preCollected.__rgPick = d.resourceGroup; }
+        if (d.location)         preCollected.__location = d.location;
+        if (d.environment)      preCollected.__env = d.environment;
+      }
+    }
+
     sessions.set(sessionId, {
       messages: [{ role: 'system', content: SYSTEM_PROMPT }],
       state:    'start',
@@ -40,7 +53,8 @@ router.post('/', async (req, res) => {
       schemaIdx: 0,
       collected: preCollected,
       plan:     [],
-      subs
+      subs,
+      projectId: projectId || null,
     });
   }
 
@@ -352,11 +366,15 @@ DIRECTIVE: Answer the user's question about Azure services using the documentati
       const planLabel = session.plan.map(p => SERVICE_LABELS[p.service] || p.service).join(', ');
       const firstConfig = configs[0] || {};
       const deployingText = `Deployment initiated...\n\nDeploying ${session.plan.length} service${session.plan.length > 1 ? 's' : ''}: ${planLabel}\nSubscription: ${firstConfig.subscriptionName || '—'}\nResource Group: ${firstConfig.resourceGroup || '—'}\nLocation: ${firstConfig.location || '—'}\n\nThis may take a few minutes. You will see the result below.`;
-      sse(res, 'deploy_plan', { configs, plan: session.plan });
+      sse(res, 'deploy_plan', { configs, plan: session.plan, projectId: session.projectId || undefined });
       session.messages.push({ role: 'user', content: message });
       session.messages.push({ role: 'assistant', content: deployingText });
       sse(res, 'token', { content: deployingText });
       sse(res, 'done');
+      // Auto-save session to project
+      if (session.projectId) {
+        try { saveProjectSession(session.projectId, session); } catch {}
+      }
       return res.end();
     } else {
       // Unclear — re-show plan review options
@@ -469,6 +487,10 @@ DIRECTIVE: Answer the user's question about Azure services using the documentati
     sse(res, 'token', { content: text });
     if (nextChoices?.length) sse(res, 'choices', { choices: nextChoices });
     sse(res, 'done');
+    // Auto-save session to project
+    if (session.projectId) {
+      try { saveProjectSession(session.projectId, session); } catch {}
+    }
     return res.end();
   }
 
@@ -523,6 +545,11 @@ DIRECTIVE: Answer the user's question about Azure services using the documentati
     sse(res, 'done');
   } catch (err) {
     sse(res, 'error', { message: `Chat error: ${err.message}` });
+  }
+
+  // Auto-save session to project (debounce-friendly — saves on every message)
+  if (session.projectId) {
+    try { saveProjectSession(session.projectId, session); } catch {}
   }
 
   res.end();

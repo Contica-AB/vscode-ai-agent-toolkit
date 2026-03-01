@@ -27,3 +27,14 @@ export function buildPortalLink(config) {
     ? `https://portal.azure.com/#resource/subscriptions/${sub}/resourceGroups/${rg}/providers/${pp}/${name}/overview`
     : `https://portal.azure.com/#browse/resourcegroups`;
 }
+
+/** Get history filtered by projectId */
+export function getProjectHistory(projectId) {
+  try {
+    if (!fs.existsSync(HISTORY_FILE)) return [];
+    const history = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+    return projectId ? history.filter(h => h.projectId === projectId) : history;
+  } catch {
+    return [];
+  }
+}

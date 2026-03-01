@@ -2,6 +2,9 @@ import { sessionId, input, sendBtn, terminal } from './state.js';
 import { send, quickSend } from './chat.js';
 import { openAzurePanel, closeAzurePanel, handleLogin, handleLogout } from './azure-panel.js';
 import { checkStatus, showHistory, onModelChange } from './status.js';
+import {
+  initProjects, toggleSidebar, createNewProject, submitCreateProject, unscopeProject
+} from './projects.js';
 
 // Expose to inline HTML handlers (welcome card chips, etc.)
 window.send = send;
@@ -38,5 +41,13 @@ document.getElementById('term-close-btn').addEventListener('click', () => termin
 document.getElementById('diag-close-btn').addEventListener('click', () => document.getElementById('diagram-panel').classList.remove('open'));
 sendBtn.addEventListener('click', () => send());
 
+// ── Project sidebar ───────────────────────────────────────────────────────────
+document.getElementById('projects-btn').addEventListener('click', toggleSidebar);
+document.getElementById('ps-close-btn').addEventListener('click', toggleSidebar);
+document.getElementById('proj-add-btn').addEventListener('click', createNewProject);
+document.getElementById('proj-create-btn').addEventListener('click', submitCreateProject);
+document.getElementById('proj-unscope-btn').addEventListener('click', unscopeProject);
+
 // ── Init ──────────────────────────────────────────────────────────────────────
+initProjects();
 checkStatus();
