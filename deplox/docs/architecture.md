@@ -209,48 +209,48 @@ Used for conversational generation in: `start` (welcome/service detection), `con
 ## State Machine Detail
 
 ```
-+-------------------------------------------------------------------------------------------+
-|                                    STATE MACHINE                                          |
-+-------------------------------------------------------------------------------------------+
-|                                                                                           |
-|    +-------+   learn intent / __learn__    +----------+                                  |
-|    | start | ------------------------------> | learning | ← Q&A loop (Ollama)            |
-|    +-------+   or __template_svc__          +----+-----+   Bicep context + MS Learn      |
-|        |                                         |          live fetch injected           |
-|        |                                         | "Deploy X now"                         |
-|        |   service detected                      |                                        |
-|        +-------> +----------------------+ <------+                                        |
-|                  | confirming_service   |                                                 |
-|        ^         |  AI explains why &   |                                                 |
-|        |         |  asks to confirm     |                                                 |
-|        |         +----------+-----------+                                                 |
-|        |   "Choose diff."   |                                                             |
-|        | <------------------+ "Yes, deploy X"                                            |
-|        |                    v                                                             |
-|        |          +------------+                                                          |
-|        |          | collecting |  ← one param at a time, full validation                 |
-|        | <------- +-----+------+  "Change service"                                       |
-|        |                |                                                                 |
-|        |      all params filled                                                           |
-|        |                v                                                                 |
-|        |         +---------+                                                              |
-|        |         | confirm |  ← summary shown                                            |
-|        | <------- +---------+  "Change service"                                          |
-|        |           /       \                                                              |
-|        |  "Edit"  /         \ "Yes, deploy"                                              |
-|        |         v           v                                                            |
-|        |   +---------+    +--------+                                                     |
-|        |   | editing |    |  done  |                                                     |
-|        |   +---------+    +--------+                                                     |
-|        |        |              |                                                          |
-|        +--------+--------------+  (any message resets)                                  |
-|                                                                                           |
-|  Ollama used in:  start, confirming_service, learning (Q&A + template explain)           |
-|  Direct text in:  collecting, confirm, editing, done                                     |
-|  Deployment result: factual from az CLI output — LLM never reports status                |
-|  Portal link: built from PORTAL_PATHS map + subscription ID — never LLM-generated       |
-|                                                                                           |
-+-------------------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------------+
+|                                     STATE MACHINE                                           |
++---------------------------------------------------------------------------------------------+
+|                                                                                             |
+|  +-------+   learn intent / __learn__   +----------+                                       |
+|  | start | ---------------------------> | learning | <- Q&A loop (Ollama)                  |
+|  +-------+   or __template_svc__        +----+-----+    Bicep context + MS Learn fetched   |
+|      |                                       |                                              |
+|      |                                       | "Deploy X now"                               |
+|      |   service detected                    |                                              |
+|      +-------------> +--------------------+ <+                                              |
+|                      | confirming_service |                                                 |
+|      ^               |  AI explains why & |                                                 |
+|      |               |  asks to confirm   |                                                 |
+|      |               +---------+----------+                                                 |
+|      |  "Choose diff."         |                                                            |
+|      | <-----------------------+ "Yes, deploy X"                                            |
+|      |                         v                                                            |
+|      |               +------------+                                                         |
+|      |               | collecting | <- one param at a time, full validation                |
+|      | <------------ +-----+------+  "Change service"                                      |
+|      |                     |                                                                |
+|      |           all params filled                                                          |
+|      |                     v                                                                |
+|      |               +---------+                                                            |
+|      |               | confirm | <- summary shown                                          |
+|      | <------------ +---------+  "Change service"                                         |
+|      |                /       \                                                             |
+|      |   "Edit"      /         \ "Yes, deploy"                                             |
+|      |              v           v                                                           |
+|      |        +---------+    +------+                                                       |
+|      |        | editing |    | done |                                                       |
+|      |        +---------+    +------+                                                       |
+|      |             |            |                                                           |
+|      +-------------+------------+  (any message resets to start)                           |
+|                                                                                             |
+|  Ollama used in:  start, confirming_service, learning (Q&A + template explain)             |
+|  Direct text in:  collecting, confirm, editing, done                                        |
+|  Deploy result:   factual from az CLI output  — LLM never reports status                   |
+|  Portal link:     built from PORTAL_PATHS + subscription ID — never LLM-generated          |
+|                                                                                             |
++---------------------------------------------------------------------------------------------+
 ```
 
 **Session data structure:**
