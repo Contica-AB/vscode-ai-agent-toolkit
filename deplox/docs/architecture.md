@@ -13,14 +13,14 @@ DeploX is a **local-first** deployment toolkit. There is no cloud backend — ev
 |                   D E V E L O P E R   M A C H I N E                   |
 +-----------------------------------------------------------------------+
 |                                                                       |
-|   +-- BROWSER  (localhost:3000) ------------------------------------+ |
+|   +-- BROWSER  (localhost:3000) ----------------------------------+   |
 |   |  index.html  (HTML + CSS + Vanilla JS -- no framework)        |   |
-|   |                                                                |  |
+|   |                                                               |   |
 |   |  +---------------+  +--------------+  +----------------+      |   |
 |   |  |  Chat Window  |  | Choice Chips |  |  Deploy Card   |      |   |
 |   |  |  (SSE stream) |  |  (buttons)   |  | (log terminal) |      |   |
 |   |  +-------+-------+  +------+-------+  +-------+--------+      |   |
-|   +----------|--------------------|-------------------|------------+  |
+|   +----------|--------------------|-------------------|-----------+   |
 |              | POST /api/chat     |             | POST /api/deploy    |
 |              v                    v                   v               |
 |   +-- SERVER  server.js  (Express) ---------------------------------+ |
