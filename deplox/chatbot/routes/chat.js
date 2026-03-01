@@ -10,8 +10,10 @@ import { estimateMonthlyCost, formatCostEstimate } from '../lib/pricing.js';
 import {
   detectService, extractValue, validationError, currentParam,
   buildSchema, inferEnv, buildDirective, choicesForParam,
-  buildDeployConfig, makeSummary, paramLabel, editableChoices, findParamByKey
+  buildDeployConfig, makeSummary, makePlanSummary, snapshotToPlan,
+  paramLabel, editableChoices, findParamByKey
 } from '../lib/state-machine.js';
+import { generateMermaid } from '../lib/diagram.js';
 
 const router = Router();
 
@@ -37,6 +39,7 @@ router.post('/', async (req, res) => {
       schema:   [],
       schemaIdx: 0,
       collected: preCollected,
+      plan:     [],
       subs
     });
   }
@@ -280,7 +283,13 @@ DIRECTIVE: Answer the user's question about Azure services using the documentati
     const lower = message.toLowerCase();
     if (message === 'Change service' || /\b(change service|different service|start over)\b/i.test(lower)) {
       delete session._pendingService;
-      session.service = null; session.schema = []; session.schemaIdx = 0; session.collected = {};
+      session.service = null; session.schema = []; session.schemaIdx = 0;
+      // Keep shared infra params when changing service
+      const shared = {};
+      for (const key of ['__subscription', '__rgPick', '__rgName', '__location', '__env']) {
+        if (session.collected[key] !== undefined) shared[key] = session.collected[key];
+      }
+      session.collected = shared;
       session.state = 'start';
       directive   = 'DIRECTIVE: The user wants to deploy a different Azure service. Ask them what they would like to deploy.';
       nextChoices = Object.values(SERVICE_LABELS);
@@ -288,19 +297,69 @@ DIRECTIVE: Answer the user's question about Azure services using the documentati
       session.state = 'editing';
       session._editingKey = null;
       nextChoices = editableChoices(session);
-    } else if (['yes','ok','go','deploy','sure','proceed'].some(k => lower.includes(k))) {
-      const config = buildDeployConfig(session);
+    } else if (['yes','ok','go','confirm','sure','proceed','add'].some(k => lower.includes(k))) {
+      // Snapshot current service to plan and go to plan_review
+      snapshotToPlan(session);
+      session.state = 'plan_review';
+    } else {
+      nextChoices = ['Yes, add to plan', 'Edit a setting', 'Change service'];
+    }
+
+  } else if (session.state === 'plan_review') {
+    const lower = message.toLowerCase();
+    const wantsAdd = lower.includes('add') || lower.includes('another') || lower.includes('more')
+                  || lower.includes('also') || lower.includes('next service');
+    const wantsDeploy = lower.includes('deploy') || lower.includes('go') || lower.includes('yes')
+                     || lower.includes('proceed') || lower.includes('confirm') || lower.includes('launch');
+    const wantsRemove = lower.includes('remove') || lower.includes('delete');
+
+    if (wantsRemove && session.plan.length > 0) {
+      // Try to find which service to remove
+      const svcToRemove = detectService(message);
+      if (svcToRemove) {
+        const idx = session.plan.findIndex(p => p.service === svcToRemove);
+        if (idx >= 0) {
+          session.plan.splice(idx, 1);
+        }
+      } else {
+        // Remove the last added
+        session.plan.pop();
+      }
+      if (session.plan.length === 0) {
+        session.state = 'start';
+        directive = 'DIRECTIVE: The plan is now empty. Ask the user which service they want to deploy.';
+        nextChoices = Object.values(SERVICE_LABELS);
+      }
+      // Otherwise stay in plan_review and the direct text block will render updated plan
+    } else if (wantsAdd) {
+      session.state = 'start';
+      // Try to detect a service from the "add another X" message
+      const svc = detectService(message);
+      if (svc) {
+        session._pendingService = svc;
+        session.state = 'confirming_service';
+        const svcLabel = SERVICE_LABELS[svc] || svc;
+        directive = `DIRECTIVE: The user wants to add "${svcLabel}" to their deployment plan. Confirm your understanding in 1-2 professional sentences and ask if they want to proceed with configuring ${svcLabel}.`;
+        nextChoices = [`Yes, deploy ${svcLabel}`, 'Choose a different service'];
+      } else {
+        directive = 'DIRECTIVE: The user wants to add another service to the deployment plan. Ask which Azure service they would like to add.';
+        nextChoices = Object.values(SERVICE_LABELS);
+      }
+    } else if (wantsDeploy && session.plan.length > 0) {
+      // Deploy all services
+      const configs = session.plan.map(p => p.config);
       session.state = 'done';
-      const svcLabel = SERVICE_LABELS[session.service] || session.service;
-      const deployingText = `Deployment initiated...\n\nDeploying — ${svcLabel}\nSubscription: ${config.subscriptionName || '—'}\nResource Group: ${config.resourceGroup || '—'}\nLocation: ${config.location || '—'}\n\nThis may take a few minutes. You will see the result below.`;
-      sse(res, 'deploy_config', { config });
+      const planLabel = session.plan.map(p => SERVICE_LABELS[p.service] || p.service).join(', ');
+      const firstConfig = configs[0] || {};
+      const deployingText = `Deployment initiated...\n\nDeploying ${session.plan.length} service${session.plan.length > 1 ? 's' : ''}: ${planLabel}\nSubscription: ${firstConfig.subscriptionName || '—'}\nResource Group: ${firstConfig.resourceGroup || '—'}\nLocation: ${firstConfig.location || '—'}\n\nThis may take a few minutes. You will see the result below.`;
+      sse(res, 'deploy_plan', { configs, plan: session.plan });
       session.messages.push({ role: 'user', content: message });
       session.messages.push({ role: 'assistant', content: deployingText });
       sse(res, 'token', { content: deployingText });
       sse(res, 'done');
       return res.end();
     } else {
-      nextChoices = ['Yes, deploy', 'Edit a setting', 'Change service'];
+      // Unclear — re-show plan review options
     }
 
   } else if (session.state === 'editing') {
@@ -354,6 +413,7 @@ DIRECTIVE: Answer the user's question about Azure services using the documentati
     const autoEnv = inferEnv(keepSub?.name);
     session.state = 'start'; session.service = null; session.schema = []; session.schemaIdx = 0;
     session.collected = { ...(keepSub ? { __subscription: keepSub } : {}), ...(autoEnv ? { __env: autoEnv } : {}) };
+    session.plan = [];
     const svc = detectService(message);
     if (svc) {
       session.service = svc; session.schema = buildSchema(svc, session.collected); session.schemaIdx = 0; session.state = 'collecting';
@@ -365,7 +425,7 @@ DIRECTIVE: Answer the user's question about Azure services using the documentati
 
   // ── Respond: collecting state → direct text, no LLM ─────────────────────
   const useDirectText = !useOllamaForRetry &&
-    ((session.state === 'collecting' || session.state === 'confirm' || session.state === 'editing')
+    ((session.state === 'collecting' || session.state === 'confirm' || session.state === 'editing' || session.state === 'plan_review')
     || (session.state === 'start' && nextChoices?.length > 0 && !directive));
 
   if (useDirectText) {
@@ -380,8 +440,20 @@ DIRECTIVE: Answer the user's question about Azure services using the documentati
     } else if (session.state === 'confirm') {
       const costEstimate = await estimateMonthlyCost(session.service, session.collected, session.collected.__location);
       const costLine = formatCostEstimate(costEstimate);
-      text = skipPrefix + `Here's a summary of what will be deployed:\n\n${makeSummary(session)}${costLine}\n\nWould you like to deploy with these settings?`;
-      nextChoices = ['Yes, deploy', 'Edit a setting', 'Change service'];
+      const planCount = (session.plan || []).length;
+      const planNote = planCount > 0 ? `\n\n(${planCount} other service${planCount > 1 ? 's' : ''} already in plan)` : '';
+      text = skipPrefix + `Here's a summary of what will be deployed:\n\n${makeSummary(session)}${costLine}${planNote}\n\nAdd this service to the deployment plan?`;
+      nextChoices = ['Yes, add to plan', 'Edit a setting', 'Change service'];
+    } else if (session.state === 'plan_review') {
+      // Generate plan summary and diagram
+      const planSummary = makePlanSummary(session);
+      const mermaidSyntax = generateMermaid(session.plan, 'preview');
+      text = skipPrefix + `Here's your deployment plan:\n\n${planSummary}\nWhat would you like to do?`;
+      nextChoices = ['Add another service', 'Deploy all', 'Remove a service'];
+      // Send diagram as separate SSE event
+      if (mermaidSyntax) {
+        sse(res, 'diagram', { mermaid: mermaidSyntax, mode: 'preview' });
+      }
     } else if (session.state === 'editing') {
       if (!session._editingKey) {
         text = skipPrefix + 'Which setting would you like to change?';

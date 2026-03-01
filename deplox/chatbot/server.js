@@ -7,6 +7,7 @@ import ollamaRoutes from './routes/ollama.js';
 import chatRoutes   from './routes/chat.js';
 import deployRoutes from './routes/deploy.js';
 import sessionRoutes from './routes/session.js';
+import diagramRoutes from './routes/diagram.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
@@ -16,11 +17,12 @@ app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
 // ── Mount routes ─────────────────────────────────────────────────────────────
-app.use('/api/azure',  azureRoutes);
-app.use('/api/ollama', ollamaRoutes);
-app.use('/api/chat',   chatRoutes);
-app.use('/api/deploy', deployRoutes);
-app.use('/api',        sessionRoutes);
+app.use('/api/azure',   azureRoutes);
+app.use('/api/ollama',  ollamaRoutes);
+app.use('/api/chat',    chatRoutes);
+app.use('/api/deploy',  deployRoutes);
+app.use('/api/diagram', diagramRoutes);
+app.use('/api',         sessionRoutes);
 
 // ── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {

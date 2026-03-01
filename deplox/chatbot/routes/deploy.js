@@ -10,10 +10,11 @@ import { appendHistory, buildPortalLink } from '../lib/history.js';
 
 const router = Router();
 
-/** Deploy — runs az CLI, streams logs via SSE */
+/** Deploy — runs az CLI, streams logs via SSE. Supports single or multi-config. */
 router.post('/', (req, res) => {
-  const { config } = req.body;
-  if (!config) return res.status(400).json({ error: 'config required' });
+  const { config, configs } = req.body;
+  const configList = configs || (config ? [config] : []);
+  if (!configList.length) return res.status(400).json({ error: 'config or configs required' });
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -21,7 +22,7 @@ router.post('/', (req, res) => {
 
   // Guard: ensure user is logged in before deploying
   try {
-    execSync('az account show --output none 2>nul', { timeout: 8000 });
+    execSync('az account show --output none 2>/dev/null', { timeout: 8000 });
   } catch {
     sse(res, 'error', { message: 'Not logged in to Azure. Please sign in via the top-right login button first.' });
     return res.end();
@@ -39,40 +40,6 @@ router.post('/', (req, res) => {
     'eventgrid':            'eventgrid.bicep',
   };
 
-  const bicepFileName = SERVICE_BICEP_MAP[config.service];
-  if (!bicepFileName) {
-    sse(res, 'error', { message: `Unknown service: ${config.service}` });
-    return res.end();
-  }
-
-  const bicepFile = path.join(MODULES_DIR, bicepFileName);
-  if (!fs.existsSync(bicepFile)) {
-    sse(res, 'error', { message: `Bicep file not found: ${bicepFile}` });
-    return res.end();
-  }
-
-  // Key Vault: auto-inject current user's object ID if not supplied
-  if (config.service === 'keyvault' && !config.params.adminObjectId) {
-    try {
-      const objId = execSync('az ad signed-in-user show --query id -o tsv 2>nul', { timeout: 8000 }).toString().trim();
-      if (objId) config.params.adminObjectId = objId;
-    } catch { /* leave empty — vault deploys without access policy */ }
-  }
-
-  // Build ARM parameters JSON — coerce typed params (e.g. int)
-  const svcSchema = SERVICE_SCHEMAS[config.service] || [];
-  const allParams = { ...config.params, location: config.location, tags: config.tags };
-  const armParams = {};
-  for (const [k, v] of Object.entries(allParams)) {
-    const def = svcSchema.find(p => p.key === k);
-    armParams[k] = { value: def?.paramType === 'int' ? parseInt(v, 10) : v };
-  }
-
-  const tmpFile = path.join(os.tmpdir(), `il-deploy-${Date.now()}.json`);
-  fs.writeFileSync(tmpFile, JSON.stringify(armParams, null, 2));
-
-  const cleanup = () => { try { fs.unlinkSync(tmpFile); } catch {} };
-
   const runStep = (label, args) => new Promise((resolve, reject) => {
     sse(res, 'log', { message: label });
     const proc = spawn('az', args, { shell: true });
@@ -85,110 +52,176 @@ router.post('/', (req, res) => {
     proc.on('close', code => code === 0 ? resolve() : reject(new Error(`Step failed (exit ${code})`)));
   });
 
-  const steps = [
-    () => runStep(
-      `[~] Setting subscription: ${config.subscriptionName || config.subscriptionId}`,
-      ['account', 'set', '--subscription', config.subscriptionId]
-    )
-  ];
-
-  if (config.createResourceGroup) {
-    steps.push(() => runStep(
-      `[+] Creating resource group: ${config.resourceGroup} in ${config.location}`,
-      ['group', 'create', '--name', config.resourceGroup, '--location', config.location, '--output', 'none']
-    ));
-  }
-
-  steps.push(() => runStep(
-    `[>] Deploying ${config.serviceLabel} → ${config.resourceGroup} ...`,
-    ['deployment', 'group', 'create',
-      '--resource-group', config.resourceGroup,
-      '--name', config.deploymentName,
-      '--template-file', bicepFile,
-      '--parameters', `@${tmpFile}`,
-      '--output', 'table']
-  ));
-
-  // Fetch and surface Bicep deployment outputs
-  const emitOutputs = () => {
-    try {
-      const raw = execSync(
-        `az deployment group show --resource-group "${config.resourceGroup}" --name "${config.deploymentName}" --query properties.outputs -o json 2>nul`,
-        { timeout: 15000 }
-      ).toString().trim();
-      const outputs = JSON.parse(raw);
-      const keys = Object.keys(outputs);
-      if (keys.length) {
-        sse(res, 'log', { message: '[+] Deployment outputs:' });
-        for (const k of keys) {
-          sse(res, 'log', { message: `    ${k}: ${outputs[k].value}` });
-        }
-      }
-    } catch { /* outputs unavailable — not fatal */ }
-  };
-
-  const makeHistoryRecord = (result, error = null) => ({
+  const makeHistoryRecord = (cfg, result, error = null) => ({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     timestamp: new Date().toISOString(),
-    service: config.service,
-    serviceLabel: config.serviceLabel,
-    resourceGroup: config.resourceGroup,
-    location: config.location,
-    subscriptionId: config.subscriptionId,
-    subscriptionName: config.subscriptionName,
-    params: config.params,
+    service: cfg.service,
+    serviceLabel: cfg.serviceLabel,
+    resourceGroup: cfg.resourceGroup,
+    location: cfg.location,
+    subscriptionId: cfg.subscriptionId,
+    subscriptionName: cfg.subscriptionName,
+    params: cfg.params,
     result,
-    portalLink: result === 'success' ? buildPortalLink(config) : null,
-    error
+    portalLink: result === 'success' ? buildPortalLink(cfg) : null,
+    error,
+    batchId: configList.length > 1 ? batchId : undefined,
   });
 
-  // Function App / Logic App Standard: zip-deploy local code after infrastructure is ready
-  if (['functionapp', 'logicapp-standard'].includes(config.service) && config.codePath) {
-    const zipFile    = path.join(os.tmpdir(), `il-code-${Date.now()}.zip`);
-    const appName    = config.params.functionAppName || config.params.logicAppName;
-    const deployCmd  = config.service === 'logicapp-standard' ? 'logicapp' : 'functionapp';
-    steps.push(() => new Promise((resolve, reject) => {
-      sse(res, 'log', { message: `[~] Packaging code from: ${config.codePath}` });
-      const proc = spawn('powershell', [
-        '-NoProfile', '-Command',
-        `Compress-Archive -Path '${config.codePath}\\*' -DestinationPath '${zipFile}' -Force`
-      ], { shell: false });
-      proc.stderr.on('data', d => sse(res, 'log', { message: d.toString().trimEnd() }));
-      proc.on('close', code => code === 0 ? resolve() : reject(new Error('Failed to zip code folder')));
-    }));
-    steps.push(() => runStep(
-      `[>] Deploying code to ${appName} ...`,
-      [deployCmd, 'deployment', 'source', 'config-zip',
-        '--resource-group', config.resourceGroup,
-        '--name', appName,
-        '--src', zipFile]
-    ));
-    const cleanupAll = () => { cleanup(); try { fs.unlinkSync(zipFile); } catch {} };
-    steps.reduce((p, fn) => p.then(fn), Promise.resolve())
-      .then(() => {
-        emitOutputs(); cleanupAll();
-        appendHistory(makeHistoryRecord('success'));
-        sse(res, 'success', { message: 'Deployment completed successfully.' }); res.end();
-      })
-      .catch(err => {
-        cleanupAll();
-        appendHistory(makeHistoryRecord('failed', err.message));
-        sse(res, 'error', { message: err.message }); res.end();
-      });
-    return;
+  const batchId = configList.length > 1 ? `batch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` : null;
+  const total = configList.length;
+  const deployResults = {};
+  let successCount = 0;
+
+  async function deploySingleConfig(cfg, idx) {
+    const svcLabel = cfg.serviceLabel || cfg.service;
+    if (total > 1) {
+      sse(res, 'deploy_service_start', { service: cfg.service, serviceLabel: svcLabel, index: idx, total });
+      sse(res, 'log', { message: `\n═══ [${idx + 1}/${total}] Deploying ${svcLabel} ═══` });
+    }
+
+    const bicepFileName = SERVICE_BICEP_MAP[cfg.service];
+    if (!bicepFileName) {
+      sse(res, 'deploy_service_error', { service: cfg.service, message: `Unknown service: ${cfg.service}`, index: idx });
+      appendHistory(makeHistoryRecord(cfg, 'failed', `Unknown service: ${cfg.service}`));
+      return false;
+    }
+
+    const bicepFile = path.join(MODULES_DIR, bicepFileName);
+    if (!fs.existsSync(bicepFile)) {
+      sse(res, 'deploy_service_error', { service: cfg.service, message: `Bicep file not found: ${bicepFile}`, index: idx });
+      appendHistory(makeHistoryRecord(cfg, 'failed', `Bicep file not found`));
+      return false;
+    }
+
+    // Key Vault: auto-inject current user's object ID if not supplied
+    if (cfg.service === 'keyvault' && !cfg.params.adminObjectId) {
+      try {
+        const objId = execSync('az ad signed-in-user show --query id -o tsv 2>/dev/null', { timeout: 8000 }).toString().trim();
+        if (objId) cfg.params.adminObjectId = objId;
+      } catch { /* leave empty */ }
+    }
+
+    // Build ARM parameters JSON
+    const svcSchema = SERVICE_SCHEMAS[cfg.service] || [];
+    const allParams = { ...cfg.params, location: cfg.location, tags: cfg.tags };
+    const armParams = {};
+    for (const [k, v] of Object.entries(allParams)) {
+      const def = svcSchema.find(p => p.key === k);
+      armParams[k] = { value: def?.paramType === 'int' ? parseInt(v, 10) : v };
+    }
+
+    const tmpFile = path.join(os.tmpdir(), `il-deploy-${Date.now()}-${idx}.json`);
+    fs.writeFileSync(tmpFile, JSON.stringify(armParams, null, 2));
+    const cleanup = () => { try { fs.unlinkSync(tmpFile); } catch {} };
+
+    try {
+      const steps = [];
+
+      steps.push(() => runStep(
+        `[~] Setting subscription: ${cfg.subscriptionName || cfg.subscriptionId}`,
+        ['account', 'set', '--subscription', cfg.subscriptionId]
+      ));
+
+      if (cfg.createResourceGroup) {
+        steps.push(() => runStep(
+          `[+] Creating resource group: ${cfg.resourceGroup} in ${cfg.location}`,
+          ['group', 'create', '--name', cfg.resourceGroup, '--location', cfg.location, '--output', 'none']
+        ));
+      }
+
+      steps.push(() => runStep(
+        `[>] Deploying ${cfg.serviceLabel} → ${cfg.resourceGroup} ...`,
+        ['deployment', 'group', 'create',
+          '--resource-group', cfg.resourceGroup,
+          '--name', cfg.deploymentName,
+          '--template-file', bicepFile,
+          '--parameters', `@${tmpFile}`,
+          '--output', 'table']
+      ));
+
+      // Zip deploy for Function App / Logic App Standard
+      if (['functionapp', 'logicapp-standard'].includes(cfg.service) && cfg.codePath) {
+        const zipFile    = path.join(os.tmpdir(), `il-code-${Date.now()}-${idx}.zip`);
+        const appName    = cfg.params.functionAppName || cfg.params.logicAppName;
+        const deployCmd  = cfg.service === 'logicapp-standard' ? 'logicapp' : 'functionapp';
+        steps.push(() => new Promise((resolve, reject) => {
+          sse(res, 'log', { message: `[~] Packaging code from: ${cfg.codePath}` });
+          const isWin = process.platform === 'win32';
+          let proc;
+          if (isWin) {
+            proc = spawn('powershell', [
+              '-NoProfile', '-Command',
+              `Compress-Archive -Path '${cfg.codePath}\\*' -DestinationPath '${zipFile}' -Force`
+            ], { shell: false });
+          } else {
+            proc = spawn('zip', ['-r', zipFile, '.'], { cwd: cfg.codePath, shell: false });
+          }
+          proc.stderr.on('data', d => sse(res, 'log', { message: d.toString().trimEnd() }));
+          proc.on('close', code => code === 0 ? resolve() : reject(new Error('Failed to zip code folder')));
+        }));
+        steps.push(() => runStep(
+          `[>] Deploying code to ${appName} ...`,
+          [deployCmd, 'deployment', 'source', 'config-zip',
+            '--resource-group', cfg.resourceGroup,
+            '--name', appName,
+            '--src', zipFile]
+        ));
+      }
+
+      await steps.reduce((p, fn) => p.then(fn), Promise.resolve());
+
+      // Fetch outputs
+      try {
+        const raw = execSync(
+          `az deployment group show --resource-group "${cfg.resourceGroup}" --name "${cfg.deploymentName}" --query properties.outputs -o json 2>/dev/null`,
+          { timeout: 15000 }
+        ).toString().trim();
+        const outputs = JSON.parse(raw);
+        const keys = Object.keys(outputs);
+        if (keys.length) {
+          sse(res, 'log', { message: '[+] Deployment outputs:' });
+          for (const k of keys) {
+            sse(res, 'log', { message: `    ${k}: ${outputs[k].value}` });
+          }
+        }
+      } catch { /* outputs unavailable */ }
+
+      cleanup();
+      appendHistory(makeHistoryRecord(cfg, 'success'));
+      deployResults[cfg.service] = { success: true };
+      sse(res, 'deploy_service_complete', { service: cfg.service, serviceLabel: svcLabel, index: idx, result: 'success' });
+      return true;
+    } catch (err) {
+      cleanup();
+      appendHistory(makeHistoryRecord(cfg, 'failed', err.message));
+      deployResults[cfg.service] = { success: false, error: err.message };
+      sse(res, 'deploy_service_error', { service: cfg.service, serviceLabel: svcLabel, message: err.message, index: idx });
+      return false;
+    }
   }
 
-  steps.reduce((p, fn) => p.then(fn), Promise.resolve())
-    .then(() => {
-      emitOutputs(); cleanup();
-      appendHistory(makeHistoryRecord('success'));
-      sse(res, 'success', { message: 'Deployment completed successfully.' }); res.end();
-    })
-    .catch(err => {
-      cleanup();
-      appendHistory(makeHistoryRecord('failed', err.message));
-      sse(res, 'error', { message: err.message }); res.end();
-    });
+  // Run deployments sequentially
+  (async () => {
+    for (let i = 0; i < configList.length; i++) {
+      const ok = await deploySingleConfig(configList[i], i);
+      if (ok) successCount++;
+    }
+    // Final summary
+    if (total > 1) {
+      const msg = successCount === total
+        ? `All ${total} services deployed successfully.`
+        : `${successCount}/${total} services deployed successfully.`;
+      sse(res, successCount === total ? 'success' : 'warn', { message: msg });
+    } else {
+      sse(res, successCount === 1 ? 'success' : 'error', {
+        message: successCount === 1 ? 'Deployment completed successfully.' : 'Deployment failed.'
+      });
+    }
+    // Send post-deploy diagram data
+    sse(res, 'deploy_complete', { deployResults, total, successCount });
+    res.end();
+  })();
 });
 
 export default router;

@@ -67,7 +67,9 @@ export function currentParam(session) {
   return session.schema[session.schemaIdx] || null;
 }
 
-/** Build schema for a service, filtering out params already collected */
+/** Build schema for a service, filtering out params already collected.
+ *  For multi-service flows, common params (subscription, rg, location, env)
+ *  are shared and skipped if already collected from a previous service. */
 export function buildSchema(svc, collected) {
   return [...(SERVICE_SCHEMAS[svc] || []), ...COMMON_SCHEMA]
     .filter(p => !(p.key in collected))
@@ -162,6 +164,56 @@ export function makeSummary(session) {
     lines.push(`${k}: ${Array.isArray(v) ? (v.length ? v.join(', ') : '(none)') : v}`);
   }
   return lines.join('\n');
+}
+
+/** Build a human-readable summary of the full deployment plan (multi-service) */
+export function makePlanSummary(session) {
+  const plan = session.plan || [];
+  if (!plan.length) return '(empty plan)';
+
+  // Shared infra from the first config
+  const first = plan[0].config || {};
+  const lines = [
+    `**Deployment Plan** — ${plan.length} service${plan.length > 1 ? 's' : ''}`,
+    `Subscription: ${first.subscriptionName || '—'}`,
+    `Resource Group: ${first.resourceGroup || '—'}`,
+    `Location: ${first.location || '—'}`,
+    `Environment: ${first.tags?.Environment || '—'}`,
+    '',
+  ];
+
+  for (let i = 0; i < plan.length; i++) {
+    const { service, config } = plan[i];
+    const svcLabel = SERVICE_LABELS[service] || service;
+    lines.push(`**${i + 1}. ${svcLabel}**`);
+    if (config?.params) {
+      for (const [k, v] of Object.entries(config.params)) {
+        lines.push(`  ${k}: ${Array.isArray(v) ? (v.length ? v.join(', ') : '(none)') : v}`);
+      }
+    }
+    if (config?.codePath) lines.push(`  Code folder: ${config.codePath}`);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+/** Snapshot the current service into the plan and reset the active service working area */
+export function snapshotToPlan(session) {
+  const config = buildDeployConfig(session);
+  if (!session.plan) session.plan = [];
+  session.plan.push({ service: session.service, collected: { ...session.collected }, config });
+
+  // Reset active service, keep shared infra params
+  const shared = {};
+  for (const key of ['__subscription', '__rgPick', '__rgName', '__location', '__env']) {
+    if (session.collected[key] !== undefined) shared[key] = session.collected[key];
+  }
+  session.service   = null;
+  session.schema    = [];
+  session.schemaIdx = 0;
+  session.collected = shared;
+  return config;
 }
 
 /** Returns a short readable label from a camelCase param key */

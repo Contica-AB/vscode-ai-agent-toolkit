@@ -35,6 +35,7 @@ document.getElementById('new-chat-btn').addEventListener('click', async () => {
 });
 
 document.getElementById('term-close-btn').addEventListener('click', () => terminal.classList.remove('open'));
+document.getElementById('diag-close-btn').addEventListener('click', () => document.getElementById('diagram-panel').classList.remove('open'));
 sendBtn.addEventListener('click', () => send());
 
 // ── Init ──────────────────────────────────────────────────────────────────────

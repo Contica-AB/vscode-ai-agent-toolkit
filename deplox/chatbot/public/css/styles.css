@@ -157,6 +157,42 @@ header {
 .term-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 0 4px; }
 .term-close:hover { color: var(--error); }
 
+/* ── Diagram panel ── */
+#diagram-panel {
+  flex-shrink: 0; height: 0; overflow: hidden; background: #080b10;
+  border-top: 2px solid var(--border); transition: height .3s ease; display: flex; flex-direction: column;
+}
+#diagram-panel.open { height: 340px; }
+.diag-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px; background: #0f1320; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.diag-title { font-size: .8rem; color: var(--muted); font-family: monospace; }
+.diag-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 0 4px; }
+.diag-close:hover { color: var(--error); }
+#diagram-content { flex: 1; overflow: auto; padding: 14px; display: flex; align-items: center; justify-content: center; }
+#diagram-content svg { max-width: 100%; height: auto; }
+
+/* ── Inline diagram (in chat bubble) ── */
+.diagram-inline { margin-top: 10px; max-height: 220px; overflow: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: #0a0e16; position: relative; }
+.diagram-inline svg { max-width: 100%; height: auto; }
+.diagram-expand-btn {
+  position: absolute; top: 6px; right: 6px; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; border-radius: 6px; padding: 3px 8px; font-size: .72rem;
+  transition: all .15s; z-index: 2;
+}
+.diagram-expand-btn:hover { color: var(--accent2); border-color: var(--accent); }
+.diagram-fallback { white-space: pre; font-family: monospace; font-size: .78rem; color: var(--muted); overflow-x: auto; }
+
+/* ── Plan service rows ── */
+.plan-services { display: flex; flex-direction: column; gap: 4px; padding: 8px 14px; }
+.plan-service-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px; border-radius: 7px; background: var(--surface2); border: 1px solid var(--border); font-size: .84rem;
+}
+.plan-svc-label { font-weight: 600; color: var(--accent2); }
+.plan-svc-status { font-size: .8rem; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; }
+
 /* ── Azure account panel ── */
 #azure-panel {
   position: fixed; top: 52px; right: 16px; z-index: 100;

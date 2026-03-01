@@ -4,7 +4,8 @@ import {
   chatWrap, input, sendBtn, typing, welcome
 } from './state.js';
 import { scrollBottom, renderMd } from './helpers.js';
-import { buildDeployCard } from './deploy.js';
+import { buildDeployCard, buildPlanCard } from './deploy.js';
+import { renderInlineDiagram, showDiagramPanel } from './diagram.js';
 
 const TEMPLATE_LABELS = {
   servicebus: 'Service Bus', eventhub: 'Event Hubs',
@@ -100,7 +101,9 @@ export async function send(overrideText) {
 
   let rawText = '';
   let deployConfig = null;
+  let deployPlan = null;
   let pendingChoices = null;
+  let pendingDiagram = null;
 
   try {
     const res = await fetch('/api/chat', {
@@ -134,6 +137,10 @@ export async function send(overrideText) {
             pendingChoices = ev.choices;
           } else if (ev.type === 'deploy_config') {
             deployConfig = ev.config;
+          } else if (ev.type === 'deploy_plan') {
+            deployPlan = { configs: ev.configs, plan: ev.plan };
+          } else if (ev.type === 'diagram') {
+            pendingDiagram = ev.mermaid;
           } else if (ev.type === 'learn_link') {
             bubble.innerHTML += `<br><br><a href="${ev.url}" target="_blank" style="color:var(--accent2);font-size:.85rem;text-decoration:underline">Official documentation on Microsoft Learn →</a>`;
           } else if (ev.type === 'error') {
@@ -143,7 +150,12 @@ export async function send(overrideText) {
       }
     }
 
+    if (pendingDiagram) {
+      await renderInlineDiagram(pendingDiagram, bubble);
+      showDiagramPanel(pendingDiagram);
+    }
     if (deployConfig) bubble.appendChild(buildDeployCard(deployConfig, addMessage));
+    if (deployPlan) bubble.appendChild(buildPlanCard(deployPlan.configs, deployPlan.plan, addMessage));
     if (pendingChoices) attachChoices(wrap, pendingChoices);
 
   } catch (err) {
