@@ -522,18 +522,21 @@ input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
 
-// ── Model descriptions ────────────────────────────────────────────────────────
-const MODEL_TAGS = {
-  'llama3.2:1b':     'Fastest · very light',
-  'llama3.2:3b':     'Fast · good balance',
-  'llama3.2:latest': 'Fast · good balance',
-  'llama3.1:8b':     'Smart · slower',
-  'llama3.1:latest': 'Smart · slower',
-  'gpt-oss:20b':     'Best quality · slowest',
-};
+// ── Model label — inferred from name, works for any installed model ───────────
 function modelLabel(m) {
-  const tag = MODEL_TAGS[m] || '';
-  return tag ? `${m}  —  ${tag}` : m;
+  const name = m.toLowerCase();
+  // Extract parameter size if present (e.g. 1b, 3b, 7b, 8b, 13b, 70b)
+  const sizeMatch = name.match(/:?(\d+(?:\.\d+)?)\s*b\b/);
+  const sizeB = sizeMatch ? parseFloat(sizeMatch[1]) : null;
+  let hint = '';
+  if (sizeB !== null) {
+    if (sizeB <= 2)       hint = 'Fastest · very light';
+    else if (sizeB <= 4)  hint = 'Fast · light';
+    else if (sizeB <= 9)  hint = 'Balanced · good quality';
+    else if (sizeB <= 20) hint = 'High quality · slower';
+    else                  hint = 'Best quality · requires strong hardware';
+  }
+  return hint ? `${m}  —  ${hint}` : m;
 }
 
 // ── Status checks ─────────────────────────────────────────────────────────────
