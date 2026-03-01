@@ -104,6 +104,7 @@ cd chatbot && npm install
 | **Azure Portal deep-link** | After a successful deployment, a direct link opens the deployed resource in the Azure Portal |
 | **Learn mode** | Ask questions about any Azure service. Answers use Ollama's knowledge + the actual Bicep template + live Microsoft Learn documentation |
 | **Explore included templates** | Dedicated chips on the welcome screen open a guided walkthrough of each Bicep template — design choices, parameters, and outputs |
+| **Deployment history** | Every deployment (success or failure) is logged to `deplox-history.json`. View past deployments via the **History** button in the header — shows service, date, resource group, result, and portal link |
 | **Dynamic model dropdown** | Lists only the Ollama models actually installed. Labels are inferred automatically from model parameter size |
 
 ---

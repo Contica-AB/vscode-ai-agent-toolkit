@@ -70,6 +70,7 @@ Single HTML file, no framework, no build step.
 | **Welcome chips** | Shortcut buttons for each Azure service on the home screen. |
 | **Template explore chips** | "Explore included templates" section on the home screen — one chip per service. Clicking immediately explains that service's Bicep template in chat. |
 | **Learn mode** | Triggered by the "Learn about Azure services" chip or any question about Azure. Streams Q&A answers with a Microsoft Learn docs link appended. |
+| **History button** | Clock icon in header — renders all past deployments in the chat. Each entry shows service, date, RG, location, result, and portal link. |
 | **Deploy card** | Auto-renders when server emits a `deploy_config` event. Shows the exact config being deployed and a terminal-style log of deployment steps. |
 | **Login bar** | Top-right — shows logged-in user, subscription, and logout button. |
 
@@ -85,6 +86,8 @@ Express app, ~1100 lines. No database. All state is in-memory.
 | **loadBicepContext()** | Reads all nine `.bicep` files at startup. Returns two maps: `BICEP_TEMPLATES` (stripped to param/resource/output lines — small context for Q&A) and `BICEP_FULL` (full source for template explain walkthroughs). |
 | **fetchLearnContent()** | Fetches the live Microsoft Learn page for a service (6 s timeout, HTML stripped to plain text, max 4000 chars). Results cached in memory per URL. Injected into Ollama context during learn mode Q&A. |
 | **LEARN_INTENT_WORDS** | Array of phrases that trigger learn mode automatically from `start` state (e.g. "what is", "explain", "when should I use"). |
+| **appendHistory()** | Appends a deployment record to `deplox-history.json` (project root) after every deploy — success or failure. Capped at 200 entries, newest first. File is gitignored. |
+| **PORTAL_PATHS_SRV** | Server-side copy of the ARM provider path map. Used by `buildPortalLink()` to construct the Azure Portal deep-link stored in history records. |
 | **buildDeployConfig()** | Assembles collected answers into an ARM-compatible deploy config object. |
 | **Deploy pipeline** | Spawns `az` CLI commands in sequence; streams stdout/stderr back to browser via SSE. |
 | **PORTAL_PATHS** | Maps each service key to its Azure Portal ARM provider path. Used to build a direct deep-link to the deployed resource after a successful deployment. |

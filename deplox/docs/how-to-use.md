@@ -11,7 +11,8 @@
    - [3.5 Answer the questions](#35-answer-the-questions)
    - [3.6 Review and edit before deploying](#36-review-and-edit-before-deploying)
    - [3.7 Watch the deployment](#37-watch-the-deployment)
-   - [3.8 Start a new session](#38-start-a-new-session)
+   - [3.8 View deployment history](#38-view-deployment-history)
+   - [3.9 Start a new session](#39-start-a-new-session)
 4. [Deploying Each Service](#4-deploying-each-service)
 5. [Stopping the App](#5-stopping-the-app)
 6. [Troubleshooting](#6-troubleshooting)
@@ -278,7 +279,26 @@ The portal link goes **directly to the deployed resource** — not just the port
 > `{"code": "NameInUse", ...}`
 > Check the terminal output above for the full error.
 
-### 3.8 Start a new session
+### 3.8 View deployment history
+
+Click the **History** button (clock icon) in the top-right header at any time. It opens a list of all past deployments directly in the chat window:
+
+| Column | Description |
+|---|---|
+| ✅ / ❌ | Success or failure |
+| Service name | Which Azure service was deployed |
+| Date / time | When the deployment ran |
+| Resource group · location · subscription | Where it was deployed |
+| Open in Portal → | Direct link to the deployed resource (success only) |
+
+History is stored locally in `deplox-history.json` in the project root and survives server restarts. It is capped at 200 entries (newest first). The file is never committed to Git as it contains subscription IDs.
+
+You can also query the history programmatically:
+```
+GET http://localhost:3000/api/history
+```
+
+### 3.9 Start a new session
 
 - **Refresh the page** — always starts a completely fresh session (no stale state)
 - **New Chat button** (if available) — resets the chat while keeping the page loaded
