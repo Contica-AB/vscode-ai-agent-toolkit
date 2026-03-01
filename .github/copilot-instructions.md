@@ -5,6 +5,28 @@ Source: [Contica Development Guidelines](https://contica.atlassian.net/wiki/spac
 
 ---
 
+## About This Repository
+
+This is the **VS Code AI Agent Toolkit** by **Contica** — an integration consultancy. It contains multiple AI-powered tools for Azure consulting work, all designed to run inside VS Code with GitHub Copilot. Each project lives in its own top-level folder with its own `.code-workspace` file and `START-HERE.md`.
+
+### Projects
+
+| Folder | What it does | Key tech |
+|---|---|---|
+| `deplox/` | **DeploX** (v0.01, POC) — Local AI chatbot that deploys Azure Integration Services via Bicep templates through a conversational UI at `localhost:3000`. | Node.js/Express, Ollama (local LLM), Azure CLI, Bicep |
+| `azure-environment-analysis/` | **Azure Environment Analysis** — Structured assessment of client Azure environments. Prompt-driven workflow through Copilot Chat producing inventory, security, failure analysis, and monitoring reports. | Azure MCP, prompt chain (phases 0–9), Node.js scripts |
+| `Scope Guardian/` | **Scope Guardian** — Issue classification tool. Cross-references Jira/ADO issues against requirements docs and Azure implementations to classify as bug, change request, or unclear. | Atlassian MCP, Azure MCP, prompt chain (phases 0–6) |
+| `sow-infrastructure-generator/` | **SoW Infrastructure Generator** — Reads Confluence Statements of Work and generates Azure Bicep parameter files + DevOps pipeline YAML via a 4-agent chain. | Copilot agents (`@sow-infra-orchestrator`, `@sow-planning`, `@sow-implementation`, `@sow-pipeline`), Atlassian MCP |
+
+### Key Conventions
+- Each project has a `START-HERE.md` — always read it before working in that project.
+- Client-specific data goes under `clients/<client-name>/` (templated from `clients/_template/`).
+- Generated output goes under `output/` folders — these are gitignored.
+- Agent definitions live in `.github/agents/*.agent.md` and can be installed globally to VS Code's user prompts folder.
+- Assessment prompts are numbered sequentially (`00-preflight.md`, `01-inventory.md`, etc.) and must be run in order.
+
+---
+
 ## Coding Guidelines
 
 ### General Rules
@@ -35,14 +57,35 @@ Source: [Contica Development Guidelines](https://contica.atlassian.net/wiki/spac
 ## Repository Structure
 
 ```
-/Deployment     → Deployment files (YAML / Bicep / Terraform)
-/LogicApp       → Logic App contents (workflows)
-/FunctionApp    → Function App contents (functions)
-/WebApp         → Web app contents
+.github/
+  copilot-instructions.md     ← this file
+azure-environment-analysis/   ← client Azure environment assessment tool
+  clients/                    ← per-client config (from _template/)
+  methodology/                ← assessment framework, checklists
+  prompts/                    ← numbered prompt chain (00–09)
+  scripts/                    ← setup, validation, report generation
+  standards/                  ← access requirements, SSOT, Azure API refs
+deplox/                       ← conversational Azure deployer (POC)
+  chatbot/                    ← Express server + UI + setup scripts
+  docs/                       ← architecture, specification, how-to-use
+  modules/                    ← Bicep templates (one per Azure service)
+Scope Guardian/               ← issue classification tool
+  clients/                    ← per-client config
+  methodology/                ← classification rules, evidence requirements
+  prompts/                    ← numbered prompt chain (00–06)
+  scripts/                    ← report generation, setup, validation
+sow-infrastructure-generator/ ← SoW-to-deployment-files agent chain
+  .github/agents/             ← Copilot agent definitions
+  output/                     ← generated deployment files
+  reference/                  ← integration setup prompt
 ```
 
-- All commits must reference a work item (Jira ID).
-- Sensitive files (secrets, keys) must never be committed.
+### Files That Must Never Be Committed
+- `.env`, `*.env.*`, `.env.local` — environment/secrets files
+- `clients/*/config.json` — client credentials (template is OK)
+- `output/` contents — generated client reports and artifacts
+- `*.pem`, `*.key`, `*.crt` — certificates and private keys
+- `node_modules/`, `package-lock.json`
 
 ---
 
@@ -66,6 +109,21 @@ feature/v1.0/servicebus-dead-letter-handler
 feature/v0.01/deplox-macos-setup
 hotfix/42
 ```
+
+---
+
+## Technology Notes
+
+### Bicep Modules (deplox)
+Each module in `deplox/modules/` is self-contained — no cross-dependencies. Supported services: Service Bus, Event Hubs, Logic App (Consumption & Standard), Function App, API Management, Integration Account, Key Vault, Event Grid. Each service has both a `.bicep` template and a `.json` parameter file.
+
+### MCP Servers
+Several projects rely on MCP (Model Context Protocol) servers for external access:
+- **Atlassian MCP** — Jira and Confluence (used by Scope Guardian, SoW generator, Environment Analysis)
+- **Azure MCP** — Azure Resource Graph, resource management (used by Environment Analysis, Scope Guardian)
+
+### Local LLM (deplox only)
+DeploX uses Ollama with a local model (default: `llama3.1:8b`). The LLM handles service detection, Q&A, and template explanation — deployment steps are always deterministic CLI calls, never LLM-generated.
 
 ---
 
