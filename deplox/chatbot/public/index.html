@@ -262,6 +262,7 @@
       <span style="color:var(--muted);font-size:.7rem;margin-left:2px;display:inline-flex;align-items:center"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
       </div>
       <button id="new-chat-btn" title="Start new chat"><span class="ic"><svg viewBox="0 0 24 24" width="13" height="13" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></span> New chat</button>
+      <button id="history-btn" title="View past deployments" onclick="showHistory()"><span class="ic"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> History</button>
     </div>
   </header>
 
@@ -545,6 +546,39 @@ let activeModel = localStorage.getItem('deplox_model') || '';
 function onModelChange(val) {
   activeModel = val;
   localStorage.setItem('deplox_model', val);
+}
+
+async function showHistory() {
+  if (welcome) welcome.style.display = 'none';
+  try {
+    const r = await fetch('/api/history');
+    const history = await r.json();
+    if (!history.length) {
+      addMessage('bot', 'No deployments recorded yet. Once you deploy a service the history will appear here.');
+      return;
+    }
+    const rows = history.map(h => {
+      const date = new Date(h.timestamp).toLocaleString();
+      const icon = h.result === 'success' ? '✅' : '❌';
+      const link = h.portalLink
+        ? `<a href="${h.portalLink}" target="_blank" style="color:var(--accent2);text-decoration:underline">Open in Portal →</a>`
+        : '';
+      const detail = h.result === 'success'
+        ? `${h.resourceGroup} · ${h.location} · ${h.subscriptionName || h.subscriptionId}`
+        : `<span style="color:#f87171">${h.error || 'Unknown error'}</span>`;
+      return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <span>${icon} <strong>${h.serviceLabel || h.service}</strong></span>
+          <span style="font-size:.75rem;color:var(--muted)">${date}</span>
+        </div>
+        <div style="font-size:.82rem;color:var(--muted);margin-top:3px">${detail}</div>
+        ${link ? `<div style="font-size:.8rem;margin-top:4px">${link}</div>` : ''}
+      </div>`;
+    }).join('');
+    addMessage('bot', `<strong>Deployment History</strong> — ${history.length} record${history.length !== 1 ? 's' : ''}<div style="margin-top:10px">${rows}</div>`);
+  } catch {
+    addMessage('bot', 'Could not load deployment history.');
+  }
 }
 
 async function checkStatus() {
