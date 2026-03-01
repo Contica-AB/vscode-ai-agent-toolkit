@@ -160,7 +160,7 @@ When the page loads, check the **top-right corner**:
 - If you see your name and subscription → you're already signed in ✅
 - If you see a **Sign in** button → click it. A browser login window opens. Complete the Microsoft login flow.
 
-### 3.3 Describe what you want to deploy
+### 3.3 Describe what you want to deploy — or learn first
 
 You do not have to click a button — just describe what you need in plain language:
 
@@ -168,7 +168,18 @@ You do not have to click a button — just describe what you need in plain langu
 - *"Set up a message queue for my orders service"*
 - *"I want to host a serverless function in Azure"*
 
-The AI identifies the right Azure service and **confirms its understanding before asking any questions**:
+**Want to learn before you deploy?** Click **Learn about Azure services** at the bottom of the welcome screen, or just ask a question:
+
+- *"What is Service Bus?"*
+- *"When should I use Event Hubs vs Service Bus?"*
+- *"What does your APIM template deploy?"*
+
+The bot will answer using its own Azure knowledge plus the actual Bicep template source, and append a link to the official Microsoft Learn documentation. After each answer you get two buttons:
+
+- **Deploy [service] now** — transitions straight into the deployment flow
+- **Keep learning** — ask another question
+
+When you are ready to deploy, the AI identifies the right Azure service and **confirms its understanding before asking any questions**:
 
 > *"It sounds like you want to centralise and secure access to your APIs. Azure API Management is the right service for this — it provides a single gateway with built-in rate limiting, authentication and monitoring. Shall I proceed with deploying API Management?"*
 
