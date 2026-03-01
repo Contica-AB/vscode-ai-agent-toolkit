@@ -3,7 +3,7 @@ import { send, quickSend } from './chat.js';
 import { openAzurePanel, closeAzurePanel, handleLogin, handleLogout } from './azure-panel.js';
 import { checkStatus, showHistory, onModelChange } from './status.js';
 import {
-  initProjects, toggleSidebar, createNewProject, submitCreateProject, unscopeProject,
+  initProjects, createNewProject, submitCreateProject, unscopeProject,
   hideDetailView, saveProjectDefaults, checkAzureStatus
 } from './projects.js';
 
@@ -43,8 +43,7 @@ document.getElementById('diag-close-btn').addEventListener('click', () => docume
 sendBtn.addEventListener('click', () => send());
 
 // ── Project sidebar ───────────────────────────────────────────────────────────
-document.getElementById('projects-btn').addEventListener('click', toggleSidebar);
-document.getElementById('ps-close-btn').addEventListener('click', toggleSidebar);
+
 document.getElementById('proj-add-btn').addEventListener('click', createNewProject);
 document.getElementById('proj-create-btn').addEventListener('click', submitCreateProject);
 document.getElementById('proj-unscope-btn').addEventListener('click', unscopeProject);

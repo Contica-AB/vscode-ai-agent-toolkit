@@ -20,6 +20,8 @@ html, body { height: 100%; overflow: hidden; font-family: var(--font); backgroun
 
 /* ── Layout ── */
 #app { display: flex; flex-direction: column; height: 100vh; }
+#app-body { display: flex; flex: 1; overflow: hidden; }
+#main-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 
 /* ── Header ── */
 header {
@@ -276,25 +278,14 @@ header {
   display: inline-flex; align-items: center;
 }
 
-/* ── Projects button (header) ── */
-#projects-btn {
-  background: none; border: 1px solid var(--border); color: var(--muted);
-  padding: 5px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem;
-  transition: all .2s;
-}
-#projects-btn:hover { border-color: var(--accent); color: var(--accent2); }
 
 /* ── Project sidebar ── */
 #project-sidebar {
-  position: fixed; top: 0; left: 0; z-index: 200;
-  width: 300px; height: 100vh;
+  width: 300px; flex-shrink: 0;
   background: var(--surface); border-right: 1px solid var(--border);
-  box-shadow: 4px 0 24px #00000044;
   display: flex; flex-direction: column;
-  transform: translateX(-100%);
-  transition: transform .25s ease;
+  overflow: hidden;
 }
-#project-sidebar.open { transform: translateX(0); }
 
 .ps-header {
   padding: 14px 16px; background: var(--surface2);
@@ -302,8 +293,6 @@ header {
   display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
 }
 .ps-header h3 { font-size: .9rem; font-weight: 600; display: flex; align-items: center; }
-.ps-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.2rem; padding: 0 4px; }
-.ps-close:hover { color: var(--error); }
 .ps-add-btn {
   background: var(--accent); color: #fff; border: none;
   width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
