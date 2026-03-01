@@ -655,18 +655,22 @@ app.post('/api/chat', async (req, res) => {
       session._learnService = svc;
       const svcLabel = SERVICE_LABELS[svc] || svc;
       const fullBicep = BICEP_FULL[svc] || '(not found)';
-      directive = `You are DeploX. Walk through the following Bicep template for ${svcLabel} and explain clearly:
-1. What Azure resources get created (type, name pattern, SKU/tier)
-2. What parameters the user configures (name, type, default value, allowed values)
-3. What outputs are produced
-Use short bullet points. Be specific and professional.
+      directive = `You are DeploX, an Azure deployment assistant. Explain our ${svcLabel} template to the user in a friendly, guided way. Cover:
 
-DeploX Bicep template:
+1. **Why Bicep** — briefly explain why DeploX uses Bicep (infrastructure-as-code, repeatable, readable, native ARM support)
+2. **What our template deploys** — describe each resource created, the SKU or tier we chose and why it is a sensible default
+3. **What the user can configure** — for each parameter, say what it controls and why we exposed it (mention default values and any restrictions)
+4. **What we kept simple on purpose** — mention any advanced options that were intentionally left out to keep the template focused and reliable
+5. **Outputs** — what the template returns after deployment and how you would use those values
+
+Write in a clear, professional tone as if you are a solutions architect explaining your own design choices. Use short paragraphs or bullets — not a raw code dump.
+
+DeploX ${svcLabel} Bicep template (read this to inform your explanation):
 \`\`\`bicep
 ${fullBicep}
 \`\`\`
 
-DIRECTIVE: Explain the template above — resources, parameters, and outputs.`;
+DIRECTIVE: Explain the template above as described — cover Bicep choice, design decisions, parameters, and outputs.`;
     } else {
     // Check for learn intent before trying to deploy
     const lowerMsg = message.toLowerCase();
@@ -737,18 +741,22 @@ DIRECTIVE: Answer the user's question. Do not mention deploying unless the user 
       if (wantsTemplateExplain && svc) {
         // Dedicated full-Bicep walkthrough
         const fullBicep = BICEP_FULL[svc] || '(not found)';
-        directive = `You are DeploX. Walk through the following Bicep template for ${svcLabel} and explain clearly:
-1. What Azure resources get created (type, name pattern, SKU/tier)
-2. What parameters the user configures (name, type, default, allowed values)
-3. What outputs are produced
-Use short bullet points. Be specific.
+        directive = `You are DeploX, an Azure deployment assistant. Explain our ${svcLabel} template to the user in a friendly, guided way. Cover:
 
-DeploX Bicep template:
+1. **Why Bicep** — briefly explain why DeploX uses Bicep (infrastructure-as-code, repeatable, readable, native ARM support)
+2. **What our template deploys** — describe each resource created, the SKU or tier we chose and why it is a sensible default
+3. **What the user can configure** — for each parameter, say what it controls and why we exposed it (mention default values and any restrictions)
+4. **What we kept simple on purpose** — mention any advanced options that were intentionally left out to keep the template focused and reliable
+5. **Outputs** — what the template returns after deployment and how you would use those values
+
+Write in a clear, professional tone as if you are a solutions architect explaining your own design choices. Use short paragraphs or bullets — not a raw code dump.
+
+DeploX ${svcLabel} Bicep template (read this to inform your explanation):
 \`\`\`bicep
 ${fullBicep}
 \`\`\`
 
-DIRECTIVE: Explain the template above — resources, parameters, and outputs.`;
+DIRECTIVE: Explain the template above as described — cover Bicep choice, design decisions, parameters, and outputs.`;
       } else {
         // Regular Q&A — inject Bicep context + live MS Learn content
         const docsUrl = svc ? LEARN_DOCS[svc] : null;
