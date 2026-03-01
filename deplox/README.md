@@ -77,13 +77,29 @@ Choose a model based on your RAM:
 | `mistral:7b` | 10 GB | Great | `ollama pull mistral:7b` |
 
 **Option A — Automated (recommended):**
+
+Windows (PowerShell):
 ```powershell
 .\chatbot\setup-ollama.ps1
 ```
 
+macOS / Linux (bash):
+```bash
+bash chatbot/setup-ollama.sh
+```
+
 **Option B — Manual:**
+
+Windows:
 ```powershell
 winget install Ollama.Ollama
+ollama pull llama3.1:8b    # replace with your chosen model
+cd chatbot && npm install
+```
+
+macOS:
+```bash
+brew install ollama
 ollama pull llama3.1:8b    # replace with your chosen model
 cd chatbot && npm install
 ```
