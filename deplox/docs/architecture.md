@@ -284,9 +284,18 @@ Used for conversational generation in: `start` (welcome/service detection), `con
 ## Folder Structure
 
 ```
-deploxV0.01/
+deplox/
+├── START-HERE.md           ← quick-start guide
+├── README.md               ← full feature list, prerequisites
+├── scripts/                ← all user-facing scripts
+│   ├── setup.ps1           ← first-time setup (Windows)
+│   ├── setup.sh            ← first-time setup (macOS/Linux)
+│   ├── start.ps1           ← launch chatbot (Windows)
+│   ├── start.sh            ← launch chatbot (macOS/Linux)
+│   └── deploy.ps1          ← terminal-only interactive deployer
 ├── docs/
 │   ├── architecture.md     ← this file
+│   ├── how-to-use.md       ← step-by-step usage guide
 │   └── specification.md    ← full product spec
 ├── modules/                ← Bicep templates (one per service)
 │   ├── servicebus.bicep
@@ -298,12 +307,9 @@ deploxV0.01/
 │   ├── integrationaccount.bicep
 │   ├── keyvault.bicep
 │   └── eventgrid.bicep
-├── chatbot/
-│   ├── public/
-│   │   └── index.html      ← entire frontend (single file)
-│   ├── server.js           ← Express backend + state machine
-│   ├── package.json
-│   └── start.ps1           ← starts Ollama + Node in one command
-├── deploy.ps1              ← top-level launcher
-└── README.md
+└── chatbot/                ← server implementation only
+    ├── public/
+    │   └── index.html      ← entire frontend (single file)
+    ├── server.js           ← Express backend + state machine
+    └── package.json
 ```

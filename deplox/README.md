@@ -21,20 +21,22 @@ Interactive Azure Integration Services deployer — a local AI chatbot that guid
 Windows (PowerShell):
 ```powershell
 cd C:\projects\deploxV0.01    # adjust to your path
-.\chatbot\start.ps1
+.\scripts\start.ps1
 ```
 
 macOS / Linux:
 ```bash
 cd ~/projects/deploxV0.01    # adjust to your path
-bash chatbot/start.sh
+bash scripts/start.sh
 ```
 
 Then open **http://localhost:3000** in your browser.
 
 > First time? Run setup first:
-> - Windows: `.\chatbot\setup-ollama.ps1`
-> - macOS: `bash chatbot/setup-ollama.sh`
+> - Windows: `.\scripts\setup.ps1`
+> - macOS: `bash scripts/setup.sh`
+>
+> New to this project? Read [START-HERE.md](START-HERE.md).
 
 ## Documentation
 
@@ -89,12 +91,12 @@ Choose a model based on your RAM:
 
 Windows (PowerShell):
 ```powershell
-.\chatbot\setup-ollama.ps1
+.\scripts\setup.ps1
 ```
 
 macOS / Linux (bash):
 ```bash
-bash chatbot/setup-ollama.sh
+bash scripts/setup.sh
 ```
 
 **Option B — Manual:**

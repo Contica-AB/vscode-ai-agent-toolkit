@@ -66,7 +66,8 @@ azure-environment-analysis/   ← client Azure environment assessment tool
   scripts/                    ← setup, validation, report generation
   standards/                  ← access requirements, SSOT, Azure API refs
 deplox/                       ← conversational Azure deployer (POC)
-  chatbot/                    ← Express server + UI + setup scripts
+  scripts/                    ← all user-facing scripts (.ps1 + .sh pairs)
+  chatbot/                    ← Express server + UI (implementation only)
   docs/                       ← architecture, specification, how-to-use
   modules/                    ← Bicep templates (one per Azure service)
 Scope Guardian/               ← issue classification tool
@@ -137,3 +138,17 @@ DeploX uses Ollama with a local model (default: `llama3.1:8b`). The LLM handles 
 - [ ] Pull request reviewed and approved
 - [ ] CI build pipeline passed
 - [ ] Documentation updated if needed
+
+---
+
+## Keeping This File Up to Date
+
+This instructions file must be kept accurate as the repository evolves. When making changes to the codebase:
+
+- **Structure changes** — If files/folders are added, moved, or removed, update the Repository Structure section above.
+- **New projects** — Add a row to the Projects table and update the structure tree.
+- **New conventions** — If a new pattern or convention is introduced (naming, tooling, workflow), add it to the relevant section.
+- **Corrections** — If you discover that any instruction here is outdated or wrong, fix it immediately as part of the current commit.
+- **Technology changes** — If dependencies, MCP servers, or tooling change, update the Technology Notes section.
+
+Treat this file as a living document. Every PR that changes project structure, conventions, or tooling should include an update to this file.

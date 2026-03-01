@@ -1,6 +1,7 @@
 ﻿#Requires -Version 5.1
 $ErrorActionPreference = "Stop"
-$chatbotDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
+$chatbotDir = Join-Path $ScriptDir '..\chatbot'
 $ollamaExe  = "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe"
 if (-not (Test-Path $ollamaExe)) { $ollamaExe = "ollama" }
 

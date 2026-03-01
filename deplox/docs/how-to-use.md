@@ -20,11 +20,16 @@
 ---
 
 > **All commands below are run from the DeploX project root folder.**
-> Open PowerShell (5 or 7), navigate to the folder, then run the commands:
+>
+> Windows (PowerShell):
 > ```powershell
 > cd C:\projects\deploxV0.01    # adjust to wherever you put the folder
 > ```
-> If you get an execution policy error, run this once:
+> macOS / Linux:
+> ```bash
+> cd ~/projects/deploxV0.01    # adjust to wherever you put the folder
+> ```
+> If you get an execution policy error on Windows, run this once:
 > ```powershell
 > Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 > ```
@@ -91,12 +96,12 @@ ollama pull llama3.1:8b    # quality option
 
 Windows (PowerShell):
 ```powershell
-.\chatbot\setup-ollama.ps1
+.\scripts\setup.ps1
 ```
 
 macOS / Linux (bash):
 ```bash
-bash chatbot/setup-ollama.sh
+bash scripts/setup.sh
 ```
 
 The script handles:
@@ -128,13 +133,13 @@ Every time you want to use DeploX:
 Windows (PowerShell):
 ```powershell
 cd C:\projects\deploxV0.01    # adjust to your path
-.\chatbot\start.ps1
+.\scripts\start.ps1
 ```
 
 macOS / Linux:
 ```bash
 cd ~/projects/deploxV0.01    # adjust to your path
-bash chatbot/start.sh
+bash scripts/start.sh
 ```
 
 Both scripts:
@@ -390,7 +395,7 @@ Questions asked:
 
 ## 5. Stopping the App
 
-In the PowerShell window where you ran `start.ps1`, press:
+In the terminal window where you ran `start.ps1` or `start.sh`, press:
 
 ```
 Ctrl + C

@@ -10,6 +10,7 @@ GRAY='\033[0;90m'
 RESET='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CHATBOT_DIR="$SCRIPT_DIR/../chatbot"
 
 # Kill anything already using port 3000
 if lsof -ti:3000 &>/dev/null; then
@@ -34,7 +35,7 @@ fi
 # Open browser after a short delay
 (sleep 2 && open "http://localhost:3000" 2>/dev/null || xdg-open "http://localhost:3000" 2>/dev/null) &
 
-cd "$SCRIPT_DIR"
+cd "$CHATBOT_DIR"
 echo ""
 echo -e "  ${CYAN}DeploX chatbot running at http://localhost:3000${RESET}"
 echo -e "  ${GRAY}Press Ctrl+C to stop.${RESET}"

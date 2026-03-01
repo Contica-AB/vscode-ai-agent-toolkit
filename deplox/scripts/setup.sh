@@ -41,7 +41,7 @@ fi
 
 # -- 2. Install npm dependencies ---------------------------------------------
 step "Installing npm dependencies..."
-pushd "$SCRIPT_DIR" > /dev/null
+pushd "$SCRIPT_DIR/../chatbot" > /dev/null
 npm install --silent
 popd > /dev/null
 ok "npm install complete"
@@ -104,5 +104,5 @@ else
 fi
 
 echo ""
-echo -e "  ${GREEN}Setup complete! Run:  bash start.sh${RESET}"
+echo -e "  ${GREEN}Setup complete! Run:  bash scripts/start.sh${RESET}"
 echo ""

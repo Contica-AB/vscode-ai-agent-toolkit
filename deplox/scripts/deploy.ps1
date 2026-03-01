@@ -10,7 +10,8 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ModulesDir = Join-Path $ScriptDir '..\modules'
 
 # ── Colours ──────────────────────────────────────────────────────────────────
 function Write-Header  { Write-Host "`n$args" -ForegroundColor Cyan }
@@ -191,7 +192,7 @@ function Install-ServiceBus {
     }
 
     Deploy-Module -ResourceGroup $RG -DeploymentName "sb-$name" `
-        -BicepFile "$ScriptDir\modules\servicebus.bicep" `
+        -BicepFile "$ModulesDir\servicebus.bicep" `
         -Params @{
             namespaceName = $name
             location      = $Location
@@ -219,7 +220,7 @@ function Install-EventHub {
     $retention = [int](Ask "Message retention in days" "1")
 
     Deploy-Module -ResourceGroup $RG -DeploymentName "eh-$name" `
-        -BicepFile "$ScriptDir\modules\eventhub.bicep" `
+        -BicepFile "$ModulesDir\eventhub.bicep" `
         -Params @{
             namespaceName          = $name
             location               = $Location
@@ -241,7 +242,7 @@ function Install-LogicApp {
         $sku     = Pick "SKU:" @("WS1", "WS2", "WS3") 0
 
         Deploy-Module -ResourceGroup $RG -DeploymentName "la-std-$name" `
-            -BicepFile "$ScriptDir\modules\logicapp-standard.bicep" `
+            -BicepFile "$ModulesDir\logicapp-standard.bicep" `
             -Params @{
                 logicAppName        = $name
                 location            = $Location
@@ -254,7 +255,7 @@ function Install-LogicApp {
         $iaId    = AskOptional "Integration Account resource ID (optional)"
 
         Deploy-Module -ResourceGroup $RG -DeploymentName "la-con-$name" `
-            -BicepFile "$ScriptDir\modules\logicapp-consumption.bicep" `
+            -BicepFile "$ModulesDir\logicapp-consumption.bicep" `
             -Params @{
                 logicAppName         = $name
                 location             = $Location
@@ -274,7 +275,7 @@ function Install-APIM {
     $sku    = Pick "SKU:" @("Consumption", "Developer", "Basic", "Standard", "Premium") 0
 
     Deploy-Module -ResourceGroup $RG -DeploymentName "apim-$name" `
-        -BicepFile "$ScriptDir\modules\apim.bicep" `
+        -BicepFile "$ModulesDir\apim.bicep" `
         -Params @{
             apimName       = $name
             location       = $Location
@@ -292,7 +293,7 @@ function Install-IntegrationAccount {
     $sku  = Pick "SKU:" @("Basic", "Standard", "Free") 0
 
     Deploy-Module -ResourceGroup $RG -DeploymentName "ia-$name" `
-        -BicepFile "$ScriptDir\modules\integrationaccount.bicep" `
+        -BicepFile "$ModulesDir\integrationaccount.bicep" `
         -Params @{
             integrationAccountName = $name
             location               = $Location
@@ -309,7 +310,7 @@ function Install-FunctionApp {
     $runtime = Pick "Runtime:" @("dotnet", "dotnet-isolated", "node", "python", "java") 0
 
     Deploy-Module -ResourceGroup $RG -DeploymentName "fa-$name" `
-        -BicepFile "$ScriptDir\modules\functionapp.bicep" `
+        -BicepFile "$ModulesDir\functionapp.bicep" `
         -Params @{
             functionAppName    = $name
             location           = $Location
@@ -327,7 +328,7 @@ function Install-KeyVault {
     $adminId = AskOptional "Your Entra Object ID for admin access (optional)"
 
     Deploy-Module -ResourceGroup $RG -DeploymentName "kv-$name" `
-        -BicepFile "$ScriptDir\modules\keyvault.bicep" `
+        -BicepFile "$ModulesDir\keyvault.bicep" `
         -Params @{
             keyVaultName    = $name
             location        = $Location
@@ -343,7 +344,7 @@ function Install-EventGrid {
     $name = Ask "Event Grid topic name"
 
     Deploy-Module -ResourceGroup $RG -DeploymentName "eg-$name" `
-        -BicepFile "$ScriptDir\modules\eventgrid.bicep" `
+        -BicepFile "$ModulesDir\eventgrid.bicep" `
         -Params @{
             topicName = $name
             location  = $Location
