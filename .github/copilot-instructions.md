@@ -13,7 +13,7 @@ This is the **VS Code AI Agent Toolkit** by **Contica** — an integration consu
 
 | Folder | What it does | Key tech |
 |---|---|---|
-| `deplox/` | **DeploX** (v0.01, POC) — Local AI chatbot that deploys Azure Integration Services via Bicep templates through a conversational UI at `localhost:3000`. | Node.js/Express, Ollama (local LLM), Azure CLI, Bicep |
+| `deplox/` | **DeploX** (v0.01, POC) — Local AI chatbot that deploys Azure Integration Services via Bicep templates through a conversational UI at `localhost:3000`. Moved to its own repository: [Contica-AB/deplox](https://github.com/Contica-AB/deplox). | Node.js/Express, Ollama (local LLM), Azure CLI, Bicep |
 | `azure-environment-analysis/` | **Azure Environment Analysis** — Structured assessment of client Azure environments. Prompt-driven workflow through Copilot Chat producing inventory, security, failure analysis, and monitoring reports. | Azure MCP, prompt chain (phases 0–9), Node.js scripts |
 | `Scope Guardian/` | **Scope Guardian** — Issue classification tool. Cross-references Jira/ADO issues against requirements docs and Azure implementations to classify as bug, change request, or unclear. | Atlassian MCP, Azure MCP, prompt chain (phases 0–6) |
 | `sow-infrastructure-generator/` | **SoW Infrastructure Generator** — Reads Confluence Statements of Work and generates Azure Bicep parameter files + DevOps pipeline YAML via a 4-agent chain. | Copilot agents (`@sow-infra-orchestrator`, `@sow-planning`, `@sow-implementation`, `@sow-pipeline`), Atlassian MCP |
@@ -65,7 +65,9 @@ azure-environment-analysis/   ← client Azure environment assessment tool
   prompts/                    ← numbered prompt chain (00–09)
   scripts/                    ← setup, validation, report generation
   standards/                  ← access requirements, SSOT, Azure API refs
-deplox/                       ← conversational Azure deployer (POC)
+deplox/                       ← conversational Azure deployer (POC) — moved to Contica-AB/deplox
+  .github/
+    copilot-instructions.md   ← Copilot instructions for the deplox repo
   scripts/                    ← all user-facing scripts (.ps1 + .sh pairs)
   chatbot/                    ← Express server + UI (implementation only)
   docs/                       ← architecture, specification, how-to-use
@@ -116,7 +118,7 @@ hotfix/42
 ## Technology Notes
 
 ### Bicep Modules (deplox)
-Each module in `deplox/modules/` is self-contained — no cross-dependencies. Supported services: Service Bus, Event Hubs, Logic App (Consumption & Standard), Function App, API Management, Integration Account, Key Vault, Event Grid. Each service has both a `.bicep` template and a `.json` parameter file.
+Each module in `deplox/modules/` is self-contained — no cross-dependencies. Supported services: Service Bus, Event Hubs, Logic App (Consumption & Standard), Function App, API Management, Integration Account, Key Vault, Event Grid. Each service has both a `.bicep` template and a `.json` parameter file. See the [deplox repository](https://github.com/Contica-AB/deplox) for the latest templates.
 
 ### MCP Servers
 Several projects rely on MCP (Model Context Protocol) servers for external access:
