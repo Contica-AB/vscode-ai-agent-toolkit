@@ -53,6 +53,8 @@ router.post('/', (req, res) => {
     proc.on('close', code => code === 0 ? resolve() : reject(new Error(`Step failed (exit ${code})`)));
   });
 
+  const batchId = configList.length > 1 ? `batch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` : null;
+
   const makeHistoryRecord = (cfg, result, error = null) => ({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     timestamp: new Date().toISOString(),
@@ -69,8 +71,6 @@ router.post('/', (req, res) => {
     batchId: configList.length > 1 ? batchId : undefined,
     projectId: projectId || undefined,
   });
-
-  const batchId = configList.length > 1 ? `batch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` : null;
   const total = configList.length;
   const deployResults = {};
   let successCount = 0;
