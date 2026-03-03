@@ -1,6 +1,7 @@
 {
   "name": "deplox-chatbot",
   "version": "0.0.1",
+  "type": "module",
   "description": "Local Azure Integration chatbot powered by Ollama",
   "main": "server.js",
   "scripts": {

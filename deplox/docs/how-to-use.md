@@ -20,11 +20,16 @@
 ---
 
 > **All commands below are run from the DeploX project root folder.**
-> Open PowerShell (5 or 7), navigate to the folder, then run the commands:
+>
+> Windows (PowerShell):
 > ```powershell
 > cd C:\projects\deploxV0.01    # adjust to wherever you put the folder
 > ```
-> If you get an execution policy error, run this once:
+> macOS / Linux:
+> ```bash
+> cd ~/projects/deploxV0.01    # adjust to wherever you put the folder
+> ```
+> If you get an execution policy error on Windows, run this once:
 > ```powershell
 > Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 > ```
@@ -88,8 +93,15 @@ ollama pull llama3.1:8b    # quality option
 #### Install Ollama + pull your chosen model
 
 **Option A — Automated (recommended):**
+
+Windows (PowerShell):
 ```powershell
-.\chatbot\setup-ollama.ps1
+.\scripts\setup.ps1
+```
+
+macOS / Linux (bash):
+```bash
+bash scripts/setup.sh
 ```
 
 The script handles:
@@ -116,18 +128,24 @@ cd ..
 
 ## 2. Starting the App
 
-Every time you want to use DeploX, open PowerShell and run:
+Every time you want to use DeploX:
 
+Windows (PowerShell):
 ```powershell
 cd C:\projects\deploxV0.01    # adjust to your path
-.\chatbot\start.ps1
+.\scripts\start.ps1
 ```
 
+macOS / Linux:
+```bash
+cd ~/projects/deploxV0.01    # adjust to your path
+bash scripts/start.sh
+```
 
-This script:
-1. Kills anything already running on port 3000
-2. Starts Ollama in the background (with Intel GPU support if available)
-3. Opens your browser at **http://localhost:3000** automatically
+Both scripts:
+1. Kill anything already running on port 3000
+2. Start Ollama in the background if not already running
+3. Open your browser at **http://localhost:3000** automatically
 4. Starts the Node.js server
 
 You'll see:
@@ -377,7 +395,7 @@ Questions asked:
 
 ## 5. Stopping the App
 
-In the PowerShell window where you ran `start.ps1`, press:
+In the terminal window where you ran `start.ps1` or `start.sh`, press:
 
 ```
 Ctrl + C

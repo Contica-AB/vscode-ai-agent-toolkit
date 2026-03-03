@@ -29,7 +29,8 @@ try {
 
 # -- 2. Install npm dependencies ---------------------------------------------
 Write-Step "Installing npm dependencies..."
-$chatbotDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
+$chatbotDir = Join-Path $ScriptDir '..\chatbot'
 Push-Location $chatbotDir
 npm install --silent
 Pop-Location
@@ -94,5 +95,5 @@ if ($az) {
 }
 
 Write-Host ""
-Write-Host "  Setup complete! Run:  powershell -ExecutionPolicy Bypass -File .\start.ps1" -ForegroundColor Green
+Write-Host "  Setup complete! Run:  powershell -ExecutionPolicy Bypass -File scripts\start.ps1" -ForegroundColor Green
 Write-Host ""

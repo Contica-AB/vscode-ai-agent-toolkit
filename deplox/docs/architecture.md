@@ -284,9 +284,19 @@ Used for conversational generation in: `start` (welcome/service detection), `con
 ## Folder Structure
 
 ```
-deploxV0.01/
+deplox/
+├── START-HERE.md           ← quick-start guide
+├── README.md               ← full feature list, prerequisites
+├── projects/               ← per-project JSON files (gitignored)
+├── scripts/                ← all user-facing scripts
+│   ├── setup.ps1           ← first-time setup (Windows)
+│   ├── setup.sh            ← first-time setup (macOS/Linux)
+│   ├── start.ps1           ← launch chatbot (Windows)
+│   ├── start.sh            ← launch chatbot (macOS/Linux)
+│   └── deploy.ps1          ← terminal-only interactive deployer
 ├── docs/
 │   ├── architecture.md     ← this file
+│   ├── how-to-use.md       ← step-by-step usage guide
 │   └── specification.md    ← full product spec
 ├── modules/                ← Bicep templates (one per service)
 │   ├── servicebus.bicep
@@ -298,12 +308,114 @@ deploxV0.01/
 │   ├── integrationaccount.bicep
 │   ├── keyvault.bicep
 │   └── eventgrid.bicep
-├── chatbot/
-│   ├── public/
-│   │   └── index.html      ← entire frontend (single file)
-│   ├── server.js           ← Express backend + state machine
-│   ├── package.json
-│   └── start.ps1           ← starts Ollama + Node in one command
-├── deploy.ps1              ← top-level launcher
-└── README.md
+└── chatbot/                ← server implementation only
+    ├── public/
+    │   ├── index.html      ← frontend (HTML shell + sidebar)
+    │   ├── css/styles.css  ← all styles including project sidebar
+    │   └── js/
+    │       ├── app.js      ← init + event wiring
+    │       ├── chat.js     ← SSE chat send/receive
+    │       ├── deploy.js   ← deploy card + plan card
+    │       ├── projects.js ← project sidebar module
+    │       ├── state.js    ← shared mutable state
+    │       └── ...         ← helpers, icons, diagram, etc.
+    ├── lib/
+    │   ├── config.js       ← env vars + path constants
+    │   ├── projects.js     ← project CRUD + persistence
+    │   ├── azure-status.js ← compare local vs Azure deployments
+    │   ├── history.js      ← deployment history log
+    │   └── ...             ← ollama, schemas, session
+    ├── routes/
+    │   ├── projects.js     ← REST API for project management
+    │   ├── chat.js         ← chat SSE endpoint
+    │   ├── deploy.js       ← deploy SSE endpoint
+    │   └── ...             ← azure, diagram, ollama, session
+    ├── server.js           ← Express app + route mounting
+    └── package.json
 ```
+
+---
+
+## Project Management System
+
+### Overview
+
+Projects scope deployments, parameters, chat sessions, and history into isolated workspaces. Each project (e.g., "CMACGM-Bookings", "HAPAGLLOYD-Bookings") stores its own defaults, deployment records, and conversation state.
+
+### Storage
+
+One JSON file per project in `deplox/projects/<slug>.json`. The directory is gitignored.
+
+```json
+{
+  "id": "cmacgm-bookings",
+  "name": "CMACGM-Bookings",
+  "createdAt": "2024-...",
+  "updatedAt": "2024-...",
+  "defaults": {
+    "subscription": null,
+    "resourceGroup": "rg-cmacgm-bookings",
+    "location": "westeurope",
+    "environment": "dev",
+    "tags": { "Project": "CMACGM-Bookings", "CreatedBy": "DeploX" }
+  },
+  "deployments": [
+    {
+      "version": 1,
+      "timestamp": "...",
+      "services": [{ "service": "servicebus", "serviceLabel": "Service Bus", "status": "succeeded" }],
+      "status": "succeeded",
+      "resourceGroup": "rg-cmacgm-bookings",
+      "location": "westeurope"
+    }
+  ],
+  "currentPlan": [],
+  "session": { "state": "...", "collected": {}, "messages": [...] }
+}
+```
+
+### API Endpoints
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/projects` | List all projects (summary) |
+| POST | `/api/projects` | Create a new project |
+| GET | `/api/projects/:id` | Full project detail |
+| PUT | `/api/projects/:id` | Update project defaults |
+| DELETE | `/api/projects/:id` | Delete project + JSON file |
+| GET | `/api/projects/:id/session` | Restore saved session |
+| PUT | `/api/projects/:id/session` | Save current session |
+| GET | `/api/projects/:id/deployments` | List deployment history |
+| GET | `/api/projects/:id/azure-status` | Compare local vs Azure state |
+
+### Version Tracking
+
+Each deployment within a project gets an auto-incrementing version number (`v1`, `v2`, ...). The version is derived from the length of the `deployments` array + 1.
+
+### Azure Status Comparison
+
+The `azure-status` endpoint runs `az deployment group list` against the project's resource group and cross-references with the local deployment history. Returns per-service sync status:
+- `in-sync` — local version matches Azure
+- `local-ahead` — local has a newer deployment than Azure
+- `failed-in-azure` — Azure shows the latest deployment as failed
+- `deploying` — Azure shows a deployment in progress
+- `not-deployed` — service exists locally but not in Azure
+- `not-found` — resource group not found in Azure
+
+### Frontend Sidebar
+
+A slide-in panel on the left (300px) activated by the "Projects" button in the header. Features:
+- Project list with status dots (green/amber/red) and version labels
+- Create project form (name, resource group, location, environment)
+- Click to switch projects (saves current session, loads new)
+- Detail view with deployment history + Azure status check
+- "Unscoped mode" button to work without a project
+- Project badge in the header showing the active project name
+
+### Chat Integration
+
+When a project is active:
+- Project defaults (resource group, location, environment) are pre-populated in the chat session
+- Chat sessions are auto-saved to the project after each response
+- Session can be restored when switching back to the project
+- `projectId` is passed with every chat and deploy request
