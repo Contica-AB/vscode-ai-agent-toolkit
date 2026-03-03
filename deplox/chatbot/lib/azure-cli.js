@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 export function azJson(args) {
   try {
     return JSON.parse(
-      execSync(`az ${args.join(' ')} --output json 2>nul`, { timeout: 15000 }).toString()
+      execSync(`az ${args.join(' ')} --output json`, { timeout: 15000, stdio: ['pipe', 'pipe', 'ignore'] }).toString()
     );
   } catch {
     return null;
