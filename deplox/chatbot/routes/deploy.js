@@ -23,7 +23,7 @@ router.post('/', (req, res) => {
 
   // Guard: ensure user is logged in before deploying
   try {
-    execSync('az account show --output none 2>/dev/null', { timeout: 8000 });
+    execSync('az account show --output none', { timeout: 8000, stdio: 'ignore' });
   } catch {
     sse(res, 'error', { message: 'Not logged in to Azure. Please sign in via the top-right login button first.' });
     return res.end();
@@ -99,7 +99,7 @@ router.post('/', (req, res) => {
     // Key Vault: auto-inject current user's object ID if not supplied
     if (cfg.service === 'keyvault' && !cfg.params.adminObjectId) {
       try {
-        const objId = execSync('az ad signed-in-user show --query id -o tsv 2>/dev/null', { timeout: 8000 }).toString().trim();
+        const objId = execSync('az ad signed-in-user show --query id -o tsv', { timeout: 8000, stdio: ['pipe', 'pipe', 'ignore'] }).toString().trim();
         if (objId) cfg.params.adminObjectId = objId;
       } catch { /* leave empty */ }
     }
@@ -177,8 +177,8 @@ router.post('/', (req, res) => {
       // Fetch outputs
       try {
         const raw = execSync(
-          `az deployment group show --resource-group "${cfg.resourceGroup}" --name "${cfg.deploymentName}" --query properties.outputs -o json 2>/dev/null`,
-          { timeout: 15000 }
+          `az deployment group show --resource-group "${cfg.resourceGroup}" --name "${cfg.deploymentName}" --query properties.outputs -o json`,
+          { timeout: 15000, stdio: ['pipe', 'pipe', 'ignore'] }
         ).toString().trim();
         const outputs = JSON.parse(raw);
         const keys = Object.keys(outputs);
